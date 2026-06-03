@@ -26,6 +26,8 @@ final readonly class ContactData
      * @param  array<int, ContactRelation>  $relations
      * @param  array<int, ContactVCardExtension>  $extensions
      * @param  array<int, ContactPronoun>  $pronouns
+     * @param  array<int, string>  $simpleEmails  Plain email strings extracted from EMAIL properties, retained alongside the typed $emails so a card carrying only untyped emails round-trips losslessly.
+     * @param  array<int, string>  $simplePhones  Plain phone strings extracted from TEL properties, retained alongside the typed $phones.
      */
     public function __construct(
         public string $uri,
@@ -56,6 +58,8 @@ final readonly class ContactData
         public ?string $jobTitle = null,
         public ?string $department = null,
         public ?string $note = null,
+        public array $simpleEmails = [],
+        public array $simplePhones = [],
     ) {}
 
     public function withStorageMeta(string $uri, string $etag, int $size): self
@@ -89,6 +93,8 @@ final readonly class ContactData
             jobTitle: $this->jobTitle,
             department: $this->department,
             note: $this->note,
+            simpleEmails: $this->simpleEmails,
+            simplePhones: $this->simplePhones,
         );
     }
 }
