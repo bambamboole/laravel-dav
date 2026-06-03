@@ -1,6 +1,7 @@
 <?php
 
 use Bambamboole\LaravelDav\Tests\TestCase;
+use Illuminate\Testing\TestResponse;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Component\VCard;
 
@@ -14,6 +15,38 @@ function vcard(string $body): string
 function ical(string $body): string
 {
     return str_replace("\n", "\r\n", trim($body))."\r\n";
+}
+
+function davAuthHeader(string $username, string $secret): string
+{
+    return 'Basic '.base64_encode($username.':'.$secret);
+}
+
+function davPut(TestCase $test, string $path, string $authHeader, string $payload, string $contentType): TestResponse
+{
+    return $test->call('PUT', $path, [], [], [], [
+        'CONTENT_TYPE' => $contentType,
+        'HTTP_AUTHORIZATION' => $authHeader,
+    ], $payload);
+}
+
+function davSyncReport(TestCase $test, string $path, string $authHeader, string $syncToken): TestResponse
+{
+    $payload = <<<XML
+<?xml version="1.0" encoding="utf-8" ?>
+<d:sync-collection xmlns:d="DAV:">
+    <d:sync-token>{$syncToken}</d:sync-token>
+    <d:sync-level>1</d:sync-level>
+    <d:prop>
+        <d:getetag />
+    </d:prop>
+</d:sync-collection>
+XML;
+
+    return $test->call('REPORT', $path, [], [], [], [
+        'CONTENT_TYPE' => 'application/xml',
+        'HTTP_AUTHORIZATION' => $authHeader,
+    ], $payload);
 }
 
 /**
