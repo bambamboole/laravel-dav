@@ -4,7 +4,6 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavPropertyFactory;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -16,15 +15,16 @@ use Illuminate\Database\Eloquent\Model;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-#[Fillable([
-    'path',
-    'name',
-    'value',
-])]
 class DavProperty extends Model
 {
     /** @use HasFactory<DavPropertyFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'path',
+        'name',
+        'value',
+    ];
 
     protected static function newFactory()
     {

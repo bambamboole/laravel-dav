@@ -16,7 +16,6 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactVCardExtension;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Parsing\VCardSerializer;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\AsCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -66,49 +65,50 @@ use Illuminate\Support\Collection;
  * @property Collection<int, ContactVCardExtension> $vcard_extensions
  * @property-read DavAddressBook $addressBook
  */
-#[Fillable([
-    'dav_address_book_id',
-    'uri',
-    'uid',
-    'full_name',
-    'given_name',
-    'family_name',
-    'organization',
-    'contact_type',
-    'name_prefix',
-    'middle_name',
-    'previous_family_name',
-    'name_suffix',
-    'nickname',
-    'phonetic_given_name',
-    'phonetic_middle_name',
-    'phonetic_family_name',
-    'job_title',
-    'department',
-    'phonetic_organization',
-    'note',
-    'birthday',
-    'pronouns',
-    'emails',
-    'phones',
-    'phone_numbers',
-    'email_addresses',
-    'addresses',
-    'urls',
-    'instant_messages',
-    'social_profiles',
-    'dates',
-    'relations',
-    'vcard_extensions',
-    'etag',
-    'size',
-    'last_modified_at',
-    'card_data',
-])]
 class DavCard extends Model
 {
     /** @use HasFactory<DavCardFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'dav_address_book_id',
+        'uri',
+        'uid',
+        'full_name',
+        'given_name',
+        'family_name',
+        'organization',
+        'contact_type',
+        'name_prefix',
+        'middle_name',
+        'previous_family_name',
+        'name_suffix',
+        'nickname',
+        'phonetic_given_name',
+        'phonetic_middle_name',
+        'phonetic_family_name',
+        'job_title',
+        'department',
+        'phonetic_organization',
+        'note',
+        'birthday',
+        'pronouns',
+        'emails',
+        'phones',
+        'phone_numbers',
+        'email_addresses',
+        'addresses',
+        'urls',
+        'instant_messages',
+        'social_profiles',
+        'dates',
+        'relations',
+        'vcard_extensions',
+        'etag',
+        'size',
+        'last_modified_at',
+        'card_data',
+    ];
 
     protected $attributes = [
         'contact_type' => 'person',

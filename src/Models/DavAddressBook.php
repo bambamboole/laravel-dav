@@ -4,7 +4,6 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavAddressBookFactory;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,17 +22,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read Collection<int, DavCard> $cards
  * @property-read int|null $cards_count
  */
-#[Fillable([
-    'user_id',
-    'uri',
-    'display_name',
-    'description',
-    'sync_token',
-])]
 class DavAddressBook extends Model
 {
     /** @use HasFactory<DavAddressBookFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'uri',
+        'display_name',
+        'description',
+        'sync_token',
+    ];
 
     protected $attributes = [
         'sync_token' => 1,

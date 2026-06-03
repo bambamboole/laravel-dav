@@ -6,7 +6,6 @@ use Bambamboole\LaravelDav\Database\Factories\DavCalendarObjectFactory;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,29 +33,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $url
  * @property-read DavCalendar $calendar
  */
-#[Fillable([
-    'dav_calendar_id',
-    'uri',
-    'uid',
-    'component_type',
-    'summary',
-    'description',
-    'location',
-    'status',
-    'url',
-    'starts_at',
-    'ends_at',
-    'is_all_day',
-    'timezone',
-    'etag',
-    'size',
-    'last_modified_at',
-    'calendar_data',
-])]
 class DavCalendarObject extends Model
 {
     /** @use HasFactory<DavCalendarObjectFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'dav_calendar_id',
+        'uri',
+        'uid',
+        'component_type',
+        'summary',
+        'description',
+        'location',
+        'status',
+        'url',
+        'starts_at',
+        'ends_at',
+        'is_all_day',
+        'timezone',
+        'etag',
+        'size',
+        'last_modified_at',
+        'calendar_data',
+    ];
 
     /**
      * Get the attributes that should be cast.

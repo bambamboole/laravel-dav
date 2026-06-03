@@ -4,7 +4,6 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavChangeFactory;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,19 +17,20 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $sync_token
  * @property CarbonImmutable $created_at
  */
-#[Fillable([
-    'collection_type',
-    'collection_id',
-    'resource_uri',
-    'operation',
-    'sync_token',
-    'created_at',
-])]
 #[WithoutTimestamps]
 class DavChange extends Model
 {
     /** @use HasFactory<DavChangeFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'collection_type',
+        'collection_id',
+        'resource_uri',
+        'operation',
+        'sync_token',
+        'created_at',
+    ];
 
     /**
      * Get the attributes that should be cast.

@@ -4,8 +4,6 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavCredentialFactory;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,20 +18,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
-#[Fillable([
-    'user_id',
-    'name',
-    'username',
-    'secret_hash',
-    'last_used_at',
-])]
-#[Hidden([
-    'secret_hash',
-])]
 class DavCredential extends Model
 {
     /** @use HasFactory<DavCredentialFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'name',
+        'username',
+        'secret_hash',
+        'last_used_at',
+    ];
+
+    protected $hidden = [
+        'secret_hash',
+    ];
 
     /**
      * Get the attributes that should be cast.
