@@ -1,9 +1,10 @@
 <?php
 
+use Bambamboole\LaravelDav\Tests\TestCase;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Component\VCard;
 
-uses(Bambamboole\LaravelDav\Tests\TestCase::class)->in('Feature', 'Unit', 'Smoke');
+uses(TestCase::class)->in('Feature', 'Unit', 'Smoke');
 
 /**
  * @param  array<string, string|array{value: string, parameters?: array<string, string>}>  $properties

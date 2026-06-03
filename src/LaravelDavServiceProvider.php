@@ -14,6 +14,6 @@ class LaravelDavServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([__DIR__.'/../config/dav.php' => config_path('dav.php')], 'dav-config');
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], 'dav-migrations');
     }
 }
