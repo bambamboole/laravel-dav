@@ -1,0 +1,28 @@
+{
+    "name": "bambamboole/laravel-dav",
+    "description": "CalDAV and CardDAV server for Laravel, powered by sabre/dav, with a typed DTO API.",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "illuminate/contracts": "^13.0",
+        "illuminate/database": "^13.0",
+        "illuminate/support": "^13.0",
+        "sabre/dav": "^4.7"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^11.0",
+        "pestphp/pest": "^4.7"
+    },
+    "autoload": {
+        "psr-4": { "Bambamboole\\LaravelDav\\": "src/", "Bambamboole\\LaravelDav\\Database\\Factories\\": "database/factories/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Bambamboole\\LaravelDav\\Tests\\": "tests/" }
+    },
+    "extra": {
+        "laravel": { "providers": ["Bambamboole\\LaravelDav\\LaravelDavServiceProvider"] }
+    },
+    "config": { "allow-plugins": { "pestphp/pest-plugin": true } },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
