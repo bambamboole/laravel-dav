@@ -6,6 +6,16 @@ use Sabre\VObject\Component\VCard;
 
 uses(TestCase::class)->in('Feature', 'Unit', 'Smoke');
 
+function vcard(string $body): string
+{
+    return str_replace("\n", "\r\n", trim($body))."\r\n";
+}
+
+function ical(string $body): string
+{
+    return str_replace("\n", "\r\n", trim($body))."\r\n";
+}
+
 /**
  * @param  array<string, string|array{value: string, parameters?: array<string, string>}>  $properties
  */
