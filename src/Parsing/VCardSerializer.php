@@ -43,6 +43,26 @@ class VCardSerializer
             $vCard->add('NICKNAME', $data->nickname);
         }
 
+        if (! empty($data->phoneticGivenName)) {
+            $vCard->add('X-PHONETIC-FIRST-NAME', $data->phoneticGivenName);
+        }
+
+        if (! empty($data->phoneticMiddleName)) {
+            $vCard->add('X-PHONETIC-MIDDLE-NAME', $data->phoneticMiddleName);
+        }
+
+        if (! empty($data->phoneticFamilyName)) {
+            $vCard->add('X-PHONETIC-LAST-NAME', $data->phoneticFamilyName);
+        }
+
+        if (! empty($data->phoneticOrganization)) {
+            $vCard->add('X-PHONETIC-ORG', $data->phoneticOrganization);
+        }
+
+        if (! empty($data->previousFamilyName)) {
+            $vCard->add('X-MAIDEN-NAME', $data->previousFamilyName);
+        }
+
         if (! empty($data->organization)) {
             $vCard->add('ORG', array_filter([
                 $data->organization,
@@ -174,6 +194,11 @@ class VCardSerializer
             $this->setOrRemove($vCard, 'NICKNAME', $data->nickname);
             $this->setOrRemove($vCard, 'TITLE', $data->jobTitle);
             $this->setOrRemove($vCard, 'NOTE', $data->note);
+            $this->setOrRemove($vCard, 'X-PHONETIC-FIRST-NAME', $data->phoneticGivenName);
+            $this->setOrRemove($vCard, 'X-PHONETIC-MIDDLE-NAME', $data->phoneticMiddleName);
+            $this->setOrRemove($vCard, 'X-PHONETIC-LAST-NAME', $data->phoneticFamilyName);
+            $this->setOrRemove($vCard, 'X-PHONETIC-ORG', $data->phoneticOrganization);
+            $this->setOrRemove($vCard, 'X-MAIDEN-NAME', $data->previousFamilyName);
 
             unset($vCard->ORG);
             if (! empty($data->organization)) {

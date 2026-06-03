@@ -94,6 +94,32 @@ it('round-trips a vcard through parse and serialize', function () {
         ->and($reparsed->addresses[0]->city)->toBe('London');
 });
 
+it('round-trips phonetic and maiden-name fields through parse and serialize', function () {
+    $payload = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:3.0
+        UID:rt-phonetic
+        FN:Ada Lovelace
+        N:Lovelace;Ada;;;
+        X-PHONETIC-FIRST-NAME:AY-dah
+        X-PHONETIC-MIDDLE-NAME:aw-GUS-tah
+        X-PHONETIC-LAST-NAME:LUV-lays
+        X-PHONETIC-ORG:an-uh-LIT-ik-ul
+        X-MAIDEN-NAME:Byron
+        END:VCARD
+        VCF);
+
+    $parsed = (new VCardParser)->parse($payload, 'rt-phonetic.vcf');
+    $serialized = (new VCardSerializer)->serialize($parsed);
+    $reparsed = (new VCardParser)->parse($serialized, 'rt-phonetic.vcf');
+
+    expect($reparsed->phoneticGivenName)->toBe('AY-dah')
+        ->and($reparsed->phoneticMiddleName)->toBe('aw-GUS-tah')
+        ->and($reparsed->phoneticFamilyName)->toBe('LUV-lays')
+        ->and($reparsed->phoneticOrganization)->toBe('an-uh-LIT-ik-ul')
+        ->and($reparsed->previousFamilyName)->toBe('Byron');
+});
+
 it('round-trips an organization vcard preserving the show-as company flag', function () {
     $payload = contactCardPayload([
         'UID' => 'rt-org',

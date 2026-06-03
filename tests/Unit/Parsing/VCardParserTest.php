@@ -184,6 +184,37 @@ it('parses a fully structured contact with all name parts and rich fields', func
         ->and($data->socialProfiles[0]->url)->toBe('https://twitter.com/adalovelace');
 });
 
+it('parses phonetic and maiden-name x-properties without leaking them into extensions', function () {
+    $payload = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:3.0
+        UID:contact-phonetic
+        FN:Ada Lovelace
+        N:Lovelace;Ada;;;
+        X-PHONETIC-FIRST-NAME:AY-dah
+        X-PHONETIC-MIDDLE-NAME:aw-GUS-tah
+        X-PHONETIC-LAST-NAME:LUV-lays
+        X-PHONETIC-ORG:an-uh-LIT-ik-ul
+        X-MAIDEN-NAME:Byron
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($payload, 'contact-phonetic.vcf');
+
+    $extensionNames = array_map(fn ($extension) => $extension->name, $data->extensions);
+
+    expect($data->phoneticGivenName)->toBe('AY-dah')
+        ->and($data->phoneticMiddleName)->toBe('aw-GUS-tah')
+        ->and($data->phoneticFamilyName)->toBe('LUV-lays')
+        ->and($data->phoneticOrganization)->toBe('an-uh-LIT-ik-ul')
+        ->and($data->previousFamilyName)->toBe('Byron')
+        ->and($extensionNames)->not->toContain('X-PHONETIC-FIRST-NAME')
+        ->and($extensionNames)->not->toContain('X-PHONETIC-MIDDLE-NAME')
+        ->and($extensionNames)->not->toContain('X-PHONETIC-LAST-NAME')
+        ->and($extensionNames)->not->toContain('X-PHONETIC-ORG')
+        ->and($extensionNames)->not->toContain('X-MAIDEN-NAME');
+});
+
 it('parses apple-style grouped properties with X-ABLABEL', function () {
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
