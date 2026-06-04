@@ -12,9 +12,7 @@ class OwnerUserFactory extends Factory
 {
     protected $model = OwnerUser::class;
 
-    /**
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

@@ -69,7 +69,6 @@ class ResponseEmitter
         try {
             $server->emit('exception', [$throwable]);
         } catch (Throwable) {
-            //
         }
 
         if (! $throwable instanceof SabreException) {

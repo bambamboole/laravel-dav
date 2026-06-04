@@ -12,11 +12,7 @@ class DavLockFactory extends Factory
 {
     protected $model = DavLock::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

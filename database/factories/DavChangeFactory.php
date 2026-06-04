@@ -2,7 +2,6 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
-use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -14,11 +13,7 @@ class DavChangeFactory extends Factory
 {
     protected $model = DavChange::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [
@@ -29,32 +24,5 @@ class DavChangeFactory extends Factory
             'sync_token' => 1,
             'created_at' => now(),
         ];
-    }
-
-    /**
-     * Create a change for an address book collection.
-     */
-    public function addressBook(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'collection_type' => 'address_book',
-            'collection_id' => DavAddressBook::factory(),
-            'resource_uri' => fake()->uuid().'.vcf',
-        ]);
-    }
-
-    /**
-     * Mark the changed resource as deleted.
-     */
-    public function deletedResource(): static
-    {
-        return $this->state(function (array $attributes) {
-            $extension = ($attributes['collection_type'] ?? 'calendar') === 'address_book' ? 'vcf' : 'ics';
-
-            return [
-                'resource_uri' => $attributes['resource_uri'] ?? fake()->uuid().'.'.$extension,
-                'operation' => 3,
-            ];
-        });
     }
 }

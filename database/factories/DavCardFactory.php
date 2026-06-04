@@ -13,11 +13,7 @@ class DavCardFactory extends Factory
 {
     protected $model = DavCard::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $uid = (string) fake()->uuid();

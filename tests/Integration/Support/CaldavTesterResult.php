@@ -4,14 +4,10 @@ namespace Bambamboole\LaravelDav\Tests\Integration\Support;
 
 use JsonException;
 
-/**
- * The parsed outcome of a caldav-server-tester run: a typed feature/support map
- * plus the checks that aborted before they could be graded.
- */
 final readonly class CaldavTesterResult
 {
     /**
-     * @param  array<string, FeatureReport>  $features  keyed by feature name
+     * @param  array<string, SupportLevel>  $features  keyed by feature name
      * @param  list<string>  $erroredChecks
      */
     public function __construct(
@@ -35,7 +31,7 @@ final readonly class CaldavTesterResult
 
         $features = [];
         foreach ($decoded['features'] ?? [] as $name => $attributes) {
-            $features[$name] = FeatureReport::fromTester($name, $attributes);
+            $features[$name] = SupportLevel::fromTester((string) ($attributes['support'] ?? 'unknown'));
         }
         ksort($features);
 
@@ -44,14 +40,9 @@ final readonly class CaldavTesterResult
         return new self($features, array_values($erroredChecks));
     }
 
-    public function feature(string $name): ?FeatureReport
-    {
-        return $this->features[$name] ?? null;
-    }
-
     public function support(string $name): ?SupportLevel
     {
-        return $this->feature($name)?->support;
+        return $this->features[$name] ?? null;
     }
 
     /**

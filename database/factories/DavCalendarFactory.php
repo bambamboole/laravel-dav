@@ -12,11 +12,7 @@ class DavCalendarFactory extends Factory
 {
     protected $model = DavCalendar::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         return [

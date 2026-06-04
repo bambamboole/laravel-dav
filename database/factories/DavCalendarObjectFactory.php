@@ -14,11 +14,7 @@ class DavCalendarObjectFactory extends Factory
 {
     protected $model = DavCalendarObject::class;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
+    /** @return array<string, mixed> */
     public function definition(): array
     {
         $uid = (string) fake()->uuid();
@@ -38,21 +34,5 @@ class DavCalendarObjectFactory extends Factory
             'timezone' => 'UTC',
             'last_modified_at' => now(),
         ];
-    }
-
-    /**
-     * Indicate that the event spans a full day.
-     */
-    public function allDay(): static
-    {
-        return $this->state(function (array $attributes): array {
-            $start = Carbon::parse($attributes['starts_at'])->startOfDay();
-
-            return [
-                'is_all_day' => true,
-                'starts_at' => $start,
-                'ends_at' => $start->copy()->addDay(),
-            ];
-        });
     }
 }
