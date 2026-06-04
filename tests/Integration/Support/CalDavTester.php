@@ -104,17 +104,14 @@ final class CalDavTester
             '--no-interaction',
         ]);
 
-        $this->server = $this->process
-            ->path($this->serverPublicPath())
-            ->env($this->serverEnv())
-            ->start([
-                PHP_BINARY,
-                '-d',
-                'variables_order=EGPCS',
-                '-S',
-                '127.0.0.1:'.$this->port,
-                $this->serverRouterPath(),
-            ]);
+        $this->server = $this->testbench()
+            ->start(array_merge($this->testbenchCommand(), [
+                'serve',
+                '--host=127.0.0.1',
+                '--port='.$this->port,
+                '--no-reload',
+                '--no-ansi',
+            ]));
 
         $this->waitUntilReady();
         $this->warmCurrentUserPrincipal();
@@ -200,27 +197,6 @@ final class CalDavTester
     private function baseUrl(): string
     {
         return "http://127.0.0.1:{$this->port}/dav/";
-    }
-
-    private function serverPublicPath(): string
-    {
-        return $this->basePath.'/vendor/orchestra/testbench-core/laravel/public';
-    }
-
-    private function serverRouterPath(): string
-    {
-        return $this->basePath.'/vendor/orchestra/testbench-core/laravel/server.php';
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function serverEnv(): array
-    {
-        return array_merge($this->env, [
-            'TESTBENCH_WORKING_PATH' => $this->basePath,
-            'TESTBENCH_USER_MODEL' => OwnerUser::class,
-        ]);
     }
 
     /**
