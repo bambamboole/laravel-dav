@@ -2,7 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Sabre\PropertyStorage;
 
-use Illuminate\Support\Facades\DB;
+use Bambamboole\LaravelDav\Models\DavProperty;
 use Sabre\DAV\PropertyStorage\Backend\BackendInterface;
 use Sabre\DAV\PropFind;
 use Sabre\DAV\PropPatch;
@@ -11,10 +11,10 @@ class PropertyBackend implements BackendInterface
 {
     public function propFind($path, PropFind $propFind): void
     {
-        $rows = DB::table('dav_properties')->where('path', $path)->get(['name', 'value']);
+        $properties = DavProperty::query()->where('path', $path)->get(['name', 'value']);
 
-        foreach ($rows as $row) {
-            $propFind->set($row->name, $row->value);
+        foreach ($properties as $property) {
+            $propFind->set($property->name, $property->value);
         }
     }
 
@@ -23,14 +23,14 @@ class PropertyBackend implements BackendInterface
         $propPatch->handleRemaining(function (array $properties) use ($path): bool {
             foreach ($properties as $name => $value) {
                 if ($value === null) {
-                    DB::table('dav_properties')->where('path', $path)->where('name', $name)->delete();
+                    DavProperty::query()->where('path', $path)->where('name', $name)->delete();
 
                     continue;
                 }
 
-                DB::table('dav_properties')->updateOrInsert(
+                DavProperty::query()->updateOrCreate(
                     ['path' => $path, 'name' => $name],
-                    ['value' => is_string($value) ? $value : (string) $value],
+                    ['value' => (string) $value],
                 );
             }
 
@@ -40,7 +40,7 @@ class PropertyBackend implements BackendInterface
 
     public function delete($path): void
     {
-        DB::table('dav_properties')
+        DavProperty::query()
             ->where('path', $path)
             ->orWhere('path', 'like', rtrim($path, '/').'/%')
             ->delete();
@@ -48,6 +48,6 @@ class PropertyBackend implements BackendInterface
 
     public function move($source, $destination): void
     {
-        DB::table('dav_properties')->where('path', $source)->update(['path' => $destination]);
+        DavProperty::query()->where('path', $source)->update(['path' => $destination]);
     }
 }
