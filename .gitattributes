@@ -1,0 +1,15 @@
+# Keep the distributed package lean: exclude development-only paths from
+# the `composer require` dist tarball (git archive / Packagist).
+/.github            export-ignore
+/docs               export-ignore
+/tests              export-ignore
+/.gitattributes     export-ignore
+/.gitignore         export-ignore
+/.editorconfig      export-ignore
+/phpunit.xml        export-ignore
+/phpstan.neon.dist  export-ignore
+/testbench.yaml     export-ignore
+/CHANGELOG.md       export-ignore
+
+# Normalize line endings.
+*.php text eol=lf

@@ -6,9 +6,11 @@ use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Process\Factory as ProcessFactory;
 use Illuminate\Process\InvokedProcess;
 use Illuminate\Process\PendingProcess;
+use PDO;
 use RuntimeException;
 
 /**
@@ -46,6 +48,8 @@ final class CalDavTester
 
     private ?InvokedProcess $server = null;
 
+    private ?string $lastReadinessProbe = null;
+
     /**
      * Boot the server, run the full compatibility suite, and tear everything
      * down again, returning the parsed result.
@@ -75,10 +79,12 @@ final class CalDavTester
         $this->databasePath = $this->tempDir.'/dav.sqlite';
         $this->port = $this->findFreePort();
         $this->env = [
+            'APP_DEBUG' => 'true',
             'DB_CONNECTION' => 'sqlite',
             'DB_DATABASE' => $this->databasePath,
             'DAV_OWNER_MODEL' => OwnerUser::class,
             'DAV_REALM' => 'CalDAV Server Tester',
+            'LOG_CHANNEL' => 'stderr',
         ];
     }
 
@@ -89,6 +95,7 @@ final class CalDavTester
     private function boot(): void
     {
         touch($this->databasePath);
+        $this->enableSqliteWalMode();
 
         $this->runTestbench([
             'migrate:fresh',
@@ -97,14 +104,30 @@ final class CalDavTester
             '--no-interaction',
         ]);
 
-        $this->server = $this->testbench()->start([
-            $this->testbenchBinary,
-            'serve',
-            '--host=127.0.0.1',
-            '--port='.$this->port,
-        ]);
+        $this->server = $this->process
+            ->path($this->serverPublicPath())
+            ->env($this->serverEnv())
+            ->start([
+                PHP_BINARY,
+                '-d',
+                'variables_order=EGPCS',
+                '-S',
+                '127.0.0.1:'.$this->port,
+                $this->serverRouterPath(),
+            ]);
 
         $this->waitUntilReady();
+        $this->warmCurrentUserPrincipal();
+    }
+
+    private function enableSqliteWalMode(): void
+    {
+        $pdo = new PDO('sqlite:'.$this->databasePath);
+        $journalMode = $pdo->query('pragma journal_mode = wal')->fetchColumn();
+
+        if (! is_string($journalMode) || strtolower($journalMode) !== 'wal') {
+            throw new RuntimeException("Could not enable SQLite WAL mode for {$this->databasePath}.");
+        }
     }
 
     /**
@@ -149,7 +172,8 @@ final class CalDavTester
             if ($crasher === null || in_array($crasher, $excluded, true)) {
                 throw new RuntimeException(
                     "caldav-server-tester crashed and the failing check could not be isolated.\n\n".
-                    $result->errorOutput()
+                    $result->errorOutput().
+                    $this->serverOutput()
                 );
             }
 
@@ -176,6 +200,27 @@ final class CalDavTester
     private function baseUrl(): string
     {
         return "http://127.0.0.1:{$this->port}/dav/";
+    }
+
+    private function serverPublicPath(): string
+    {
+        return $this->basePath.'/vendor/orchestra/testbench-core/laravel/public';
+    }
+
+    private function serverRouterPath(): string
+    {
+        return $this->basePath.'/vendor/orchestra/testbench-core/laravel/server.php';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function serverEnv(): array
+    {
+        return array_merge($this->env, [
+            'TESTBENCH_WORKING_PATH' => $this->basePath,
+            'TESTBENCH_USER_MODEL' => OwnerUser::class,
+        ]);
     }
 
     /**
@@ -234,7 +279,7 @@ final class CalDavTester
     {
         $result = $this->testbench()
             ->timeout(120)
-            ->run(array_merge([$this->testbenchBinary], $arguments));
+            ->run(array_merge($this->testbenchCommand(), $arguments));
 
         if (! $result->successful()) {
             throw new RuntimeException(
@@ -249,8 +294,8 @@ final class CalDavTester
         for ($attempt = 0; $attempt < 100; $attempt++) {
             if ($this->server !== null && ! $this->server->running()) {
                 throw new RuntimeException(
-                    "DAV server process exited before becoming ready.\n\n".
-                    $this->server->output()."\n".$this->server->errorOutput()
+                    'DAV server process exited before becoming ready.'.
+                    $this->serverOutput()
                 );
             }
 
@@ -261,20 +306,94 @@ final class CalDavTester
             usleep(200_000);
         }
 
-        throw new RuntimeException('DAV server did not become ready within the timeout.');
+        throw new RuntimeException('DAV server did not become ready within the timeout.'.$this->serverOutput());
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function testbenchCommand(): array
+    {
+        return [
+            PHP_BINARY,
+            '-d',
+            'variables_order=EGPCS',
+            $this->testbenchBinary,
+        ];
     }
 
     private function serverIsAnswering(): bool
     {
         try {
-            // An unauthenticated request to the DAV root is challenged (401)
-            // once the server is up; any HTTP response means it is answering.
-            $this->http->connectTimeout(1)->timeout(2)->withoutRedirecting()->get($this->baseUrl());
+            $this->http
+                ->connectTimeout(1)
+                ->timeout(2)
+                ->withoutRedirecting()
+                ->get($this->baseUrl());
 
             return true;
         } catch (ConnectionException) {
             return false;
         }
+    }
+
+    private function warmCurrentUserPrincipal(): void
+    {
+        try {
+            $this->lastReadinessProbe = $this->describeResponse($this->currentUserPrincipalResponse());
+        } catch (ConnectionException $exception) {
+            $this->lastReadinessProbe = 'Current-user-principal warmup failed to connect: '.$exception->getMessage();
+        }
+    }
+
+    private function currentUserPrincipalResponse(): HttpResponse
+    {
+        return $this->http
+            ->connectTimeout(1)
+            ->timeout(2)
+            ->withoutRedirecting()
+            ->withBasicAuth(CaldavTesterFixture::USERNAME, CaldavTesterFixture::SECRET)
+            ->withHeaders(['Depth' => '0'])
+            ->withBody(<<<'XML'
+                    <?xml version="1.0" encoding="utf-8" ?>
+                    <d:propfind xmlns:d="DAV:">
+                        <d:prop>
+                            <d:current-user-principal />
+                        </d:prop>
+                    </d:propfind>
+                    XML, 'application/xml')
+            ->send('PROPFIND', $this->baseUrl());
+    }
+
+    private function describeResponse(HttpResponse $response): string
+    {
+        return "HTTP {$response->status()}\n".
+            'Body: '.substr($response->body(), 0, 2_000);
+    }
+
+    private function serverOutput(): string
+    {
+        if ($this->server === null) {
+            return '';
+        }
+
+        $sections = [];
+        $stdout = trim($this->server->output());
+        $stderr = trim($this->server->errorOutput());
+
+        if ($stdout !== '') {
+            $sections[] = "Server stdout:\n".$stdout;
+        }
+
+        if ($stderr !== '') {
+            $sections[] = "Server stderr:\n".$stderr;
+        }
+
+        if ($this->lastReadinessProbe !== null) {
+            $sections[] = "Last DAV warmup response:\n".$this->lastReadinessProbe;
+        }
+
+        return $sections === [] ? '' : "\n\n".implode("\n\n", $sections);
     }
 
     private function testerBinary(): string

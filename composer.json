@@ -1,21 +1,34 @@
 {
     "name": "bambamboole/laravel-dav",
     "description": "CalDAV and CardDAV server for Laravel, powered by sabre/dav, with a typed DTO API.",
+    "keywords": ["laravel", "caldav", "carddav", "webdav", "dav", "sabre", "calendar", "contacts", "ical", "vcard"],
+    "homepage": "https://github.com/bambamboole/laravel-dav",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Manuel Christlieb",
+            "email": "manuel@christlieb.eu",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/bambamboole/laravel-dav/issues",
+        "source": "https://github.com/bambamboole/laravel-dav"
+    },
     "require": {
         "php": "^8.3",
-        "illuminate/contracts": "^13.0",
-        "illuminate/database": "^13.0",
-        "illuminate/support": "^13.0",
+        "illuminate/contracts": "^12.0 || ^13.0",
+        "illuminate/database": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
         "sabre/dav": "^4.7"
     },
     "require-dev": {
         "ext-sockets": "*",
         "larastan/larastan": "^3.0",
         "laravel/pint": "^1.27",
-        "orchestra/testbench": "^11.0",
+        "orchestra/testbench": "^10.0 || ^11.0",
         "pestphp/pest": "^4.7",
-        "illuminate/process": "^13.0"
+        "illuminate/process": "^12.0 || ^13.0"
     },
     "autoload": {
         "psr-4": { "Bambamboole\\LaravelDav\\": "src/", "Bambamboole\\LaravelDav\\Database\\Factories\\": "database/factories/" }

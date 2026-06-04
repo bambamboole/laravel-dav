@@ -53,6 +53,27 @@ it('serves the dav root for authenticated requests', function (): void {
         ->assertSee('/dav/principals/', false);
 });
 
+it('returns the current user principal from the dav root', function (): void {
+    $actor = davActor();
+    $owner = $actor['owner'];
+
+    $this->call('PROPFIND', '/dav/', [], [], [], [
+        'CONTENT_TYPE' => 'application/xml',
+        'HTTP_AUTHORIZATION' => $actor['header'],
+        'HTTP_DEPTH' => '0',
+    ], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:current-user-principal />
+            </d:prop>
+        </d:propfind>
+        XML)
+        ->assertStatus(207)
+        ->assertSee('current-user-principal', false)
+        ->assertSee('/dav/principals/'.$owner->getKey().'/', false);
+});
+
 it('rejects a wrong secret', function (): void {
     $actor = davActor();
 

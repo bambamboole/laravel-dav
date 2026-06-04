@@ -15,10 +15,20 @@ Expose your application's calendars and contacts to any standards-compliant clie
 - **Typed DTOs** — every calendar object and contact carries the verbatim `raw` payload plus best-effort, strongly-typed parsed fields.
 - **Eloquent storage** — collections and objects are plain models you can query, extend, and relate to the rest of your app.
 
+## Known limitations
+
+The following are not implemented yet and are tracked for future releases:
+
+- **RFC 6638 scheduling** — inbox/outbox, auto-schedule, free/busy queries, and iMIP invitations.
+- **Calendar sharing & proxy delegation.**
+- **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
+- **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
+- The `caldav-server-tester` `save-load.event.timezone` check reports `broken`. Stored iCalendar (including any `VTIMEZONE`) is persisted and returned verbatim, so standards-compliant clients round-trip correctly; the deviation is under investigation.
+
 ## Requirements
 
 - PHP `^8.3`
-- Laravel `^13`
+- Laravel `^12` or `^13`
 - sabre/dav `^4.7`
 
 ## Installation

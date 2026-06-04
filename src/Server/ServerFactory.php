@@ -40,6 +40,7 @@ class ServerFactory
         ]);
 
         $server->setBaseUri((string) config('dav.base_uri'));
+        $server->debugExceptions = (bool) config('app.debug');
         $server->addPlugin(new AuthPlugin($this->authBackend));
         $server->addPlugin(new PropertyStoragePlugin($this->propertyBackend));
         $server->addPlugin(new AclPlugin);

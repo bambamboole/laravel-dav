@@ -90,8 +90,12 @@ class ResponseEmitter
             $error->appendChild($document->createElement('s:sabredav-version', $this->escape(Version::VERSION)));
         }
 
-        $error->appendChild($document->createElement('s:exception', $this->escape($this->exceptionClass($throwable))));
-        $error->appendChild($document->createElement('s:message', $this->escape($this->exceptionMessage($throwable))));
+        $error->appendChild($document->createElement('s:exception', $this->escape($this->exceptionClass($server, $throwable))));
+        $error->appendChild($document->createElement('s:message', $this->escape($this->exceptionMessage($server, $throwable))));
+
+        if ($server->debugExceptions) {
+            $this->appendDebugExceptionDetails($document, $error, $throwable);
+        }
 
         $status = 500;
         $headers = $response->getHeaders();
@@ -109,16 +113,36 @@ class ResponseEmitter
         $response->setBody($document->saveXML());
     }
 
-    private function exceptionClass(Throwable $throwable): string
+    private function appendDebugExceptionDetails(DOMDocument $document, \DOMElement $error, Throwable $throwable): void
     {
-        return $throwable instanceof SabreException
+        $error->appendChild($document->createElement('s:file', $this->escape($throwable->getFile())));
+        $error->appendChild($document->createElement('s:line', $this->escape($throwable->getLine())));
+        $error->appendChild($document->createElement('s:code', $this->escape($throwable->getCode())));
+        $error->appendChild($document->createElement('s:stacktrace', $this->escape($throwable->getTraceAsString())));
+
+        $previous = $throwable;
+        while ($previous = $previous->getPrevious()) {
+            $previousElement = $document->createElement('s:previous-exception');
+            $previousElement->appendChild($document->createElement('s:exception', $this->escape($previous::class)));
+            $previousElement->appendChild($document->createElement('s:message', $this->escape($previous->getMessage())));
+            $previousElement->appendChild($document->createElement('s:file', $this->escape($previous->getFile())));
+            $previousElement->appendChild($document->createElement('s:line', $this->escape($previous->getLine())));
+            $previousElement->appendChild($document->createElement('s:code', $this->escape($previous->getCode())));
+            $previousElement->appendChild($document->createElement('s:stacktrace', $this->escape($previous->getTraceAsString())));
+            $error->appendChild($previousElement);
+        }
+    }
+
+    private function exceptionClass(Server $server, Throwable $throwable): string
+    {
+        return $server->debugExceptions || $throwable instanceof SabreException
             ? $throwable::class
             : SabreException::class;
     }
 
-    private function exceptionMessage(Throwable $throwable): string
+    private function exceptionMessage(Server $server, Throwable $throwable): string
     {
-        return $throwable instanceof SabreException
+        return $server->debugExceptions || $throwable instanceof SabreException
             ? $throwable->getMessage()
             : 'Internal server error.';
     }
