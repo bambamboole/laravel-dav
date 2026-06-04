@@ -2,7 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Sabre\CardDav;
 
-use Bambamboole\LaravelDav\LaravelDav;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
@@ -39,7 +39,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             return [];
         }
 
-        return LaravelDav::modelFor('address_book', DavAddressBook::class)::query()
+        return Dav::modelFor('address_book', DavAddressBook::class)::query()
             ->where('user_id', $userId)
             ->orderBy('id')
             ->get()
@@ -58,7 +58,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             throw new NotFound('Principal not found');
         }
 
-        $addressBook = LaravelDav::modelFor('address_book', DavAddressBook::class)::query()->create([
+        $addressBook = Dav::modelFor('address_book', DavAddressBook::class)::query()->create([
             'user_id' => $userId,
             'uri' => (string) $url,
             'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $url),
@@ -75,7 +75,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             self::DisplayNameProperty,
             self::DescriptionProperty,
         ], function (array $mutations) use ($addressBookId): bool {
-            $addressBook = LaravelDav::model('address_book')::query()->find($addressBookId);
+            $addressBook = Dav::model('address_book')::query()->find($addressBookId);
 
             if (! $addressBook) {
                 return false;
@@ -99,7 +99,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     public function deleteAddressBook($addressBookId): void
     {
-        LaravelDav::model('address_book')::query()->whereKey($addressBookId)->delete();
+        Dav::model('address_book')::query()->whereKey($addressBookId)->delete();
     }
 
     /**
@@ -209,7 +209,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
      */
     public function getChangesForAddressBook($addressBookId, $syncToken, $syncLevel, $limit = null): ?array
     {
-        $addressBook = LaravelDav::modelFor('address_book', DavAddressBook::class)::query()->find($addressBookId);
+        $addressBook = Dav::modelFor('address_book', DavAddressBook::class)::query()->find($addressBookId);
         $syncToken = (string) $syncToken;
 
         if (! $addressBook) {
@@ -266,7 +266,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     private function addressBook(int|string $addressBookId): DavAddressBook
     {
-        return LaravelDav::modelFor('address_book', DavAddressBook::class)::query()->findOrFail($addressBookId);
+        return Dav::modelFor('address_book', DavAddressBook::class)::query()->findOrFail($addressBookId);
     }
 
     private function ownerExists(int $userId): bool

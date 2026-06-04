@@ -4,6 +4,7 @@ namespace Bambamboole\LaravelDav\Server;
 
 use Bambamboole\LaravelDav\Sabre\Auth\BasicAuthBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
+use Bambamboole\LaravelDav\Sabre\CalDav\Xml\Request\CalendarQueryReport;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
 use Bambamboole\LaravelDav\Sabre\Principal\PrincipalBackend;
 use Bambamboole\LaravelDav\Sabre\PropertyStorage\PropertyBackend;
@@ -42,6 +43,7 @@ class ServerFactory
         $server->addPlugin(new PropertyStoragePlugin($this->propertyBackend));
         $server->addPlugin(new AclPlugin);
         $server->addPlugin(new CalDavPlugin);
+        $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;
         $server->addPlugin(new CardDavPlugin);
         $server->addPlugin(new SyncPlugin);
         $server->addPlugin(new ICSExportPlugin);

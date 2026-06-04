@@ -1,6 +1,6 @@
 <?php
 
-use Bambamboole\LaravelDav\LaravelDav;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
@@ -18,7 +18,7 @@ beforeEach(function (): void {
 });
 
 it('resolves the swapped card model through the resolver', function (): void {
-    expect(LaravelDav::model('card'))->toBe(CustomCard::class);
+    expect(Dav::model('card'))->toBe(CustomCard::class);
 });
 
 it('drives the address book backend end-to-end with the swapped card model', function (): void {

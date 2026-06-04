@@ -49,6 +49,26 @@ XML;
     ], $payload);
 }
 
+function davCalendarQueryReport(TestCase $test, string $path, string $authHeader, string $filter): TestResponse
+{
+    $payload = <<<XML
+<?xml version="1.0" encoding="utf-8" ?>
+<cal:calendar-query xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+    <d:prop>
+        <d:getetag />
+        <cal:calendar-data />
+    </d:prop>
+    {$filter}
+</cal:calendar-query>
+XML;
+
+    return $test->call('REPORT', $path, [], [], [], [
+        'CONTENT_TYPE' => 'application/xml',
+        'HTTP_AUTHORIZATION' => $authHeader,
+        'HTTP_DEPTH' => '1',
+    ], $payload);
+}
+
 /**
  * @param  array<string, string|array{value: string, parameters?: array<string, string>}>  $properties
  */

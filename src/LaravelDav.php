@@ -19,7 +19,7 @@ class LaravelDav
     /**
      * @return class-string<Model>
      */
-    public static function model(string $key): string
+    public function model(string $key): string
     {
         /** @var class-string<Model>|null $configured */
         $configured = config("dav.models.$key");
@@ -41,9 +41,9 @@ class LaravelDav
      * @param  class-string<TModel>  $default
      * @return class-string<TModel>
      */
-    public static function modelFor(string $key, string $default): string
+    public function modelFor(string $key, string $default): string
     {
-        $model = self::model($key);
+        $model = $this->model($key);
 
         if (! is_a($model, $default, true)) {
             throw new InvalidArgumentException(

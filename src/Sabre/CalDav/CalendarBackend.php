@@ -2,7 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Sabre\CalDav;
 
-use Bambamboole\LaravelDav\LaravelDav;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
@@ -47,7 +47,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             return [];
         }
 
-        return LaravelDav::modelFor('calendar', DavCalendar::class)::query()
+        return Dav::modelFor('calendar', DavCalendar::class)::query()
             ->where('user_id', $userId)
             ->orderBy('id')
             ->get()
@@ -66,7 +66,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             throw new NotFound('Principal not found');
         }
 
-        $calendar = LaravelDav::modelFor('calendar', DavCalendar::class)::query()->create([
+        $calendar = Dav::modelFor('calendar', DavCalendar::class)::query()->create([
             'user_id' => $userId,
             'uri' => (string) $calendarUri,
             'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $calendarUri),
@@ -89,7 +89,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             self::TimezoneProperty,
             self::SupportedComponentsProperty,
         ], function (array $mutations) use ($calendarId): bool {
-            $calendar = LaravelDav::model('calendar')::query()->find($calendarId);
+            $calendar = Dav::model('calendar')::query()->find($calendarId);
 
             if (! $calendar) {
                 return false;
@@ -116,7 +116,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     public function deleteCalendar($calendarId): void
     {
-        LaravelDav::model('calendar')::query()->whereKey($calendarId)->delete();
+        Dav::model('calendar')::query()->whereKey($calendarId)->delete();
     }
 
     /**
@@ -222,7 +222,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     public function getChangesForCalendar($calendarId, $syncToken, $syncLevel, $limit = null): ?array
     {
-        $calendar = LaravelDav::modelFor('calendar', DavCalendar::class)::query()->find($calendarId);
+        $calendar = Dav::modelFor('calendar', DavCalendar::class)::query()->find($calendarId);
         $syncToken = (string) $syncToken;
 
         if (! $calendar) {
@@ -284,7 +284,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     private function calendar(int|string $calendarId): DavCalendar
     {
-        return LaravelDav::modelFor('calendar', DavCalendar::class)::query()->findOrFail($calendarId);
+        return Dav::modelFor('calendar', DavCalendar::class)::query()->findOrFail($calendarId);
     }
 
     private function ownerExists(int $userId): bool

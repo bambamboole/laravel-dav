@@ -1,6 +1,6 @@
 <?php
 
-use Bambamboole\LaravelDav\LaravelDav;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
@@ -19,7 +19,7 @@ beforeEach(function (): void {
 });
 
 it('resolves the swapped calendar model through the resolver', function (): void {
-    expect(LaravelDav::model('calendar'))->toBe(CustomCalendar::class);
+    expect(Dav::model('calendar'))->toBe(CustomCalendar::class);
 });
 
 it('drives the calendar backend end-to-end with the swapped model', function (): void {

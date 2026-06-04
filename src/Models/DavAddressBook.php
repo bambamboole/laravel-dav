@@ -3,7 +3,7 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavAddressBookFactory;
-use Bambamboole\LaravelDav\LaravelDav;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -70,7 +70,7 @@ class DavAddressBook extends Model
      */
     public function cards(): HasMany
     {
-        return $this->hasMany(LaravelDav::modelFor('card', DavCard::class), 'dav_address_book_id');
+        return $this->hasMany(Dav::modelFor('card', DavCard::class), 'dav_address_book_id');
     }
 
     protected static function newFactory(): DavAddressBookFactory
