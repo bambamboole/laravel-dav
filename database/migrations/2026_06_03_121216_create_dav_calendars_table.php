@@ -21,7 +21,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('color')->nullable();
             $table->string('timezone')->nullable();
-            $table->json('components')->default(json_encode(['VEVENT', 'VTODO']));
+            $table->json('components')->default(json_encode(['VEVENT', 'VTODO', 'VJOURNAL']));
             $table->unsignedBigInteger('sync_token')->default(1);
             $table->timestamps();
 

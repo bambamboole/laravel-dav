@@ -37,7 +37,7 @@ class CalendarObjectSerializer
             $this->addDateTime($component, 'DTSTART', $data->startsAt, $isAllDay);
         }
 
-        if ($data->endsAt instanceof DateTimeInterface) {
+        if ($data->endsAt instanceof DateTimeInterface && $componentType !== 'VJOURNAL') {
             $this->addDateTime($component, $componentType === 'VTODO' ? 'DUE' : 'DTEND', $data->endsAt, $isAllDay);
         }
 
@@ -64,6 +64,7 @@ class CalendarObjectSerializer
             $this->setOrRemove($component, 'URL', $data->url);
 
             $isAllDay = $data->isAllDay;
+            $isJournal = $component->name === 'VJOURNAL';
             $endProperty = $component->name === 'VTODO' ? 'DUE' : 'DTEND';
 
             unset($component->DTSTART);
@@ -71,9 +72,11 @@ class CalendarObjectSerializer
                 $this->addDateTime($component, 'DTSTART', $data->startsAt, $isAllDay);
             }
 
-            unset($component->{$endProperty});
-            if ($data->endsAt instanceof DateTimeInterface) {
-                $this->addDateTime($component, $endProperty, $data->endsAt, $isAllDay);
+            if (! $isJournal) {
+                unset($component->{$endProperty});
+                if ($data->endsAt instanceof DateTimeInterface) {
+                    $this->addDateTime($component, $endProperty, $data->endsAt, $isAllDay);
+                }
             }
 
             $this->setOrRemove($component, 'LAST-MODIFIED', gmdate('Ymd\THis\Z'));
@@ -88,7 +91,7 @@ class CalendarObjectSerializer
     {
         $component = $calendar->getBaseComponent();
 
-        if ($component instanceof Component && in_array($component->name, ['VEVENT', 'VTODO'], true)) {
+        if ($component instanceof Component && in_array($component->name, ['VEVENT', 'VTODO', 'VJOURNAL'], true)) {
             return $component;
         }
 

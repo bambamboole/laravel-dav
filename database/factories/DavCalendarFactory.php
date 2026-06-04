@@ -26,7 +26,7 @@ class DavCalendarFactory extends Factory
             'description' => null,
             'color' => fake()->hexColor(),
             'timezone' => 'UTC',
-            'components' => ['VEVENT', 'VTODO'],
+            'components' => ['VEVENT', 'VTODO', 'VJOURNAL'],
             'sync_token' => 1,
         ];
     }

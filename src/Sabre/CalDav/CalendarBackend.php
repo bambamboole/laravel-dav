@@ -245,7 +245,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     private function calendarRow(DavCalendar $calendar): array
     {
-        $components = $calendar->components ?: ['VEVENT', 'VTODO'];
+        $components = $calendar->components ?: ['VEVENT', 'VTODO', 'VJOURNAL'];
 
         return [
             'id' => $calendar->id,
@@ -470,6 +470,6 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             return $value->getValue();
         }
 
-        return ['VEVENT', 'VTODO'];
+        return ['VEVENT', 'VTODO', 'VJOURNAL'];
     }
 }

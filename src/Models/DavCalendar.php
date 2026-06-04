@@ -45,7 +45,7 @@ class DavCalendar extends Model
     ];
 
     protected $attributes = [
-        'components' => '["VEVENT","VTODO"]',
+        'components' => '["VEVENT","VTODO","VJOURNAL"]',
         'sync_token' => 1,
     ];
 
