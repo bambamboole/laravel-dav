@@ -48,6 +48,11 @@
         "lint": "pint",
         "lint:check": "pint --test",
         "stan": "phpstan analyse --no-progress",
+        "all": [
+            "@lint",
+            "@stan",
+            "@test"
+        ],
         "post-autoload-dump": [
             "@clear",
             "@prepare"
