@@ -159,6 +159,10 @@ class VCardSerializer
         $vCard = Reader::read($existingPayload);
 
         try {
+            if (! $vCard instanceof VCard) {
+                return $this->serialize($data);
+            }
+
             $this->setOrRemove($vCard, 'FN', $data->formattedName);
 
             unset($vCard->N);
@@ -186,6 +190,10 @@ class VCardSerializer
                     fn (?string $v): bool => filled($v),
                 )));
             }
+
+            $group = $this->nextItemNumber($vCard);
+            $this->setPrimaryTextProperty($vCard, 'EMAIL', $this->primaryEmail($data), ['TYPE' => ['INTERNET']], $group);
+            $this->setPrimaryTextProperty($vCard, 'TEL', $this->primaryPhone($data), ['TYPE' => ['CELL']], $group);
 
             return $vCard->serialize();
         } finally {
@@ -249,7 +257,97 @@ class VCardSerializer
     {
         return match (strtolower($label)) {
             'home page', 'homepage' => '_$!<HomePage>!$_',
+            'home' => '_$!<Home>!$_',
+            'work' => '_$!<Work>!$_',
             default => $label,
         };
+    }
+
+    private function primaryEmail(ContactData $data): ?ContactEmailAddress
+    {
+        if ($data->emails !== []) {
+            return $data->emails[0];
+        }
+
+        if ($data->simpleEmails !== []) {
+            return new ContactEmailAddress([
+                'value' => $data->simpleEmails[0],
+                'types' => ['INTERNET'],
+            ]);
+        }
+
+        return null;
+    }
+
+    private function primaryPhone(ContactData $data): ?ContactPhoneNumber
+    {
+        if ($data->phones !== []) {
+            return $data->phones[0];
+        }
+
+        if ($data->simplePhones !== []) {
+            return new ContactPhoneNumber([
+                'value' => $data->simplePhones[0],
+                'types' => ['CELL'],
+            ]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Updates only the first modeled property and preserves additional
+     * properties of the same name. This keeps client-owned secondary values and
+     * unknown grouped metadata intact while still applying app-owned primary
+     * field edits.
+     *
+     * @param  array<string, mixed>  $defaultParameters
+     */
+    private function setPrimaryTextProperty(
+        VCard $vCard,
+        string $name,
+        ContactEmailAddress|ContactPhoneNumber|null $value,
+        array $defaultParameters,
+        int &$group,
+    ): void {
+        if ($value === null || $value->value === '') {
+            return;
+        }
+
+        $existing = $vCard->select($name);
+        $first = $existing[array_key_first($existing)] ?? null;
+
+        if ($first instanceof Property) {
+            $first->setValue($value->value);
+
+            return;
+        }
+
+        $parameters = $this->parameters($value);
+        $this->addGroupedProperty(
+            $vCard,
+            $name,
+            $value->value,
+            $value->label,
+            $parameters === [] ? $defaultParameters : $parameters,
+            $group,
+        );
+    }
+
+    private function nextItemNumber(VCard $vCard): int
+    {
+        $max = 0;
+
+        foreach ($vCard->children() as $child) {
+            if (! $child instanceof Property || $child->group === null) {
+                continue;
+            }
+
+            if (preg_match('/^item(?<number>\d+)$/i', $child->group, $matches) === 1) {
+                $max = max($max, (int) $matches['number']);
+            }
+        }
+
+        return $max + 1;
     }
 }

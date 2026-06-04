@@ -1,5 +1,8 @@
 <?php
 
+use Bambamboole\LaravelDav\Dto\Contact\ContactEmailAddress;
+use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
+use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
 use Bambamboole\LaravelDav\Parsing\VCardParser;
@@ -134,4 +137,127 @@ it('round-trips an organization vcard preserving the show-as company flag', func
 
     expect($parsed->contactType)->toBe('organization')
         ->and($reparsed->contactType)->toBe('organization');
+});
+
+it('merges primary email and phone changes without dropping client-owned vcard content', function () {
+    $existing = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:3.0
+        UID:merge-contact
+        FN:Old Name
+        N:Old;Name;;;
+        EMAIL;TYPE=INTERNET:old@example.com
+        EMAIL;TYPE=INTERNET:secondary@example.com
+        TEL;TYPE=CELL:+1 000
+        PHOTO;VALUE=uri:https://example.com/photo.jpg
+        X-CUSTOM:keep-me
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($existing, 'merge-contact.vcf');
+    $updated = new ContactData(
+        uri: $data->uri,
+        raw: $data->raw,
+        etag: $data->etag,
+        size: $data->size,
+        uid: $data->uid,
+        formattedName: 'New Name',
+        givenName: 'New',
+        familyName: 'Name',
+        emails: [new ContactEmailAddress([
+            'value' => 'new@example.com',
+            'types' => ['INTERNET', 'WORK'],
+        ])],
+        phones: [new ContactPhoneNumber([
+            'value' => '+1 999',
+            'types' => ['CELL'],
+        ])],
+    );
+
+    $merged = (new VCardSerializer)->merge($existing, $updated);
+
+    expect($merged)
+        ->toContain('FN:New Name')
+        ->toContain('EMAIL;TYPE=INTERNET:new@example.com')
+        ->toContain('secondary@example.com')
+        ->toContain('TEL;TYPE=CELL:+1 999')
+        ->toContain('PHOTO;VALUE=uri:https://example.com/photo.jpg')
+        ->toContain('X-CUSTOM:keep-me')
+        ->not->toContain('old@example.com')
+        ->not->toContain('FN:Old Name');
+});
+
+it('adds primary email and phone during merge when the existing vcard has none', function () {
+    $existing = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:3.0
+        UID:merge-contact
+        FN:Ada Lovelace
+        N:Lovelace;Ada;;;
+        X-CUSTOM:keep-me
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($existing, 'merge-contact.vcf');
+    $updated = new ContactData(
+        uri: $data->uri,
+        raw: $data->raw,
+        etag: $data->etag,
+        size: $data->size,
+        uid: $data->uid,
+        formattedName: 'Ada Lovelace',
+        givenName: 'Ada',
+        familyName: 'Lovelace',
+        emails: [new ContactEmailAddress([
+            'label' => 'work',
+            'value' => 'ada@example.com',
+            'types' => ['INTERNET', 'WORK'],
+        ])],
+        phones: [new ContactPhoneNumber([
+            'label' => 'mobile',
+            'value' => '+1 555',
+            'types' => ['CELL'],
+        ])],
+    );
+
+    $merged = (new VCardSerializer)->merge($existing, $updated);
+
+    expect($merged)
+        ->toContain('EMAIL;TYPE=INTERNET,WORK:ada@example.com')
+        ->toContain('TEL;TYPE=CELL:+1 555')
+        ->toContain('X-ABLABEL:_$!<Work>!$_')
+        ->toContain('X-ABLABEL:mobile')
+        ->toContain('X-CUSTOM:keep-me');
+});
+
+it('leaves existing emails and phones untouched when merge data does not carry replacements', function () {
+    $existing = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:3.0
+        UID:merge-contact
+        FN:Ada Lovelace
+        N:Lovelace;Ada;;;
+        EMAIL;TYPE=INTERNET:ada@example.com
+        TEL;TYPE=CELL:+1 555
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($existing, 'merge-contact.vcf');
+    $updated = new ContactData(
+        uri: $data->uri,
+        raw: $data->raw,
+        etag: $data->etag,
+        size: $data->size,
+        uid: $data->uid,
+        formattedName: 'Ada Byron',
+        givenName: 'Ada',
+        familyName: 'Byron',
+    );
+
+    $merged = (new VCardSerializer)->merge($existing, $updated);
+
+    expect($merged)
+        ->toContain('FN:Ada Byron')
+        ->toContain('ada@example.com')
+        ->toContain('+1 555');
 });
