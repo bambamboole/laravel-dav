@@ -1,6 +1,6 @@
 <?php
 
-use Bambamboole\LaravelDav\Tests\Integration\Support\CaldavTesterHarness;
+use Bambamboole\LaravelDav\Tests\Integration\Support\CalDavTester;
 use Bambamboole\LaravelDav\Tests\Integration\Support\CaldavTesterResult;
 use Bambamboole\LaravelDav\Tests\Integration\Support\SupportLevel;
 
@@ -19,14 +19,7 @@ use Bambamboole\LaravelDav\Tests\Integration\Support\SupportLevel;
  * documents the progress.
  */
 it('captures the caldav-server-tester compatibility status quo', function (): void {
-    $harness = new CaldavTesterHarness;
-
-    try {
-        $harness->boot();
-        $result = $harness->runCompatibilityChecks();
-    } finally {
-        $harness->shutdown();
-    }
+    $result = CalDavTester::runCompatibilityTests();
 
     expect($result)->toBeInstanceOf(CaldavTesterResult::class);
 

@@ -3,28 +3,35 @@
 namespace Bambamboole\LaravelDav\Tests\Integration\Support;
 
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Process\Factory as ProcessFactory;
 use Illuminate\Process\InvokedProcess;
+use Illuminate\Process\PendingProcess;
 use RuntimeException;
 
 /**
  * Boots the package's DAV server as a real, network-reachable HTTP process and
  * drives the external python `caldav-server-tester` against it, returning a
- * normalized feature/support map.
+ * typed {@see CaldavTesterResult}.
  *
  * The server runs in a separate OS process (orchestra/testbench `serve`) backed
- * by a temporary file SQLite database that this harness migrates and seeds. All
- * child processes are spawned through illuminate/process.
+ * by a temporary file SQLite database that is migrated and seeded for the run.
+ * All child processes are spawned through illuminate/process.
  *
- * Single responsibility: process lifecycle + invoking the tester. Result
- * shaping lives in {@see normalize()}; the comparison against the committed
- * baseline lives in the test itself.
+ * Use the single entry point {@see runCompatibilityTests()}, which boots the
+ * server, runs the tester, and always shuts everything down again.
  */
-final class CaldavTesterHarness
+final class CalDavTester
 {
     private ProcessFactory $process;
 
+    private HttpFactory $http;
+
     private string $basePath;
+
+    private string $testbenchBinary;
 
     private string $tempDir;
 
@@ -35,12 +42,35 @@ final class CaldavTesterHarness
     /** @var array<string, string> */
     private array $env;
 
+    private ?string $testerBinary = null;
+
     private ?InvokedProcess $server = null;
 
-    public function __construct()
+    /**
+     * Boot the server, run the full compatibility suite, and tear everything
+     * down again, returning the parsed result.
+     *
+     * @throws \JsonException
+     */
+    public static function runCompatibilityTests(): CaldavTesterResult
+    {
+        $tester = new self;
+
+        try {
+            $tester->boot();
+
+            return $tester->runChecks();
+        } finally {
+            $tester->shutdown();
+        }
+    }
+
+    private function __construct()
     {
         $this->process = new ProcessFactory;
+        $this->http = new HttpFactory;
         $this->basePath = dirname(__DIR__, 3);
+        $this->testbenchBinary = $this->basePath.'/vendor/bin/testbench';
         $this->tempDir = $this->makeTempDir();
         $this->databasePath = $this->tempDir.'/dav.sqlite';
         $this->port = $this->findFreePort();
@@ -56,26 +86,23 @@ final class CaldavTesterHarness
      * Migrate + seed the temporary database, start the server, and block until
      * it answers HTTP requests.
      */
-    public function boot(): void
+    private function boot(): void
     {
         touch($this->databasePath);
 
-        $this->runTestbench(['migrate:fresh', '--no-interaction']);
         $this->runTestbench([
-            'db:seed',
-            '--class='.CaldavTesterSeeder::class,
+            'migrate:fresh',
+            '--seed',
+            '--seeder='.CaldavTesterSeeder::class,
             '--no-interaction',
         ]);
 
-        $this->server = $this->process
-            ->path($this->basePath)
-            ->env($this->env)
-            ->start([
-                $this->basePath.'/vendor/bin/testbench',
-                'serve',
-                '--host=127.0.0.1',
-                '--port='.$this->port,
-            ]);
+        $this->server = $this->testbench()->start([
+            $this->testbenchBinary,
+            'serve',
+            '--host=127.0.0.1',
+            '--port='.$this->port,
+        ]);
 
         $this->waitUntilReady();
     }
@@ -91,7 +118,7 @@ final class CaldavTesterHarness
      *
      * @throws \JsonException
      */
-    public function runCompatibilityChecks(): CaldavTesterResult
+    private function runChecks(): CaldavTesterResult
     {
         $checks = $this->listChecks();
         $excluded = [];
@@ -136,17 +163,17 @@ final class CaldavTesterHarness
      * Stop the server and remove the temporary working directory. Safe to call
      * more than once and on a partially-booted harness.
      */
-    public function shutdown(): void
+    private function shutdown(): void
     {
         if ($this->server !== null && $this->server->running()) {
             $this->server->stop();
         }
         $this->server = null;
 
-        $this->removeDirectory($this->tempDir);
+        (new Filesystem)->deleteDirectory($this->tempDir);
     }
 
-    public function baseUrl(): string
+    private function baseUrl(): string
     {
         return "http://127.0.0.1:{$this->port}/dav/";
     }
@@ -192,15 +219,22 @@ final class CaldavTesterHarness
     }
 
     /**
+     * A process builder rooted at the package with the shared SQLite/owner
+     * environment applied, used for every spawned testbench command.
+     */
+    private function testbench(): PendingProcess
+    {
+        return $this->process->path($this->basePath)->env($this->env);
+    }
+
+    /**
      * @param  list<string>  $arguments
      */
     private function runTestbench(array $arguments): void
     {
-        $result = $this->process
-            ->path($this->basePath)
-            ->env($this->env)
+        $result = $this->testbench()
             ->timeout(120)
-            ->run(array_merge([$this->basePath.'/vendor/bin/testbench'], $arguments));
+            ->run(array_merge([$this->testbenchBinary], $arguments));
 
         if (! $result->successful()) {
             throw new RuntimeException(
@@ -220,8 +254,7 @@ final class CaldavTesterHarness
                 );
             }
 
-            $status = $this->httpStatus();
-            if (in_array($status, [200, 207, 401], true)) {
+            if ($this->serverIsAnswering()) {
                 return;
             }
 
@@ -231,35 +264,25 @@ final class CaldavTesterHarness
         throw new RuntimeException('DAV server did not become ready within the timeout.');
     }
 
-    private function httpStatus(): ?int
+    private function serverIsAnswering(): bool
     {
-        // Suppress the expected "connection refused" warning while the server is
-        // still starting up; the @ operator alone does not stop PHPUnit's error
-        // handler from turning it into a test warning.
-        set_error_handler(static fn (): bool => true);
-
         try {
-            $socket = fsockopen('127.0.0.1', $this->port, $errno, $errstr, 0.5);
-        } finally {
-            restore_error_handler();
+            // An unauthenticated request to the DAV root is challenged (401)
+            // once the server is up; any HTTP response means it is answering.
+            $this->http->connectTimeout(1)->timeout(2)->withoutRedirecting()->get($this->baseUrl());
+
+            return true;
+        } catch (ConnectionException) {
+            return false;
         }
-
-        if ($socket === false) {
-            return null;
-        }
-
-        fwrite($socket, "GET /dav/ HTTP/1.0\r\nHost: 127.0.0.1\r\n\r\n");
-        $statusLine = (string) fgets($socket);
-        fclose($socket);
-
-        if (preg_match('#^HTTP/\d\.\d (\d{3})#', $statusLine, $matches)) {
-            return (int) $matches[1];
-        }
-
-        return null;
     }
 
     private function testerBinary(): string
+    {
+        return $this->testerBinary ??= $this->resolveTesterBinary();
+    }
+
+    private function resolveTesterBinary(): string
     {
         $override = getenv('CALDAV_SERVER_TESTER_BIN');
         if (is_string($override) && $override !== '' && is_executable($override)) {
@@ -316,24 +339,5 @@ final class CaldavTesterHarness
         }
 
         return $port;
-    }
-
-    private function removeDirectory(string $dir): void
-    {
-        if (! is_dir($dir)) {
-            return;
-        }
-
-        $entries = scandir($dir) ?: [];
-        foreach ($entries as $entry) {
-            if ($entry === '.' || $entry === '..') {
-                continue;
-            }
-
-            $path = $dir.'/'.$entry;
-            is_dir($path) ? $this->removeDirectory($path) : @unlink($path);
-        }
-
-        @rmdir($dir);
     }
 }
