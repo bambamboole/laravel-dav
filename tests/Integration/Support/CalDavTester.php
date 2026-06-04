@@ -325,18 +325,13 @@ final class CalDavTester
 
     private function findFreePort(): int
     {
-        $socket = stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
+        $socket = socket_create_listen(0);
         if ($socket === false) {
-            throw new RuntimeException("Could not allocate a free port: {$errstr}");
+            throw new RuntimeException('Could not allocate a free port: '.socket_strerror(socket_last_error()));
         }
 
-        $name = (string) stream_socket_get_name($socket, false);
-        fclose($socket);
-
-        $port = (int) substr($name, strrpos($name, ':') + 1);
-        if ($port <= 0) {
-            throw new RuntimeException("Could not determine a free port from: {$name}");
-        }
+        socket_getsockname($socket, $address, $port);
+        socket_close($socket);
 
         return $port;
     }
