@@ -52,7 +52,6 @@ trait RecordsDavChanges
                 'resource_uri' => $resourceUri,
                 'operation' => $operation,
                 'sync_token' => $lockedCollection->sync_token,
-                'created_at' => now(),
             ]);
 
             $operationLabel = match ($operation) {

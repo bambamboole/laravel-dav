@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('summary')->nullable();
             $table->text('description')->nullable();
             $table->string('location')->nullable();
+            $table->string('status')->nullable();
+            $table->string('url')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->boolean('is_all_day')->default(false);

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('resource_uri')->nullable();
             $table->unsignedTinyInteger('operation');
             $table->unsignedBigInteger('sync_token');
-            $table->timestamp('created_at');
+            $table->timestamps();
 
             $table->index(['collection_type', 'collection_id', 'sync_token']);
         });

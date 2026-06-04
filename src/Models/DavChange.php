@@ -4,7 +4,6 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavChangeFactory;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,9 +14,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $resource_uri
  * @property int $operation
  * @property int $sync_token
- * @property CarbonImmutable $created_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
-#[WithoutTimestamps]
 class DavChange extends Model
 {
     /** @use HasFactory<DavChangeFactory> */
@@ -29,7 +28,6 @@ class DavChange extends Model
         'resource_uri',
         'operation',
         'sync_token',
-        'created_at',
     ];
 
     /**
@@ -44,6 +42,7 @@ class DavChange extends Model
             'operation' => 'integer',
             'sync_token' => 'integer',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 
