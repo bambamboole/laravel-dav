@@ -37,8 +37,10 @@ class CalendarObjectSerializer
             $this->addDateTime($component, 'DTSTART', $data->startsAt, $isAllDay);
         }
 
-        if ($data->endsAt instanceof DateTimeInterface && $componentType !== 'VJOURNAL') {
-            $this->addDateTime($component, $componentType === 'VTODO' ? 'DUE' : 'DTEND', $data->endsAt, $isAllDay);
+        $endProperty = $this->endPropertyFor($componentType);
+
+        if ($data->endsAt instanceof DateTimeInterface && $endProperty !== null) {
+            $this->addDateTime($component, $endProperty, $data->endsAt, $isAllDay);
         }
 
         $calendar->add($component);
@@ -64,15 +66,14 @@ class CalendarObjectSerializer
             $this->setOrRemove($component, 'URL', $data->url);
 
             $isAllDay = $data->isAllDay;
-            $isJournal = $component->name === 'VJOURNAL';
-            $endProperty = $component->name === 'VTODO' ? 'DUE' : 'DTEND';
+            $endProperty = $this->endPropertyFor($component->name);
 
             unset($component->DTSTART);
             if ($data->startsAt instanceof DateTimeInterface) {
                 $this->addDateTime($component, 'DTSTART', $data->startsAt, $isAllDay);
             }
 
-            if (! $isJournal) {
+            if ($endProperty !== null) {
                 unset($component->{$endProperty});
                 if ($data->endsAt instanceof DateTimeInterface) {
                     $this->addDateTime($component, $endProperty, $data->endsAt, $isAllDay);
@@ -85,6 +86,15 @@ class CalendarObjectSerializer
         } finally {
             $calendar->destroy();
         }
+    }
+
+    private function endPropertyFor(string $componentType): ?string
+    {
+        return match ($componentType) {
+            'VTODO' => 'DUE',
+            'VJOURNAL' => null,
+            default => 'DTEND',
+        };
     }
 
     private function findComponent(VCalendar $calendar): ?Component
