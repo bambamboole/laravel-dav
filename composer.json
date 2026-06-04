@@ -24,17 +24,21 @@
     },
     "require-dev": {
         "ext-sockets": "*",
+        "illuminate/process": "^12.0 || ^13.0",
         "larastan/larastan": "^3.0",
+        "laravel/boost": "^2.4",
         "laravel/pint": "^1.27",
         "orchestra/testbench": "^10.0 || ^11.0",
-        "pestphp/pest": "^4.7",
-        "illuminate/process": "^12.0 || ^13.0"
+        "pestphp/pest": "^4.7"
     },
     "autoload": {
         "psr-4": { "Bambamboole\\LaravelDav\\": "src/", "Bambamboole\\LaravelDav\\Database\\Factories\\": "database/factories/" }
     },
     "autoload-dev": {
-        "psr-4": { "Bambamboole\\LaravelDav\\Tests\\": "tests/" }
+        "psr-4": {
+            "Bambamboole\\LaravelDav\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/"
+        }
     },
     "extra": {
         "laravel": { "providers": ["Bambamboole\\LaravelDav\\LaravelDavServiceProvider"] }
@@ -43,9 +47,21 @@
         "test": "pest",
         "lint": "pint",
         "lint:check": "pint --test",
-        "stan": "phpstan analyse --no-progress"
+        "stan": "phpstan analyse --no-progress",
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "build": "@php vendor/bin/testbench workbench:build --ansi",
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@build",
+            "@php vendor/bin/testbench serve --ansi"
+        ]
     },
-    "config": { "allow-plugins": { "pestphp/pest-plugin": true } },
+    "config": { "sort-packages": true, "allow-plugins": { "pestphp/pest-plugin": true } },
     "minimum-stability": "stable",
     "prefer-stable": true
 }

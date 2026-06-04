@@ -3,6 +3,8 @@
 /.github            export-ignore
 /docs               export-ignore
 /tests              export-ignore
+/workbench          export-ignore
+/.ai                export-ignore
 /.gitattributes     export-ignore
 /.gitignore         export-ignore
 /.editorconfig      export-ignore
@@ -10,6 +12,14 @@
 /phpstan.neon.dist  export-ignore
 /testbench.yaml     export-ignore
 /CHANGELOG.md       export-ignore
+/artisan            export-ignore
+/boost.json         export-ignore
+/.mcp.json          export-ignore
+/.codex             export-ignore
+/.claude            export-ignore
+/.agents            export-ignore
+/AGENTS.md          export-ignore
+/CLAUDE.md          export-ignore
 
 # Normalize line endings.
 *.php text eol=lf

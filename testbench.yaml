@@ -1,2 +1,16 @@
+laravel: '@testbench'
+
 providers:
   - Bambamboole\LaravelDav\LaravelDavServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+workbench:
+  start: '/'
+  welcome: true
+  discovers:
+    web: false
+    api: false
+    commands: false
+    components: false
+    views: false
+  build: []

@@ -1,3 +1,13 @@
 .idea
 /vendor
 /composer.lock
+/.worktrees
+/.phpunit.cache
+.phpunit.result.cache
+
+# Laravel Boost: generated outputs (sources are committed: .ai, boost.json, .mcp.json)
+/AGENTS.md
+/CLAUDE.md
+/.agents
+/.claude
+/.codex
