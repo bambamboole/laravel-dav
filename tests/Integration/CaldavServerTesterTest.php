@@ -23,31 +23,23 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
 
     expect($result)->toBeInstanceOf(CaldavTesterResult::class);
 
-    // Checks that currently abort the tester before they can be graded.
-    expect($result->erroredChecks)->toBe(['CheckRecurrenceSearch']);
+    // CheckRecurrenceSearch no longer crashes — all checks complete cleanly.
+    expect($result->erroredChecks)->toBe([]);
 
     // The complete set of graded features, so a newly reported or dropped
     // feature surfaces here instead of passing silently.
+    // search.recurrences.* are now full after the recurrence fix and therefore
+    // drop out of the deviation list — except search.recurrences.expanded.todo
+    // which remains unsupported (server-side VTODO expansion; tracked in todo #48).
     expect($result->featureNames())->toBe([
         'save-load.event.timezone',
         'scheduling',
-        'search.comp-type.optional',
-        'search.is-not-defined',
-        'search.is-not-defined.class',
-        'search.is-not-defined.dtend',
-        'search.text.case-sensitive',
-        'search.time-range.alarm',
-        'search.time-range.open.start.duration',
+        'search.recurrences.expanded.todo',
     ]);
 
     // Per-feature status quo.
     expect($result->support('save-load.event.timezone'))->toBe(SupportLevel::Broken);
     expect($result->support('scheduling'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('search.comp-type.optional'))->toBe(SupportLevel::Fragile);
-    expect($result->support('search.is-not-defined'))->toBe(SupportLevel::Fragile);
-    expect($result->support('search.is-not-defined.class'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('search.is-not-defined.dtend'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('search.text.case-sensitive'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('search.time-range.alarm'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('search.time-range.open.start.duration'))->toBe(SupportLevel::Broken);
+    // Known limitation: server-side VTODO recurrence expansion is not implemented (todo #48).
+    expect($result->support('search.recurrences.expanded.todo'))->toBe(SupportLevel::Unsupported);
 });
