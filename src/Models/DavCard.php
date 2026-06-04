@@ -14,6 +14,7 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactSocialProfile;
 use Bambamboole\LaravelDav\Dto\Contact\ContactUrl;
 use Bambamboole\LaravelDav\Dto\Contact\ContactVCardExtension;
 use Bambamboole\LaravelDav\Dto\ContactData;
+use Bambamboole\LaravelDav\LaravelDav;
 use Bambamboole\LaravelDav\Parsing\VCardSerializer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\AsCollection;
@@ -69,6 +70,8 @@ class DavCard extends Model
 {
     /** @use HasFactory<DavCardFactory> */
     use HasFactory;
+
+    protected $table = 'dav_cards';
 
     protected $fillable = [
         'dav_address_book_id',
@@ -157,7 +160,7 @@ class DavCard extends Model
      */
     public function addressBook(): BelongsTo
     {
-        return $this->belongsTo(DavAddressBook::class, 'dav_address_book_id');
+        return $this->belongsTo(LaravelDav::modelFor('address_book', DavAddressBook::class), 'dav_address_book_id');
     }
 
     public function toData(): ContactData

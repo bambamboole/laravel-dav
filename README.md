@@ -223,6 +223,53 @@ The published `config/dav.php` exposes:
 | `address_book_prefix`       | `addressbooks`         | Path segment for address book collections.              |
 | `default_calendar_uri`      | `personal`             | Conventional URI for an owner's primary calendar.       |
 | `default_address_book_uri`  | `personal`             | Conventional URI for an owner's primary address book.   |
+| `models.*`                  | package models         | Override the content models (see below).                |
+
+## Customizing the models
+
+The content models — `calendar`, `calendar_object`, `address_book`, `card`, and
+`credential` — are swappable. To customize one, **subclass the package model** and
+point the matching `config('dav.models.*')` key at your subclass. Because the
+package type-hints the concrete model, your subclass satisfies every internal call
+while letting you add columns (via your own migration), casts, relations, scopes,
+or traits such as tenancy.
+
+Keep the package table name (subclasses inherit it automatically) and add your
+extra columns with a regular migration against that table.
+
+```php
+namespace App\Models;
+
+use Bambamboole\LaravelDav\Models\DavCalendar;
+use App\Database\Factories\TeamCalendarFactory;
+
+class TeamCalendar extends DavCalendar
+{
+    use BelongsToTeam;
+
+    protected function casts(): array
+    {
+        return [...parent::casts(), 'settings' => 'array'];
+    }
+
+    // Only needed if you want TeamCalendar::factory() to build your subclass;
+    // the package factory builds the default DavCalendar.
+    protected static function newFactory(): TeamCalendarFactory
+    {
+        return TeamCalendarFactory::new();
+    }
+}
+```
+
+```php
+// config/dav.php
+'models' => [
+    'calendar' => \App\Models\TeamCalendar::class,
+],
+```
+
+The override must extend the package model it replaces; the resolver throws if it
+does not. The same pattern applies to every content model key.
 
 ## Testing
 

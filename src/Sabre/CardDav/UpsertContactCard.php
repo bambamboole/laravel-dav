@@ -14,8 +14,8 @@ class UpsertContactCard
     {
         $parsed = $this->parser->parse($payload, $uri);
 
-        return DavCard::query()->updateOrCreate(
-            ['dav_address_book_id' => $addressBook->id, 'uri' => $uri],
+        return $addressBook->cards()->updateOrCreate(
+            ['uri' => $uri],
             [
                 'uid' => $parsed->uid,
                 'full_name' => $parsed->formattedName,

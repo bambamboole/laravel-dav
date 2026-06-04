@@ -4,6 +4,7 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarObjectFactory;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
+use Bambamboole\LaravelDav\LaravelDav;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,6 +38,8 @@ class DavCalendarObject extends Model
 {
     /** @use HasFactory<DavCalendarObjectFactory> */
     use HasFactory;
+
+    protected $table = 'dav_calendar_objects';
 
     protected $fillable = [
         'dav_calendar_id',
@@ -79,7 +82,7 @@ class DavCalendarObject extends Model
      */
     public function calendar(): BelongsTo
     {
-        return $this->belongsTo(DavCalendar::class, 'dav_calendar_id');
+        return $this->belongsTo(LaravelDav::modelFor('calendar', DavCalendar::class), 'dav_calendar_id');
     }
 
     public function toData(): CalendarObjectData

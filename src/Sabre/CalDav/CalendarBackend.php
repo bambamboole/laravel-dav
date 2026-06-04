@@ -2,16 +2,20 @@
 
 namespace Bambamboole\LaravelDav\Sabre\CalDav;
 
+use Bambamboole\LaravelDav\LaravelDav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\PropPatch;
+use Sabre\VObject\Component\VCalendar;
+use Sabre\VObject\Reader;
 
 class CalendarBackend extends AbstractBackend implements SyncSupport
 {
@@ -43,7 +47,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             return [];
         }
 
-        return DavCalendar::query()
+        return LaravelDav::modelFor('calendar', DavCalendar::class)::query()
             ->where('user_id', $userId)
             ->orderBy('id')
             ->get()
@@ -62,7 +66,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             throw new NotFound('Principal not found');
         }
 
-        $calendar = DavCalendar::query()->create([
+        $calendar = LaravelDav::modelFor('calendar', DavCalendar::class)::query()->create([
             'user_id' => $userId,
             'uri' => (string) $calendarUri,
             'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $calendarUri),
@@ -85,7 +89,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             self::TimezoneProperty,
             self::SupportedComponentsProperty,
         ], function (array $mutations) use ($calendarId): bool {
-            $calendar = DavCalendar::query()->find($calendarId);
+            $calendar = LaravelDav::model('calendar')::query()->find($calendarId);
 
             if (! $calendar) {
                 return false;
@@ -112,7 +116,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     public function deleteCalendar($calendarId): void
     {
-        DavCalendar::query()->whereKey($calendarId)->delete();
+        LaravelDav::model('calendar')::query()->whereKey($calendarId)->delete();
     }
 
     /**
@@ -120,8 +124,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     public function getCalendarObjects($calendarId): array
     {
-        return DavCalendarObject::query()
-            ->where('dav_calendar_id', $calendarId)
+        return $this->calendar($calendarId)->objects()
             ->select([
                 'id',
                 'dav_calendar_id',
@@ -142,12 +145,26 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     public function getCalendarObject($calendarId, $objectUri): ?array
     {
-        $object = DavCalendarObject::query()
-            ->where('dav_calendar_id', $calendarId)
+        $object = $this->calendar($calendarId)->objects()
             ->where('uri', $objectUri)
             ->first();
 
         return $object ? $this->objectRow($object, includeData: true) : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, string>
+     */
+    public function calendarQuery($calendarId, array $filters): array
+    {
+        return $this->calendar($calendarId)->objects()
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (DavCalendarObject $object): bool => $this->objectMatchesCalendarQuery($object, $filters))
+            ->pluck('uri')
+            ->values()
+            ->all();
     }
 
     public function createCalendarObject($calendarId, $objectUri, $calendarData): string
@@ -190,8 +207,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
     {
         DB::transaction(function () use ($calendarId, $objectUri): void {
             $calendar = $this->calendar($calendarId);
-            $deleted = DavCalendarObject::query()
-                ->where('dav_calendar_id', $calendarId)
+            $deleted = $calendar->objects()
                 ->where('uri', $objectUri)
                 ->delete();
 
@@ -206,7 +222,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     public function getChangesForCalendar($calendarId, $syncToken, $syncLevel, $limit = null): ?array
     {
-        $calendar = DavCalendar::query()->find($calendarId);
+        $calendar = LaravelDav::modelFor('calendar', DavCalendar::class)::query()->find($calendarId);
         $syncToken = (string) $syncToken;
 
         if (! $calendar) {
@@ -216,9 +232,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
         if ($syncToken === '') {
             return $this->currentResourceChangeResponse(
                 $calendar->sync_token,
-                DavCalendarObject::query()
-                    ->where('dav_calendar_id', $calendar->id)
-                    ->orderBy('id'),
+                $calendar->objects()->orderBy('id')->getQuery(),
                 $limit,
             );
         }
@@ -270,7 +284,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     private function calendar(int|string $calendarId): DavCalendar
     {
-        return DavCalendar::query()->findOrFail($calendarId);
+        return LaravelDav::modelFor('calendar', DavCalendar::class)::query()->findOrFail($calendarId);
     }
 
     private function ownerExists(int $userId): bool
@@ -278,6 +292,173 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
         $model = config('dav.owner_model');
 
         return $model::query()->whereKey($userId)->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function objectMatchesCalendarQuery(DavCalendarObject $object, array $filters): bool
+    {
+        if (($filters['name'] ?? null) !== 'VCALENDAR') {
+            return false;
+        }
+
+        foreach ($filters['comp-filters'] ?? [] as $filter) {
+            if (! $this->objectMatchesComponentFilter($object, $filter)) {
+                return false;
+            }
+        }
+
+        if (($filters['time-range'] ?? false) && ! $this->objectOverlapsTimeRange($object, $filters['time-range'])) {
+            return false;
+        }
+
+        foreach ($filters['prop-filters'] ?? [] as $filter) {
+            if (! $this->objectMatchesPropertyFilter($object, $filter)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filter
+     */
+    private function objectMatchesComponentFilter(DavCalendarObject $object, array $filter): bool
+    {
+        $componentType = strtoupper((string) $object->component_type);
+        $filterName = strtoupper((string) ($filter['name'] ?? ''));
+        $isDefined = $componentType === $filterName;
+
+        if ((bool) ($filter['is-not-defined'] ?? false)) {
+            return ! $isDefined;
+        }
+
+        if (! $isDefined) {
+            return false;
+        }
+
+        if (($filter['time-range'] ?? false) && ! $this->objectOverlapsTimeRange($object, $filter['time-range'])) {
+            return false;
+        }
+
+        foreach ($filter['prop-filters'] ?? [] as $propertyFilter) {
+            if (! $this->objectMatchesPropertyFilter($object, $propertyFilter)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array{start?: DateTimeInterface|null, end?: DateTimeInterface|null}  $timeRange
+     */
+    private function objectOverlapsTimeRange(DavCalendarObject $object, array $timeRange): bool
+    {
+        $startsAt = $object->starts_at;
+        $endsAt = $object->ends_at ?? $startsAt;
+
+        if ($startsAt === null) {
+            return false;
+        }
+
+        $rangeStart = $timeRange['start'] ?? null;
+        $rangeEnd = $timeRange['end'] ?? null;
+
+        if ($rangeStart !== null && $endsAt !== null && $endsAt <= $rangeStart) {
+            return false;
+        }
+
+        if ($rangeEnd !== null && $startsAt >= $rangeEnd) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filter
+     */
+    private function objectMatchesPropertyFilter(DavCalendarObject $object, array $filter): bool
+    {
+        $value = $this->propertyValue($object, (string) ($filter['name'] ?? ''));
+        $isDefined = filled($value);
+
+        if ((bool) ($filter['is-not-defined'] ?? false)) {
+            return ! $isDefined;
+        }
+
+        if (! $isDefined) {
+            return false;
+        }
+
+        if (($filter['text-match'] ?? null) !== null && ! $this->textMatches((string) $value, $filter['text-match'])) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function propertyValue(DavCalendarObject $object, string $property): ?string
+    {
+        return match (strtoupper($property)) {
+            'UID' => $object->uid,
+            'SUMMARY' => $object->summary,
+            'DESCRIPTION' => $object->description,
+            'LOCATION' => $object->location,
+            'STATUS' => $object->status,
+            'URL' => $object->url,
+            'CATEGORIES' => $this->rawPropertyValue($object, 'CATEGORIES'),
+            default => null,
+        };
+    }
+
+    private function rawPropertyValue(DavCalendarObject $object, string $property): ?string
+    {
+        $vCalendar = Reader::read($object->calendar_data);
+
+        if (! $vCalendar instanceof VCalendar) {
+            $vCalendar->destroy();
+
+            return null;
+        }
+
+        try {
+            foreach ($vCalendar->getBaseComponents() as $component) {
+                if ($object->component_type !== null && $component->name !== $object->component_type) {
+                    continue;
+                }
+
+                if (! isset($component->{$property})) {
+                    continue;
+                }
+
+                $values = [];
+
+                foreach ($component->{$property} as $value) {
+                    $values[] = (string) $value;
+                }
+
+                return implode(',', $values);
+            }
+
+            return null;
+        } finally {
+            $vCalendar->destroy();
+        }
+    }
+
+    /**
+     * @param  array{value: string, negate-condition?: bool, collation?: string}  $textMatch
+     */
+    private function textMatches(string $value, array $textMatch): bool
+    {
+        $needle = $textMatch['value'];
+        $matches = str_contains(mb_strtolower($value), mb_strtolower($needle));
+
+        return (bool) ($textMatch['negate-condition'] ?? false) ? ! $matches : $matches;
     }
 
     /**

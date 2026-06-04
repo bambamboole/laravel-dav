@@ -23,6 +23,8 @@ class DavCredential extends Model
     /** @use HasFactory<DavCredentialFactory> */
     use HasFactory;
 
+    protected $table = 'dav_credentials';
+
     protected $fillable = [
         'user_id',
         'name',

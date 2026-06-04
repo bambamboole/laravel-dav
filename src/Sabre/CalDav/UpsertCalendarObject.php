@@ -14,8 +14,8 @@ class UpsertCalendarObject
     {
         $parsed = $this->parser->parse($payload, $uri);
 
-        return DavCalendarObject::query()->updateOrCreate(
-            ['dav_calendar_id' => $calendar->id, 'uri' => $uri],
+        return $calendar->objects()->updateOrCreate(
+            ['uri' => $uri],
             [
                 'uid' => $parsed->uid,
                 'component_type' => $parsed->componentType,

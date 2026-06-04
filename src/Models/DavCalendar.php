@@ -3,6 +3,7 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarFactory;
+use Bambamboole\LaravelDav\LaravelDav;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,6 +30,8 @@ class DavCalendar extends Model
 {
     /** @use HasFactory<DavCalendarFactory> */
     use HasFactory;
+
+    protected $table = 'dav_calendars';
 
     protected $fillable = [
         'user_id',
@@ -75,7 +78,7 @@ class DavCalendar extends Model
      */
     public function objects(): HasMany
     {
-        return $this->hasMany(DavCalendarObject::class);
+        return $this->hasMany(LaravelDav::modelFor('calendar_object', DavCalendarObject::class), 'dav_calendar_id');
     }
 
     protected static function newFactory(): DavCalendarFactory
