@@ -13,6 +13,7 @@ use Workbench\App\Support\BoostConfig;
 use Workbench\App\Support\BoostGuidelineComposer;
 use Workbench\App\Support\BoostSkillComposer;
 
+use function Orchestra\Testbench\default_migration_path;
 use function Orchestra\Testbench\package_path;
 
 class WorkbenchServiceProvider extends ServiceProvider
@@ -20,12 +21,51 @@ class WorkbenchServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->readBoostConfigFromPackageRoot();
+        $this->persistWorkbenchDatabaseToFile();
     }
 
     public function boot(): void
     {
         $this->pointBoostAtPackageRoot();
         $this->redirectBoostSkillsToPackageRoot();
+        $this->loadOwnerMigrationsForServe();
+    }
+
+    // The served workbench needs a database that survives between requests and
+    // restarts, so point it at a file under workbench/database/ instead of the
+    // default in-memory connection. Tests keep their own in-memory database.
+    private function persistWorkbenchDatabaseToFile(): void
+    {
+        if ($this->app->runningUnitTests()) {
+            return;
+        }
+
+        // Respect an explicit database chosen via the environment (the CalDAV
+        // integration harness points DB_DATABASE at its own throwaway file).
+        // DB_CONNECTION is set by Testbench itself, so only DB_DATABASE is a
+        // reliable signal that the database was chosen deliberately.
+        if (env('DB_DATABASE') !== null) {
+            return;
+        }
+
+        $this->app->useDatabasePath(package_path('workbench/database'));
+
+        $config = $this->app['config'];
+        $config->set('database.default', 'sqlite');
+        $config->set('database.connections.sqlite.database', package_path('workbench/database/database.sqlite'));
+    }
+
+    // The package's DAV tables have foreign keys to the owner table, which a host
+    // app would provide. Load Testbench's default migrations (users, cache, jobs)
+    // so `workbench:build` can migrate a usable schema. Skipped under tests, which
+    // load the owner table via tests/TestCase.
+    private function loadOwnerMigrationsForServe(): void
+    {
+        if ($this->app->runningUnitTests()) {
+            return;
+        }
+
+        $this->loadMigrationsFrom(default_migration_path());
     }
 
     // Boost reads boost.json and custom .ai guidelines and skills from

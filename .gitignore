@@ -4,6 +4,7 @@
 /.worktrees
 /.phpunit.cache
 .phpunit.result.cache
+/workbench/database/*.sqlite
 
 # Laravel Boost: generated outputs (sources are committed: .ai, boost.json, .mcp.json)
 /AGENTS.md
