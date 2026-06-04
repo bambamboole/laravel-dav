@@ -29,9 +29,6 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
     // The complete set of graded features, so a newly reported or dropped
     // feature surfaces here instead of passing silently.
     expect($result->featureNames())->toBe([
-        'principal-search',
-        'principal-search.by-name',
-        'principal-search.list-all',
         'save-load.event.timezone',
         'scheduling',
         'search.comp-type.optional',
@@ -44,9 +41,6 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
     ]);
 
     // Per-feature status quo.
-    expect($result->support('principal-search'))->toBe(SupportLevel::Ungraceful);
-    expect($result->support('principal-search.by-name'))->toBe(SupportLevel::Unsupported);
-    expect($result->support('principal-search.list-all'))->toBe(SupportLevel::Ungraceful);
     expect($result->support('save-load.event.timezone'))->toBe(SupportLevel::Broken);
     expect($result->support('scheduling'))->toBe(SupportLevel::Unsupported);
     expect($result->support('search.comp-type.optional'))->toBe(SupportLevel::Fragile);

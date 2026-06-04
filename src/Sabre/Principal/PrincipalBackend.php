@@ -61,23 +61,31 @@ class PrincipalBackend extends AbstractBackend
      */
     public function searchPrincipals($prefixPath, array $searchProperties, $test = 'allof'): array
     {
-        if ($prefixPath !== config('dav.principal_prefix') || $searchProperties === []) {
+        if ($prefixPath !== config('dav.principal_prefix')) {
             return [];
         }
 
-        $supportedProperties = array_intersect(
-            array_keys($searchProperties),
-            [self::DisplayNameProperty, self::EmailAddressProperty],
+        if ($searchProperties === []) {
+            return $this->ownerQuery()
+                ->orderBy('id')
+                ->get()
+                ->map(fn (Model $owner): string => $this->principalUri($this->asOwner($owner)))
+                ->all();
+        }
+
+        $supportedProperties = array_intersect_key(
+            $searchProperties,
+            array_flip([self::DisplayNameProperty, self::EmailAddressProperty]),
         );
 
-        if (count($supportedProperties) !== count($searchProperties)) {
+        if ($supportedProperties === []) {
             return [];
         }
 
         return $this->ownerQuery()
             ->orderBy('id')
             ->get()
-            ->filter(fn (Model $owner): bool => $this->matchesSearch($this->asOwner($owner), $searchProperties, $test))
+            ->filter(fn (Model $owner): bool => $this->matchesSearch($this->asOwner($owner), $supportedProperties, $test))
             ->map(fn (Model $owner): string => $this->principalUri($this->asOwner($owner)))
             ->values()
             ->all();
