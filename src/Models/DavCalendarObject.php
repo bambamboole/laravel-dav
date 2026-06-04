@@ -121,7 +121,7 @@ class DavCalendarObject extends Model
         });
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavCalendarObjectFactory
     {
         return DavCalendarObjectFactory::new();
     }

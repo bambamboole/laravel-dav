@@ -26,7 +26,7 @@ class DavProperty extends Model
         'value',
     ];
 
-    protected static function newFactory()
+    protected static function newFactory(): DavPropertyFactory
     {
         return DavPropertyFactory::new();
     }

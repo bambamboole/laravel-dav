@@ -1,7 +1,21 @@
 <?php
 
+use App\Models\User;
+use Bambamboole\LaravelDav\Models\DavAddressBook;
+use Bambamboole\LaravelDav\Models\DavCalendar;
+use Bambamboole\LaravelDav\Models\DavCalendarObject;
+use Bambamboole\LaravelDav\Models\DavCard;
+use Bambamboole\LaravelDav\Models\DavChange;
+use Bambamboole\LaravelDav\Models\DavCredential;
+use Bambamboole\LaravelDav\Models\DavLock;
+use Bambamboole\LaravelDav\Models\DavProperty;
+use Bambamboole\LaravelDav\Storage\EloquentAddressBookStore;
+use Bambamboole\LaravelDav\Storage\EloquentCalendarStore;
+use Bambamboole\LaravelDav\Storage\EloquentCredentialRepository;
+use Bambamboole\LaravelDav\Storage\EloquentPrincipalRepository;
+
 return [
-    'owner_model' => env('DAV_OWNER_MODEL', \App\Models\User::class),
+    'owner_model' => env('DAV_OWNER_MODEL', User::class),
     'owner_table' => 'users',
 
     'route' => [
@@ -19,20 +33,20 @@ return [
     'default_address_book_uri' => 'personal',
 
     'stores' => [
-        'principal' => \Bambamboole\LaravelDav\Storage\EloquentPrincipalRepository::class,
-        'credential' => \Bambamboole\LaravelDav\Storage\EloquentCredentialRepository::class,
-        'calendar' => \Bambamboole\LaravelDav\Storage\EloquentCalendarStore::class,
-        'address_book' => \Bambamboole\LaravelDav\Storage\EloquentAddressBookStore::class,
+        'principal' => EloquentPrincipalRepository::class,
+        'credential' => EloquentCredentialRepository::class,
+        'calendar' => EloquentCalendarStore::class,
+        'address_book' => EloquentAddressBookStore::class,
     ],
 
     'models' => [
-        'calendar' => \Bambamboole\LaravelDav\Models\DavCalendar::class,
-        'calendar_object' => \Bambamboole\LaravelDav\Models\DavCalendarObject::class,
-        'address_book' => \Bambamboole\LaravelDav\Models\DavAddressBook::class,
-        'card' => \Bambamboole\LaravelDav\Models\DavCard::class,
-        'change' => \Bambamboole\LaravelDav\Models\DavChange::class,
-        'credential' => \Bambamboole\LaravelDav\Models\DavCredential::class,
-        'lock' => \Bambamboole\LaravelDav\Models\DavLock::class,
-        'property' => \Bambamboole\LaravelDav\Models\DavProperty::class,
+        'calendar' => DavCalendar::class,
+        'calendar_object' => DavCalendarObject::class,
+        'address_book' => DavAddressBook::class,
+        'card' => DavCard::class,
+        'change' => DavChange::class,
+        'credential' => DavCredential::class,
+        'lock' => DavLock::class,
+        'property' => DavProperty::class,
     ],
 ];

@@ -6,6 +6,7 @@ use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use RuntimeException;
 use Sabre\DAV\PropPatch;
 use Sabre\DAVACL\PrincipalBackend\AbstractBackend;
 
@@ -29,7 +30,7 @@ class PrincipalBackend extends AbstractBackend
         return $this->ownerQuery()
             ->orderBy('id')
             ->get()
-            ->map(fn (DavOwner $owner): array => $this->principalForOwner($owner))
+            ->map(fn (Model $owner): array => $this->principalForOwner($this->asOwner($owner)))
             ->all();
     }
 
@@ -76,8 +77,8 @@ class PrincipalBackend extends AbstractBackend
         return $this->ownerQuery()
             ->orderBy('id')
             ->get()
-            ->filter(fn (DavOwner $owner): bool => $this->matchesSearch($owner, $searchProperties, $test))
-            ->map(fn (DavOwner $owner): string => $this->principalUri($owner))
+            ->filter(fn (Model $owner): bool => $this->matchesSearch($this->asOwner($owner), $searchProperties, $test))
+            ->map(fn (Model $owner): string => $this->principalUri($this->asOwner($owner)))
             ->values()
             ->all();
     }
@@ -92,7 +93,7 @@ class PrincipalBackend extends AbstractBackend
 
         $owner = $this->ownerQuery()
             ->get()
-            ->first(fn (DavOwner $owner): bool => $owner->getDavPrincipalEmail() === $email);
+            ->first(fn (Model $owner): bool => $this->asOwner($owner)->getDavPrincipalEmail() === $email);
 
         return $owner instanceof DavOwner ? $this->principalUri($owner) : null;
     }
@@ -162,8 +163,18 @@ class PrincipalBackend extends AbstractBackend
      */
     private function ownerQuery(): Builder
     {
+        /** @var class-string<Model> $model */
         $model = config('dav.owner_model');
 
         return $model::query();
+    }
+
+    private function asOwner(Model $model): DavOwner
+    {
+        if (! $model instanceof DavOwner) {
+            throw new RuntimeException(sprintf('The dav.owner_model [%s] must implement %s.', $model::class, DavOwner::class));
+        }
+
+        return $model;
     }
 }

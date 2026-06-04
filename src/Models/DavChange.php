@@ -46,7 +46,7 @@ class DavChange extends Model
         ];
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavChangeFactory
     {
         return DavChangeFactory::new();
     }

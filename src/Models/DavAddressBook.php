@@ -56,7 +56,10 @@ class DavAddressBook extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('dav.owner_model'));
+        /** @var class-string<Model> $ownerModel */
+        $ownerModel = config('dav.owner_model');
+
+        return $this->belongsTo($ownerModel);
     }
 
     /**
@@ -67,7 +70,7 @@ class DavAddressBook extends Model
         return $this->hasMany(DavCard::class);
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavAddressBookFactory
     {
         return DavAddressBookFactory::new();
     }

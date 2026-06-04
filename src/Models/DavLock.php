@@ -49,7 +49,7 @@ class DavLock extends Model
         ];
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavLockFactory
     {
         return DavLockFactory::new();
     }

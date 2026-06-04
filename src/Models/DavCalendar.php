@@ -64,7 +64,10 @@ class DavCalendar extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('dav.owner_model'));
+        /** @var class-string<Model> $ownerModel */
+        $ownerModel = config('dav.owner_model');
+
+        return $this->belongsTo($ownerModel);
     }
 
     /**
@@ -75,7 +78,7 @@ class DavCalendar extends Model
         return $this->hasMany(DavCalendarObject::class);
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavCalendarFactory
     {
         return DavCalendarFactory::new();
     }

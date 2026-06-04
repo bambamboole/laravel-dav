@@ -10,6 +10,8 @@
         "sabre/dav": "^4.7"
     },
     "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.27",
         "orchestra/testbench": "^11.0",
         "pestphp/pest": "^4.7"
     },
@@ -21,6 +23,12 @@
     },
     "extra": {
         "laravel": { "providers": ["Bambamboole\\LaravelDav\\LaravelDavServiceProvider"] }
+    },
+    "scripts": {
+        "test": "pest",
+        "lint": "pint",
+        "lint:check": "pint --test",
+        "stan": "phpstan analyse --no-progress"
     },
     "config": { "allow-plugins": { "pestphp/pest-plugin": true } },
     "minimum-stability": "stable",

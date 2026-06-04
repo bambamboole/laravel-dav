@@ -219,7 +219,7 @@ class DavCard extends Model
         });
     }
 
-    protected static function newFactory()
+    protected static function newFactory(): DavCardFactory
     {
         return DavCardFactory::new();
     }
