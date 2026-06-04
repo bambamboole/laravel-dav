@@ -24,6 +24,8 @@
     },
     "require-dev": {
         "ext-sockets": "*",
+        "amphp/amp": "^3.1",
+        "amphp/http-server": "^3.4",
         "illuminate/process": "^12.0 || ^13.0",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^2.4",

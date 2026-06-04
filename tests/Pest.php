@@ -5,7 +5,7 @@ use Illuminate\Testing\TestResponse;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Component\VCard;
 
-uses(TestCase::class)->in('Feature', 'Unit', 'Smoke');
+uses(TestCase::class)->in('Feature', 'Unit', 'Smoke', 'Integration');
 
 function vcard(string $body): string
 {

@@ -3,59 +3,26 @@
 namespace Bambamboole\LaravelDav\Tests\Integration\Support;
 
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\Factory as HttpFactory;
-use Illuminate\Http\Client\Response as HttpResponse;
 use Illuminate\Process\Factory as ProcessFactory;
-use Illuminate\Process\InvokedProcess;
-use Illuminate\Process\PendingProcess;
-use PDO;
+use Illuminate\Process\ProcessResult;
 use RuntimeException;
+use Throwable;
 
-/**
- * Boots the package's DAV server as a real, network-reachable HTTP process and
- * drives the external python `caldav-server-tester` against it, returning a
- * typed {@see CaldavTesterResult}.
- *
- * The server runs in a separate OS process (orchestra/testbench `serve`) backed
- * by a temporary file SQLite database that is migrated and seeded for the run.
- * All child processes are spawned through illuminate/process.
- *
- * Use the single entry point {@see runCompatibilityTests()}, which boots the
- * server, runs the tester, and always shuts everything down again.
- */
+use function Amp\delay;
+
 final class CalDavTester
 {
     private ProcessFactory $process;
 
-    private HttpFactory $http;
-
     private string $basePath;
-
-    private string $testbenchBinary;
-
-    private string $tempDir;
-
-    private string $databasePath;
 
     private int $port;
 
-    /** @var array<string, string> */
-    private array $env;
-
     private ?string $testerBinary = null;
 
-    private ?InvokedProcess $server = null;
+    private ?InProcessLaravelServer $server = null;
 
-    private ?string $lastReadinessProbe = null;
-
-    /**
-     * Boot the server, run the full compatibility suite, and tear everything
-     * down again, returning the parsed result.
-     *
-     * @throws \JsonException
-     */
+    /** @throws \JsonException */
     public static function runCompatibilityTests(): CaldavTesterResult
     {
         $tester = new self;
@@ -72,64 +39,25 @@ final class CalDavTester
     private function __construct()
     {
         $this->process = new ProcessFactory;
-        $this->http = new HttpFactory;
         $this->basePath = dirname(__DIR__, 3);
-        $this->testbenchBinary = $this->basePath.'/vendor/bin/testbench';
-        $this->tempDir = $this->makeTempDir();
-        $this->databasePath = $this->tempDir.'/dav.sqlite';
         $this->port = $this->findFreePort();
-        $this->env = [
-            'APP_DEBUG' => 'true',
-            'DB_CONNECTION' => 'sqlite',
-            'DB_DATABASE' => $this->databasePath,
-            'DAV_OWNER_MODEL' => OwnerUser::class,
-            'DAV_REALM' => 'CalDAV Server Tester',
-            'LOG_CHANNEL' => 'stderr',
-        ];
+
+        config([
+            'app.debug' => true,
+            'dav.owner_model' => OwnerUser::class,
+            'dav.realm' => 'CalDAV Server Tester',
+        ]);
     }
 
-    /**
-     * Migrate + seed the temporary database, start the server, and block until
-     * it answers HTTP requests.
-     */
     private function boot(): void
     {
-        touch($this->databasePath);
-        $this->enableSqliteWalMode();
+        (new CaldavTesterSeeder)->run();
 
-        $this->runTestbench([
-            'migrate:fresh',
-            '--seed',
-            '--seeder='.CaldavTesterSeeder::class,
-            '--no-interaction',
-        ]);
-
-        $this->server = $this->testbench()
-            ->start(array_merge($this->testbenchCommand(), [
-                'serve',
-                '--host=127.0.0.1',
-                '--port='.$this->port,
-                '--no-reload',
-                '--no-ansi',
-            ]));
-
-        $this->waitUntilReady();
-        $this->warmCurrentUserPrincipal();
-    }
-
-    private function enableSqliteWalMode(): void
-    {
-        $pdo = new PDO('sqlite:'.$this->databasePath);
-        $journalMode = $pdo->query('pragma journal_mode = wal')->fetchColumn();
-
-        if (! is_string($journalMode) || strtolower($journalMode) !== 'wal') {
-            throw new RuntimeException("Could not enable SQLite WAL mode for {$this->databasePath}.");
-        }
+        $this->server = new InProcessLaravelServer('127.0.0.1', $this->port);
+        $this->server->start();
     }
 
     /**
-     * Run every available compatibility check against the booted server.
-     *
      * The tester aborts the whole run when an individual check fails its own
      * internal self-consistency assertions. To capture the status quo for every
      * check anyway, we run all checks at once and, on a crash, isolate the
@@ -155,10 +83,7 @@ final class CalDavTester
             $arguments[] = '--format';
             $arguments[] = 'json';
 
-            $result = $this->process
-                ->path($this->basePath)
-                ->timeout(600)
-                ->run(array_merge([$this->testerBinary()], $arguments));
+            $result = $this->runTester($arguments);
 
             if ($result->successful()) {
                 return CaldavTesterResult::fromTesterOutput($result->output(), $excluded);
@@ -180,18 +105,13 @@ final class CalDavTester
         throw new RuntimeException('caldav-server-tester never produced a clean run after isolating crashing checks.');
     }
 
-    /**
-     * Stop the server and remove the temporary working directory. Safe to call
-     * more than once and on a partially-booted harness.
-     */
     private function shutdown(): void
     {
-        if ($this->server !== null && $this->server->running()) {
+        if ($this->server instanceof InProcessLaravelServer) {
             $this->server->stop();
         }
-        $this->server = null;
 
-        (new Filesystem)->deleteDirectory($this->tempDir);
+        $this->server = null;
     }
 
     private function baseUrl(): string
@@ -240,136 +160,40 @@ final class CalDavTester
     }
 
     /**
-     * A process builder rooted at the package with the shared SQLite/owner
-     * environment applied, used for every spawned testbench command.
+     * @return list<string>
      */
-    private function testbench(): PendingProcess
+    private function testerCommand(array $arguments): array
     {
-        return $this->process->path($this->basePath)->env($this->env);
+        return array_merge([$this->testerBinary()], $arguments);
     }
 
     /**
      * @param  list<string>  $arguments
      */
-    private function runTestbench(array $arguments): void
+    private function runTester(array $arguments): ProcessResult
     {
-        $result = $this->testbench()
-            ->timeout(120)
-            ->run(array_merge($this->testbenchCommand(), $arguments));
+        $process = $this->process
+            ->path($this->basePath)
+            ->timeout(600)
+            ->start($this->testerCommand($arguments));
 
-        if (! $result->successful()) {
-            throw new RuntimeException(
-                'testbench '.implode(' ', $arguments)." failed.\n\n".
-                $result->output()."\n".$result->errorOutput()
-            );
-        }
-    }
-
-    private function waitUntilReady(): void
-    {
-        for ($attempt = 0; $attempt < 100; $attempt++) {
-            if ($this->server !== null && ! $this->server->running()) {
-                throw new RuntimeException(
-                    'DAV server process exited before becoming ready.'.
-                    $this->serverOutput()
-                );
-            }
-
-            if ($this->serverIsAnswering()) {
-                return;
-            }
-
-            usleep(200_000);
+        while ($process->running()) {
+            $process->ensureNotTimedOut();
+            delay(0.01);
         }
 
-        throw new RuntimeException('DAV server did not become ready within the timeout.'.$this->serverOutput());
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function testbenchCommand(): array
-    {
-        return [
-            PHP_BINARY,
-            '-d',
-            'variables_order=EGPCS',
-            $this->testbenchBinary,
-        ];
-    }
-
-    private function serverIsAnswering(): bool
-    {
-        try {
-            $this->http
-                ->connectTimeout(1)
-                ->timeout(2)
-                ->withoutRedirecting()
-                ->get($this->baseUrl());
-
-            return true;
-        } catch (ConnectionException) {
-            return false;
-        }
-    }
-
-    private function warmCurrentUserPrincipal(): void
-    {
-        try {
-            $this->lastReadinessProbe = $this->describeResponse($this->currentUserPrincipalResponse());
-        } catch (ConnectionException $exception) {
-            $this->lastReadinessProbe = 'Current-user-principal warmup failed to connect: '.$exception->getMessage();
-        }
-    }
-
-    private function currentUserPrincipalResponse(): HttpResponse
-    {
-        return $this->http
-            ->connectTimeout(1)
-            ->timeout(2)
-            ->withoutRedirecting()
-            ->withBasicAuth(CaldavTesterFixture::USERNAME, CaldavTesterFixture::SECRET)
-            ->withHeaders(['Depth' => '0'])
-            ->withBody(<<<'XML'
-                    <?xml version="1.0" encoding="utf-8" ?>
-                    <d:propfind xmlns:d="DAV:">
-                        <d:prop>
-                            <d:current-user-principal />
-                        </d:prop>
-                    </d:propfind>
-                    XML, 'application/xml')
-            ->send('PROPFIND', $this->baseUrl());
-    }
-
-    private function describeResponse(HttpResponse $response): string
-    {
-        return "HTTP {$response->status()}\n".
-            'Body: '.substr($response->body(), 0, 2_000);
+        return $process->wait();
     }
 
     private function serverOutput(): string
     {
-        if ($this->server === null) {
+        if (! $this->server instanceof InProcessLaravelServer || ! $this->server->lastThrowable() instanceof Throwable) {
             return '';
         }
 
-        $sections = [];
-        $stdout = trim($this->server->output());
-        $stderr = trim($this->server->errorOutput());
+        $throwable = $this->server->lastThrowable();
 
-        if ($stdout !== '') {
-            $sections[] = "Server stdout:\n".$stdout;
-        }
-
-        if ($stderr !== '') {
-            $sections[] = "Server stderr:\n".$stderr;
-        }
-
-        if ($this->lastReadinessProbe !== null) {
-            $sections[] = "Last DAV warmup response:\n".$this->lastReadinessProbe;
-        }
-
-        return $sections === [] ? '' : "\n\n".implode("\n\n", $sections);
+        return "\n\nServer exception:\n".$throwable::class.': '.$throwable->getMessage()."\n".$throwable->getTraceAsString();
     }
 
     private function testerBinary(): string
@@ -406,16 +230,6 @@ final class CalDavTester
             'caldav-server-tester is not installed. Install it (e.g. `uv tool install caldav-server-tester`) '.
             'or set CALDAV_SERVER_TESTER_BIN to its path.'
         );
-    }
-
-    private function makeTempDir(): string
-    {
-        $dir = sys_get_temp_dir().'/laravel-dav-tester-'.bin2hex(random_bytes(6));
-        if (! mkdir($dir, 0o755, true) && ! is_dir($dir)) {
-            throw new RuntimeException("Could not create temp directory: {$dir}");
-        }
-
-        return $dir;
     }
 
     private function findFreePort(): int
