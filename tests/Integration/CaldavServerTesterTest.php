@@ -1,18 +1,22 @@
 <?php
 
 use Bambamboole\LaravelDav\Tests\Integration\Support\CaldavTesterHarness;
+use Bambamboole\LaravelDav\Tests\Integration\Support\CaldavTesterResult;
+use Bambamboole\LaravelDav\Tests\Integration\Support\SupportLevel;
 
 /**
  * Boots the DAV server as a real HTTP process, runs the external python
- * caldav-server-tester against it, and asserts the parsed feature/support map
- * matches the committed status-quo baseline.
+ * caldav-server-tester against it, parses its JSON output into a typed
+ * {@see CaldavTesterResult} DTO, and asserts the current compatibility status
+ * quo feature by feature.
  *
  * This test intentionally does NOT use the package TestCase (no in-memory
  * RefreshDatabase): the tester is a separate OS process that needs a real,
  * network-reachable server backed by a shared file database.
  *
- * Regenerate the baseline after intentionally changing server behaviour:
- *   DAV_TESTER_UPDATE_BASELINE=1 vendor/bin/pest --filter="compatibility status quo"
+ * Many features are unsupported today. As the server improves, update the
+ * matching expectation below (e.g. from Unsupported to Full) so the diff
+ * documents the progress.
  */
 it('captures the caldav-server-tester compatibility status quo', function (): void {
     $harness = new CaldavTesterHarness;
@@ -24,29 +28,39 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
         $harness->shutdown();
     }
 
-    expect($result['features'])->toBeArray()->not->toBeEmpty();
+    expect($result)->toBeInstanceOf(CaldavTesterResult::class);
 
-    $baselinePath = __DIR__.'/baseline/caldav-server-tester.json';
+    // Checks that currently abort the tester before they can be graded.
+    expect($result->erroredChecks)->toBe(['CheckRecurrenceSearch']);
 
-    if (filter_var(getenv('DAV_TESTER_UPDATE_BASELINE'), FILTER_VALIDATE_BOOL)) {
-        if (! is_dir(dirname($baselinePath))) {
-            mkdir(dirname($baselinePath), 0o755, true);
-        }
+    // The complete set of graded features, so a newly reported or dropped
+    // feature surfaces here instead of passing silently.
+    expect($result->featureNames())->toBe([
+        'principal-search',
+        'principal-search.by-name',
+        'principal-search.list-all',
+        'save-load.event.timezone',
+        'scheduling',
+        'search.comp-type.optional',
+        'search.is-not-defined',
+        'search.is-not-defined.class',
+        'search.is-not-defined.dtend',
+        'search.text.case-sensitive',
+        'search.time-range.alarm',
+        'search.time-range.open.start.duration',
+    ]);
 
-        file_put_contents(
-            $baselinePath,
-            json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n",
-        );
-
-        return;
-    }
-
-    expect(file_exists($baselinePath))->toBeTrue(
-        'Baseline missing. Generate it with: DAV_TESTER_UPDATE_BASELINE=1 vendor/bin/pest --filter="compatibility status quo"',
-    );
-
-    /** @var array{features: array<string, mixed>, errored_checks: list<string>} $baseline */
-    $baseline = json_decode((string) file_get_contents($baselinePath), true, 512, JSON_THROW_ON_ERROR);
-
-    expect($result)->toEqual($baseline);
+    // Per-feature status quo.
+    expect($result->support('principal-search'))->toBe(SupportLevel::Ungraceful);
+    expect($result->support('principal-search.by-name'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('principal-search.list-all'))->toBe(SupportLevel::Ungraceful);
+    expect($result->support('save-load.event.timezone'))->toBe(SupportLevel::Broken);
+    expect($result->support('scheduling'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('search.comp-type.optional'))->toBe(SupportLevel::Fragile);
+    expect($result->support('search.is-not-defined'))->toBe(SupportLevel::Fragile);
+    expect($result->support('search.is-not-defined.class'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('search.is-not-defined.dtend'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('search.text.case-sensitive'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('search.time-range.alarm'))->toBe(SupportLevel::Unsupported);
+    expect($result->support('search.time-range.open.start.duration'))->toBe(SupportLevel::Broken);
 });

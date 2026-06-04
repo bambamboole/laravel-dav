@@ -89,9 +89,9 @@ final class CaldavTesterHarness
      * offending check from stderr, record it as "errored", exclude it, and retry
      * until the run completes cleanly.
      *
-     * @return array{features: array<string, mixed>, errored_checks: list<string>}
+     * @throws \JsonException
      */
-    public function runCompatibilityChecks(): array
+    public function runCompatibilityChecks(): CaldavTesterResult
     {
         $checks = $this->listChecks();
         $excluded = [];
@@ -114,7 +114,7 @@ final class CaldavTesterHarness
                 ->run(array_merge([$this->testerBinary()], $arguments));
 
             if ($result->successful()) {
-                return $this->normalize($result->output(), $excluded);
+                return CaldavTesterResult::fromTesterOutput($result->output(), $excluded);
             }
 
             $crasher = $this->identifyCrashingCheck($result->errorOutput());
@@ -179,36 +179,6 @@ final class CaldavTesterHarness
             '--caldav-username', CaldavTesterFixture::USERNAME,
             '--caldav-password', CaldavTesterFixture::SECRET,
             '--caldav-calendar', CaldavTesterFixture::CALENDAR_DISPLAY_NAME,
-        ];
-    }
-
-    /**
-     * Normalize raw tester JSON into a stable, comparable structure: the
-     * feature map with volatile metadata (version, timestamp, url, name)
-     * stripped and all keys sorted, plus the sorted list of checks that aborted.
-     *
-     * @param  list<string>  $erroredChecks
-     * @return array{features: array<string, mixed>, errored_checks: list<string>}
-     */
-    private function normalize(string $json, array $erroredChecks): array
-    {
-        /** @var array{features?: array<string, mixed>} $decoded */
-        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-
-        $features = $decoded['features'] ?? [];
-        ksort($features);
-        foreach ($features as &$attributes) {
-            if (is_array($attributes)) {
-                ksort($attributes);
-            }
-        }
-        unset($attributes);
-
-        sort($erroredChecks);
-
-        return [
-            'features' => $features,
-            'errored_checks' => array_values($erroredChecks),
         ];
     }
 

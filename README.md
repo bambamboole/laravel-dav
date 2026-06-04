@@ -282,11 +282,13 @@ composer test
 `tests/Integration/CaldavServerTesterTest.php` boots the DAV server as a real
 HTTP process (via `orchestra/testbench serve`) and runs the external
 [`caldav-server-tester`](https://github.com/python-caldav/caldav-server-tester)
-against it. It parses the JSON feature/support map the tester emits and asserts
-it matches the committed status-quo baseline at
-`tests/Integration/baseline/caldav-server-tester.json`. Many features are known
-to be unsupported today; the baseline records that reality so the suite stays
-green, and improvements show up as a baseline diff.
+against it. It parses the JSON the tester emits into a typed
+`CaldavTesterResult` DTO and asserts the current status quo feature by feature
+(e.g. `expect($result->support('scheduling'))->toBe(SupportLevel::Unsupported)`).
+Many features are known to be unsupported today; the per-feature expectations
+record that reality so the suite stays green. As the server improves, update the
+matching expectation (e.g. from `Unsupported` to `Full`) so the diff documents
+the progress.
 
 This test is part of the default `composer test` run, so the tester binary must
 be installed wherever the suite runs:
@@ -297,12 +299,6 @@ uv tool install caldav-server-tester
 
 If the binary lives outside `~/.local/bin` and your `PATH`, point the test at it
 with `CALDAV_SERVER_TESTER_BIN=/path/to/caldav-server-tester`.
-
-After intentionally changing server behaviour, regenerate the baseline:
-
-```bash
-DAV_TESTER_UPDATE_BASELINE=1 vendor/bin/pest --filter="compatibility status quo"
-```
 
 ## License
 
