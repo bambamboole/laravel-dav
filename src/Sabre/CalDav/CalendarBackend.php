@@ -14,6 +14,8 @@ use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\PropPatch;
+use Sabre\DAV\StringUtil;
+use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Reader;
 
@@ -254,10 +256,35 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             self::DisplayNameProperty => $calendar->display_name,
             self::DescriptionProperty => $calendar->description,
             self::ColorProperty => $calendar->color,
-            self::TimezoneProperty => $calendar->timezone,
+            self::TimezoneProperty => $this->calendarTimezoneProperty($calendar->timezone),
             self::SupportedComponentsProperty => new SupportedCalendarComponentSet($components),
             self::SyncTokenProperty => $this->davSyncToken($calendar->sync_token),
         ];
+    }
+
+    /**
+     * The CalDAV calendar-timezone property must hold a full iCalendar object
+     * containing a VTIMEZONE (RFC 4791 §5.2.2). Sabre reads it verbatim when
+     * expanding recurrences, so a bare identifier such as "UTC" would make the
+     * VObject parser throw. We only expose values that parse as a VCALENDAR and
+     * otherwise leave the property unset so Sabre defaults to UTC.
+     */
+    private function calendarTimezoneProperty(?string $timezone): ?string
+    {
+        if ($timezone === null || trim($timezone) === '') {
+            return null;
+        }
+
+        try {
+            $parsed = Reader::read($timezone);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $isCalendar = $parsed instanceof VCalendar;
+        $parsed->destroy();
+
+        return $isCalendar ? $timezone : null;
     }
 
     /**
@@ -303,151 +330,223 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             return false;
         }
 
-        foreach ($filters['comp-filters'] ?? [] as $filter) {
-            if (! $this->objectMatchesComponentFilter($object, $filter)) {
-                return false;
-            }
-        }
-
-        if (($filters['time-range'] ?? false) && ! $this->objectOverlapsTimeRange($object, $filters['time-range'])) {
+        if (! $this->passesComponentTypePreFilter($object, $filters)) {
             return false;
         }
 
-        foreach ($filters['prop-filters'] ?? [] as $filter) {
-            if (! $this->objectMatchesPropertyFilter($object, $filter)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  array<string, mixed>  $filter
-     */
-    private function objectMatchesComponentFilter(DavCalendarObject $object, array $filter): bool
-    {
-        $componentType = strtoupper((string) $object->component_type);
-        $filterName = strtoupper((string) ($filter['name'] ?? ''));
-        $isDefined = $componentType === $filterName;
-
-        if ((bool) ($filter['is-not-defined'] ?? false)) {
-            return ! $isDefined;
-        }
-
-        if (! $isDefined) {
-            return false;
-        }
-
-        if (($filter['time-range'] ?? false) && ! $this->objectOverlapsTimeRange($object, $filter['time-range'])) {
-            return false;
-        }
-
-        foreach ($filter['prop-filters'] ?? [] as $propertyFilter) {
-            if (! $this->objectMatchesPropertyFilter($object, $propertyFilter)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  array{start?: DateTimeInterface|null, end?: DateTimeInterface|null}  $timeRange
-     */
-    private function objectOverlapsTimeRange(DavCalendarObject $object, array $timeRange): bool
-    {
-        $startsAt = $object->starts_at;
-        $endsAt = $object->ends_at ?? $startsAt;
-
-        if ($startsAt === null) {
-            return false;
-        }
-
-        $rangeStart = $timeRange['start'] ?? null;
-        $rangeEnd = $timeRange['end'] ?? null;
-
-        if ($rangeStart !== null && $endsAt !== null && $endsAt <= $rangeStart) {
-            return false;
-        }
-
-        if ($rangeEnd !== null && $startsAt >= $rangeEnd) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * @param  array<string, mixed>  $filter
-     */
-    private function objectMatchesPropertyFilter(DavCalendarObject $object, array $filter): bool
-    {
-        $value = $this->propertyValue($object, (string) ($filter['name'] ?? ''));
-        $isDefined = filled($value);
-
-        if ((bool) ($filter['is-not-defined'] ?? false)) {
-            return ! $isDefined;
-        }
-
-        if (! $isDefined) {
-            return false;
-        }
-
-        if (($filter['text-match'] ?? null) !== null && ! $this->textMatches((string) $value, $filter['text-match'])) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private function propertyValue(DavCalendarObject $object, string $property): ?string
-    {
-        return match (strtoupper($property)) {
-            'UID' => $object->uid,
-            'SUMMARY' => $object->summary,
-            'DESCRIPTION' => $object->description,
-            'LOCATION' => $object->location,
-            'STATUS' => $object->status,
-            'URL' => $object->url,
-            'CATEGORIES' => $this->rawPropertyValue($object, 'CATEGORIES'),
-            default => null,
-        };
-    }
-
-    private function rawPropertyValue(DavCalendarObject $object, string $property): ?string
-    {
         $vCalendar = Reader::read($object->calendar_data);
 
         if (! $vCalendar instanceof VCalendar) {
             $vCalendar->destroy();
 
-            return null;
+            return false;
         }
 
         try {
-            foreach ($vCalendar->getBaseComponents() as $component) {
-                if ($object->component_type !== null && $component->name !== $object->component_type) {
-                    continue;
-                }
-
-                if (! isset($component->{$property})) {
-                    continue;
-                }
-
-                $values = [];
-
-                foreach ($component->{$property} as $value) {
-                    $values[] = (string) $value;
-                }
-
-                return implode(',', $values);
-            }
-
-            return null;
+            return $this->componentMatchesFilter($vCalendar, $filters);
         } finally {
             $vCalendar->destroy();
         }
+    }
+
+    /**
+     * Cheap pre-filter so we avoid parsing every stored object when the query
+     * targets a single component type.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function passesComponentTypePreFilter(DavCalendarObject $object, array $filters): bool
+    {
+        $componentType = strtoupper((string) $object->component_type);
+
+        foreach ($filters['comp-filters'] ?? [] as $filter) {
+            if ((bool) ($filter['is-not-defined'] ?? false)) {
+                continue;
+            }
+
+            $filterName = strtoupper((string) ($filter['name'] ?? ''));
+
+            if ($filterName !== '' && $filterName !== $componentType) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Recurrence-aware comp-filter matching following RFC 4791 §9.7.
+     *
+     * Unlike Sabre's {@see CalendarQueryValidator}, a time-range here is ANDed
+     * with sibling prop-filters/comp-filters against the same component, and
+     * the relaxed top-level VCALENDAR time-range is honoured.
+     *
+     * @param  array<string, mixed>  $filter
+     * @param  list<VObject\Component>  $recurrenceSet  the master and its
+     *                                                  RECURRENCE-ID overrides
+     *                                                  for $component, used to
+     *                                                  expand recurring objects
+     */
+    private function componentMatchesFilter(VObject\Component $component, array $filter, array $recurrenceSet = []): bool
+    {
+        if (($filter['time-range'] ?? false) && ! $this->componentInTimeRange($component, $filter['time-range'], $recurrenceSet)) {
+            return false;
+        }
+
+        foreach ($filter['comp-filters'] ?? [] as $childFilter) {
+            if (! $this->childComponentMatches($component, $childFilter)) {
+                return false;
+            }
+        }
+
+        foreach ($filter['prop-filters'] ?? [] as $propertyFilter) {
+            if (! $this->propertyMatchesFilter($component, $propertyFilter)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, mixed>  $filter
+     */
+    private function childComponentMatches(VObject\Component $parent, array $filter): bool
+    {
+        $name = (string) ($filter['name'] ?? '');
+        $children = array_values(array_filter(
+            $parent->select($name),
+            static fn (VObject\Node $node): bool => $node instanceof VObject\Component,
+        ));
+
+        if ((bool) ($filter['is-not-defined'] ?? false)) {
+            return $children === [];
+        }
+
+        foreach ($this->groupByUid($children) as $recurrenceSet) {
+            if ($this->componentMatchesFilter($recurrenceSet[0], $filter, $recurrenceSet)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Groups components by UID so a recurrence master and its RECURRENCE-ID
+     * overrides are evaluated together. Components without a UID each form
+     * their own group.
+     *
+     * @param  list<VObject\Component>  $components
+     * @return list<list<VObject\Component>>
+     */
+    private function groupByUid(array $components): array
+    {
+        $masters = [];
+        $overrides = [];
+        $ungrouped = [];
+
+        foreach ($components as $component) {
+            $uid = isset($component->UID) ? (string) $component->UID : '';
+
+            if ($uid === '') {
+                $ungrouped[] = [$component];
+
+                continue;
+            }
+
+            if (isset($component->{'RECURRENCE-ID'})) {
+                $overrides[$uid][] = $component;
+            } else {
+                $masters[$uid][] = $component;
+            }
+        }
+
+        $groups = [];
+
+        foreach ($masters as $uid => $components) {
+            $groups[] = [...$components, ...($overrides[$uid] ?? [])];
+            unset($overrides[$uid]);
+        }
+
+        foreach ($overrides as $components) {
+            $groups[] = $components;
+        }
+
+        return [...$groups, ...$ungrouped];
+    }
+
+    /**
+     * @param  array<string, mixed>  $filter
+     */
+    private function propertyMatchesFilter(VObject\Component $component, array $filter): bool
+    {
+        $name = (string) ($filter['name'] ?? '');
+        $properties = $component->select($name);
+
+        if ((bool) ($filter['is-not-defined'] ?? false)) {
+            return $properties === [];
+        }
+
+        if ($properties === []) {
+            return false;
+        }
+
+        $textMatch = $filter['text-match'] ?? null;
+        $paramFilters = $filter['param-filters'] ?? [];
+
+        if ($textMatch === null && $paramFilters === []) {
+            return true;
+        }
+
+        foreach ($properties as $property) {
+            if (! $property instanceof VObject\Property) {
+                continue;
+            }
+
+            if ($textMatch !== null && ! $this->textMatches((string) $property->getValue(), $textMatch)) {
+                continue;
+            }
+
+            if ($paramFilters !== [] && ! $this->parametersMatch($property, $paramFilters)) {
+                continue;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $paramFilters
+     */
+    private function parametersMatch(VObject\Property $property, array $paramFilters): bool
+    {
+        foreach ($paramFilters as $paramFilter) {
+            $name = (string) ($paramFilter['name'] ?? '');
+            $parameter = $property[$name] ?? null;
+
+            if ((bool) ($paramFilter['is-not-defined'] ?? false)) {
+                if ($parameter !== null) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (! $parameter instanceof VObject\Parameter) {
+                return false;
+            }
+
+            $textMatch = $paramFilter['text-match'] ?? null;
+
+            if ($textMatch !== null && ! $this->textMatches((string) $parameter->getValue(), $textMatch)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -455,10 +554,114 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     private function textMatches(string $value, array $textMatch): bool
     {
-        $needle = $textMatch['value'];
-        $matches = str_contains(mb_strtolower($value), mb_strtolower($needle));
+        $matches = StringUtil::textMatch(
+            $value,
+            $textMatch['value'],
+            $textMatch['collation'] ?? 'i;ascii-casemap',
+        );
 
         return (bool) ($textMatch['negate-condition'] ?? false) ? ! $matches : $matches;
+    }
+
+    /**
+     * @param  array{start?: DateTimeInterface|null, end?: DateTimeInterface|null}  $timeRange
+     * @param  list<VObject\Component>  $recurrenceSet
+     */
+    private function componentInTimeRange(VObject\Component $component, array $timeRange, array $recurrenceSet = []): bool
+    {
+        $start = $timeRange['start'] ?? new \DateTime('1900-01-01');
+        $end = $timeRange['end'] ?? new \DateTime('3000-01-01');
+
+        if ($component instanceof VCalendar) {
+            $baseComponents = array_values(array_filter(
+                $component->getBaseComponents(),
+                static fn (VObject\Component $base): bool => $base->name !== 'VTIMEZONE',
+            ));
+
+            foreach ($this->groupByUid($baseComponents) as $group) {
+                if ($this->recurrenceSetInTimeRange($group, $start, $end)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return $this->recurrenceSetInTimeRange(
+            $recurrenceSet === [] ? [$component] : $recurrenceSet,
+            $start,
+            $end,
+        );
+    }
+
+    /**
+     * Expansion-aware time-range check for a single component and, when it
+     * recurs, its instances. VObject only expands recurring VEVENTs natively,
+     * so we drive the {@see VObject\Recur\EventIterator} ourselves to also
+     * cover recurring VTODO/VJOURNAL objects (RFC 4791 §9.9). RECURRENCE-ID
+     * overrides are honoured because the iterator receives the whole set.
+     *
+     * @param  list<VObject\Component>  $recurrenceSet
+     */
+    private function recurrenceSetInTimeRange(array $recurrenceSet, DateTimeInterface $start, DateTimeInterface $end): bool
+    {
+        $master = $recurrenceSet[0];
+
+        if (! $this->isRecurring($recurrenceSet)) {
+            return $this->nodeInTimeRange($master, $start, $end);
+        }
+
+        // VObject caps recurrence expansion (default 3500) to guard against
+        // runaway RRULEs. fast-forwarding an infinite recurrence to a far-future
+        // window (e.g. a daily event queried decades out) can exceed that, so we
+        // raise the cap to a generous finite bound — enough for a daily rule over
+        // ~135 years, while still stopping pathological sub-daily rules from
+        // hanging the iterator (which then fall back to the master instance).
+        $previousMax = VObject\Settings::$maxRecurrences;
+        VObject\Settings::$maxRecurrences = 50000;
+
+        try {
+            $iterator = new VObject\Recur\EventIterator($recurrenceSet, null, $start instanceof \DateTime ? $start->getTimezone() : null);
+
+            $iterator->fastForward($start);
+
+            while ($iterator->valid() && $iterator->getDtStart() < $end) {
+                if ($iterator->getDtEnd() > $start) {
+                    return true;
+                }
+
+                $iterator->next();
+            }
+
+            return false;
+        } catch (\Exception) {
+            return $this->nodeInTimeRange($master, $start, $end);
+        } finally {
+            VObject\Settings::$maxRecurrences = $previousMax;
+        }
+    }
+
+    /**
+     * @param  list<VObject\Component>  $recurrenceSet
+     */
+    private function isRecurring(array $recurrenceSet): bool
+    {
+        foreach ($recurrenceSet as $component) {
+            if (isset($component->RRULE) || isset($component->RDATE) || isset($component->{'RECURRENCE-ID'})) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function nodeInTimeRange(VObject\Node $node, DateTimeInterface $start, DateTimeInterface $end): bool
+    {
+        if (! method_exists($node, 'isInTimeRange')) {
+            return false;
+        }
+
+        return $node->isInTimeRange($start, $end);
     }
 
     /**

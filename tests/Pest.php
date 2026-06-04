@@ -49,14 +49,14 @@ XML;
     ], $payload);
 }
 
-function davCalendarQueryReport(TestCase $test, string $path, string $authHeader, string $filter): TestResponse
+function davCalendarQueryReport(TestCase $test, string $path, string $authHeader, string $filter, string $calendarData = '<cal:calendar-data />'): TestResponse
 {
     $payload = <<<XML
 <?xml version="1.0" encoding="utf-8" ?>
 <cal:calendar-query xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
     <d:prop>
         <d:getetag />
-        <cal:calendar-data />
+        {$calendarData}
     </d:prop>
     {$filter}
 </cal:calendar-query>
