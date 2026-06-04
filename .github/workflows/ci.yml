@@ -24,6 +24,14 @@ jobs:
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install caldav-server-tester
+        run: |
+          uv tool install caldav-server-tester
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Run tests
         run: vendor/bin/pest
 
