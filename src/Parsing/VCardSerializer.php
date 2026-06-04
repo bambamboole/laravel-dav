@@ -9,13 +9,15 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
 use Bambamboole\LaravelDav\Dto\Contact\ContactPostalAddress;
 use Bambamboole\LaravelDav\Dto\Contact\ContactUrl;
 use Bambamboole\LaravelDav\Dto\ContactData;
+use Bambamboole\LaravelDav\Parsing\Concerns\ManipulatesVObject;
 use Sabre\VObject\Component\VCard;
-use Sabre\VObject\Document;
 use Sabre\VObject\Property;
 use Sabre\VObject\Reader;
 
 class VCardSerializer
 {
+    use ManipulatesVObject;
+
     public function serialize(ContactData $data): string
     {
         $vCard = new VCard([], false);
@@ -23,9 +25,7 @@ class VCardSerializer
         $vCard->add('PRODID', '-//Life OS//Contacts//EN');
         $vCard->add('UID', (string) $data->uid);
 
-        if (! empty($data->formattedName)) {
-            $vCard->add('FN', $data->formattedName);
-        }
+        $this->addIfPresent($vCard, 'FN', $data->formattedName);
 
         $vCard->add('N', [
             $data->familyName ?? '',
@@ -39,29 +39,12 @@ class VCardSerializer
             $vCard->add('X-ABShowAs', 'COMPANY');
         }
 
-        if (! empty($data->nickname)) {
-            $vCard->add('NICKNAME', $data->nickname);
-        }
-
-        if (! empty($data->phoneticGivenName)) {
-            $vCard->add('X-PHONETIC-FIRST-NAME', $data->phoneticGivenName);
-        }
-
-        if (! empty($data->phoneticMiddleName)) {
-            $vCard->add('X-PHONETIC-MIDDLE-NAME', $data->phoneticMiddleName);
-        }
-
-        if (! empty($data->phoneticFamilyName)) {
-            $vCard->add('X-PHONETIC-LAST-NAME', $data->phoneticFamilyName);
-        }
-
-        if (! empty($data->phoneticOrganization)) {
-            $vCard->add('X-PHONETIC-ORG', $data->phoneticOrganization);
-        }
-
-        if (! empty($data->previousFamilyName)) {
-            $vCard->add('X-MAIDEN-NAME', $data->previousFamilyName);
-        }
+        $this->addIfPresent($vCard, 'NICKNAME', $data->nickname);
+        $this->addIfPresent($vCard, 'X-PHONETIC-FIRST-NAME', $data->phoneticGivenName);
+        $this->addIfPresent($vCard, 'X-PHONETIC-MIDDLE-NAME', $data->phoneticMiddleName);
+        $this->addIfPresent($vCard, 'X-PHONETIC-LAST-NAME', $data->phoneticFamilyName);
+        $this->addIfPresent($vCard, 'X-PHONETIC-ORG', $data->phoneticOrganization);
+        $this->addIfPresent($vCard, 'X-MAIDEN-NAME', $data->previousFamilyName);
 
         if (! empty($data->organization)) {
             $vCard->add('ORG', array_filter([
@@ -70,17 +53,13 @@ class VCardSerializer
             ], fn (?string $value): bool => filled($value)));
         }
 
-        if (! empty($data->jobTitle)) {
-            $vCard->add('TITLE', $data->jobTitle);
-        }
+        $this->addIfPresent($vCard, 'TITLE', $data->jobTitle);
 
         if ($data->birthday instanceof ContactDate) {
             $vCard->add('BDAY', $this->dateValue($data->birthday));
         }
 
-        if (! empty($data->note)) {
-            $vCard->add('NOTE', $data->note);
-        }
+        $this->addIfPresent($vCard, 'NOTE', $data->note);
 
         foreach ($data->pronouns as $pronoun) {
             if ($pronoun->value === '') {
@@ -211,14 +190,6 @@ class VCardSerializer
             return $vCard->serialize();
         } finally {
             $vCard->destroy();
-        }
-    }
-
-    private function setOrRemove(Document $vCard, string $name, ?string $value): void
-    {
-        unset($vCard->{$name});
-        if (! empty($value)) {
-            $vCard->add($name, $value);
         }
     }
 

@@ -3,6 +3,7 @@
 namespace Bambamboole\LaravelDav\Parsing;
 
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
+use Bambamboole\LaravelDav\Parsing\Concerns\ManipulatesVObject;
 use DateTimeInterface;
 use Illuminate\Support\Carbon;
 use Sabre\VObject\Component;
@@ -11,6 +12,8 @@ use Sabre\VObject\Reader;
 
 class CalendarObjectSerializer
 {
+    use ManipulatesVObject;
+
     public function serialize(CalendarObjectData $data): string
     {
         $calendar = new VCalendar([], false);
@@ -90,14 +93,6 @@ class CalendarObjectSerializer
         }
 
         return null;
-    }
-
-    private function setOrRemove(Component $component, string $name, ?string $value): void
-    {
-        unset($component->{$name});
-        if (! empty($value)) {
-            $component->add($name, $value);
-        }
     }
 
     private function addDateTime(Component $component, string $property, DateTimeInterface $value, bool $isAllDay): void

@@ -32,7 +32,7 @@ The package auto-registers its service provider and loads its migrations automat
 Publishing is optional:
 
 ```bash
-# Publish the config file (config/dav.php) to customize prefixes, models, etc.
+# Publish the config file (config/dav.php) to customize the owner model, prefixes, etc.
 php artisan vendor:publish --tag=dav-config
 
 # Publish the migrations if you want to customize the schema before migrating.
@@ -223,7 +223,6 @@ The published `config/dav.php` exposes:
 | `address_book_prefix`       | `addressbooks`         | Path segment for address book collections.              |
 | `default_calendar_uri`      | `personal`             | Conventional URI for an owner's primary calendar.       |
 | `default_address_book_uri`  | `personal`             | Conventional URI for an owner's primary address book.   |
-| `models.*`                  | package models         | Eloquent models backing each resource (override to extend). |
 
 ## Testing
 
