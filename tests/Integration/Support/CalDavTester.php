@@ -20,6 +20,8 @@ final class CalDavTester
 
     private ?string $testerBinary = null;
 
+    private ?string $configFile = null;
+
     private ?InProcessLaravelServer $server = null;
 
     /** @throws \JsonException */
@@ -55,6 +57,33 @@ final class CalDavTester
 
         $this->server = new InProcessLaravelServer('127.0.0.1', $this->port);
         $this->server->start();
+
+        $this->configFile = $this->writeTesterConfig();
+    }
+
+    /**
+     * Write a python-caldav JSON config file describing both seeded accounts.
+     * Pointing the tester at it via the CALDAV_CONFIG_FILE env var (and naming
+     * both sections) is what enables the multi-user scheduling checks.
+     */
+    private function writeTesterConfig(): string
+    {
+        $account = fn (string $username): array => [
+            'caldav_url' => $this->baseUrl(),
+            'caldav_username' => $username,
+            'caldav_password' => CaldavTesterFixture::SECRET,
+            'calendar_name' => CaldavTesterFixture::CALENDAR_DISPLAY_NAME,
+        ];
+
+        $config = [
+            CaldavTesterFixture::PRIMARY_SECTION => $account(CaldavTesterFixture::USERNAME),
+            CaldavTesterFixture::SECONDARY_SECTION => $account(CaldavTesterFixture::SECOND_USERNAME),
+        ];
+
+        $path = sys_get_temp_dir().'/laravel-dav-caldav-tester-'.$this->port.'.json';
+        file_put_contents($path, json_encode($config, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT));
+
+        return $path;
     }
 
     /**
@@ -112,6 +141,12 @@ final class CalDavTester
         }
 
         $this->server = null;
+
+        if ($this->configFile !== null && file_exists($this->configFile)) {
+            @unlink($this->configFile);
+        }
+
+        $this->configFile = null;
     }
 
     private function baseUrl(): string
@@ -143,9 +178,8 @@ final class CalDavTester
     private function testerBaseArguments(): array
     {
         return [
-            '--caldav-url', $this->baseUrl(),
-            '--caldav-username', CaldavTesterFixture::USERNAME,
-            '--caldav-password', CaldavTesterFixture::SECRET,
+            '--config-section', CaldavTesterFixture::PRIMARY_SECTION,
+            '--config-section', CaldavTesterFixture::SECONDARY_SECTION,
             '--caldav-calendar', CaldavTesterFixture::CALENDAR_DISPLAY_NAME,
         ];
     }
@@ -174,6 +208,7 @@ final class CalDavTester
     {
         $process = $this->process
             ->path($this->basePath)
+            ->env(['CALDAV_CONFIG_FILE' => (string) $this->configFile])
             ->timeout(600)
             ->start($this->testerCommand($arguments));
 
