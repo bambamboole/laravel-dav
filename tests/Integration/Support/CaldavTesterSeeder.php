@@ -10,8 +10,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Seeds a single deterministic CalDAV/CardDAV account for the external
- * caldav-server-tester to authenticate against and exercise.
+ * Seeds two deterministic CalDAV/CardDAV accounts for the external
+ * caldav-server-tester to authenticate against and exercise. The second
+ * account lets the tester run its multi-user scheduling checks (RFC 6638).
  *
  * Runs inside the spawned `testbench db:seed` process, so it must rely only on
  * the package models and the OwnerUser stub (both available via the dev
@@ -22,16 +23,32 @@ class CaldavTesterSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->seedAccount(
+            CaldavTesterFixture::OWNER_NAME,
+            CaldavTesterFixture::OWNER_EMAIL,
+            CaldavTesterFixture::USERNAME,
+            withAddressBook: true,
+        );
+
+        $this->seedAccount(
+            CaldavTesterFixture::SECOND_OWNER_NAME,
+            CaldavTesterFixture::SECOND_OWNER_EMAIL,
+            CaldavTesterFixture::SECOND_USERNAME,
+        );
+    }
+
+    private function seedAccount(string $name, string $email, string $username, bool $withAddressBook = false): void
+    {
         $owner = OwnerUser::query()->create([
-            'name' => CaldavTesterFixture::OWNER_NAME,
-            'email' => CaldavTesterFixture::OWNER_EMAIL,
+            'name' => $name,
+            'email' => $email,
             'password' => Hash::make(CaldavTesterFixture::SECRET),
         ]);
 
         DavCredential::query()->create([
             'user_id' => $owner->getKey(),
             'name' => 'caldav-server-tester',
-            'username' => CaldavTesterFixture::USERNAME,
+            'username' => $username,
             'secret_hash' => Hash::make(CaldavTesterFixture::SECRET),
         ]);
 
@@ -42,10 +59,12 @@ class CaldavTesterSeeder extends Seeder
             'components' => ['VEVENT', 'VTODO', 'VJOURNAL'],
         ]);
 
-        DavAddressBook::query()->create([
-            'user_id' => $owner->getKey(),
-            'uri' => CaldavTesterFixture::ADDRESS_BOOK_URI,
-            'display_name' => CaldavTesterFixture::ADDRESS_BOOK_DISPLAY_NAME,
-        ]);
+        if ($withAddressBook) {
+            DavAddressBook::query()->create([
+                'user_id' => $owner->getKey(),
+                'uri' => CaldavTesterFixture::ADDRESS_BOOK_URI,
+                'display_name' => CaldavTesterFixture::ADDRESS_BOOK_DISPLAY_NAME,
+            ]);
+        }
     }
 }
