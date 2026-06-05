@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendarAttachment;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,6 +21,7 @@ class DavCalendarAttachmentFactory extends Factory
 
         return [
             'dav_calendar_object_id' => DavCalendarObject::factory(),
+            'created_by_owner_id' => (Dav::ownerModel())::factory(),
             'managed_id' => $managedId,
             'filename' => $managedId.'.bin',
             'content_type' => 'application/octet-stream',

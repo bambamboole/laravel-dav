@@ -12,11 +12,18 @@ Expose your application's calendars and contacts to any standards-compliant clie
 - **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), schedule tags, free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
 - **Calendar sharing** — CalendarServer-style sharing with read-only and read-write access.
 - **Calendar proxy delegation** — account-level read and write delegation through CalDAV proxy principals.
+- **CalDAV managed attachments** ([RFC 8607](https://datatracker.ietf.org/doc/html/rfc8607)) — server-managed calendar `ATTACH` files stored on a configurable Laravel filesystem disk.
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
 - **HTTP Basic authentication** — stateless, backed by hashed credentials.
 - **Owner-agnostic** — any model that implements a small contract can own collections.
 - **Typed DTOs** — every calendar object and contact carries the verbatim `raw` payload plus best-effort, strongly-typed parsed fields.
 - **Eloquent storage** — collections and objects are plain models you can query, extend, and relate to the rest of your app.
+
+## Known limitations
+
+The following are not implemented yet and are tracked for future releases:
+
+- **Per-recurrence managed attachment operations.**
 
 ## Requirements
 
@@ -269,6 +276,8 @@ The published `config/dav.php` exposes:
 | `address_book_prefix`       | `addressbooks`         | Path segment for address book collections.               |
 | `default_calendar_uri`      | `personal`             | Conventional URI for an owner's primary calendar.        |
 | `default_address_book_uri`  | `personal`             | Conventional URI for an owner's primary address book.    |
+| `attachments.disk`          | `local`                | Filesystem disk used for managed calendar attachments.  |
+| `attachments.path`          | `dav-attachments`      | Base path for managed calendar attachment files.        |
 
 ## Customizing the models
 
