@@ -357,7 +357,7 @@ it('[sections 5.1 and 6.3.2] puts fetches and deletes a contact card through Car
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
         VERSION:3.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         UID:contact-1
         FN:Ada Lovelace
         N:Lovelace;Ada;;;
@@ -400,7 +400,7 @@ it('[section 5.1] stores a vCard 4.0 card losslessly and serves it back under co
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
         VERSION:4.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         UID:urn:uuid:vcard4-contact
         FN:Ada Lovelace
         N:Lovelace;Ada;;;

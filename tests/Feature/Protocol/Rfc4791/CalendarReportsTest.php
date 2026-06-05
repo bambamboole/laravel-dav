@@ -14,7 +14,7 @@ it('[section 7.9] returns requested calendar objects through calendar-multiget',
     $eventPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-1
         DTSTAMP:20260603T000000Z
@@ -28,7 +28,7 @@ it('[section 7.9] returns requested calendar objects through calendar-multiget',
     $todoPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:task-1
         DTSTAMP:20260603T000000Z

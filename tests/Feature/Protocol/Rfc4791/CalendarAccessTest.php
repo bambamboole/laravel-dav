@@ -17,7 +17,7 @@ it('[sections 4.1 and 5.3.2] puts fetches lists and deletes a calendar object th
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-1
         DTSTAMP:20260603T000000Z
@@ -73,7 +73,7 @@ it('[section 7.8] returns all calendar objects when calendar-query omits the com
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:event-1
             DTSTAMP:20260603T000000Z
@@ -93,7 +93,7 @@ it('[section 7.8] returns all calendar objects when calendar-query omits the com
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VTODO
             UID:task-1
             DTSTAMP:20260603T000000Z
@@ -136,7 +136,7 @@ it('[section 7.8] returns matching calendar objects when a time range query omit
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:event-1
             DTSTAMP:20260603T000000Z
@@ -156,7 +156,7 @@ it('[section 7.8] returns matching calendar objects when a time range query omit
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VTODO
             UID:task-1
             DTSTAMP:20260603T000000Z
@@ -176,7 +176,7 @@ it('[section 7.8] returns matching calendar objects when a time range query omit
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:outside-range
             DTSTAMP:20260603T000000Z
@@ -223,7 +223,7 @@ it('[section 7.8] combines calendar query filters as logical and', function (): 
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:matching-event
             DTSTAMP:20260603T000000Z
@@ -243,7 +243,7 @@ it('[section 7.8] combines calendar query filters as logical and', function (): 
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:wrong-summary
             DTSTAMP:20260603T000000Z
@@ -263,7 +263,7 @@ it('[section 7.8] combines calendar query filters as logical and', function (): 
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:wrong-date
             DTSTAMP:20260603T000000Z
@@ -315,7 +315,7 @@ it('[section 7.8] supports category text matching in calendar queries', function
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:hands-event
             DTSTAMP:20260603T000000Z
@@ -336,7 +336,7 @@ it('[section 7.8] supports category text matching in calendar queries', function
         ical(<<<'ICS'
             BEGIN:VCALENDAR
             VERSION:2.0
-            PRODID:-//Life OS//Tests//EN
+            PRODID:-//LaravelDav//Tests//EN
             BEGIN:VEVENT
             UID:finance-event
             DTSTAMP:20260603T000000Z
@@ -383,7 +383,7 @@ it('[section 9.7.1] matches objects without a component through comp-filter is-n
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/event-1.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-1
         DTSTAMP:20260603T000000Z
@@ -397,7 +397,7 @@ it('[section 9.7.1] matches objects without a component through comp-filter is-n
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/task-1.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:task-1
         DTSTAMP:20260603T000000Z
@@ -433,7 +433,7 @@ it('[section 9.7.2] matches a missing property through prop-filter is-not-define
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/with-location.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:with-location
         DTSTAMP:20260603T000000Z
@@ -448,7 +448,7 @@ it('[section 9.7.2] matches a missing property through prop-filter is-not-define
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/no-location.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:no-location
         DTSTAMP:20260603T000000Z
@@ -487,7 +487,7 @@ it('[section 9.7.3] matches a property parameter through param-filter text-match
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/accepted.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:accepted
         DTSTAMP:20260603T000000Z
@@ -502,7 +502,7 @@ it('[section 9.7.3] matches a property parameter through param-filter text-match
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/declined.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:declined
         DTSTAMP:20260603T000000Z
@@ -544,7 +544,7 @@ it('[section 9.7.3] matches a missing parameter through param-filter is-not-defi
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/with-partstat.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:with-partstat
         DTSTAMP:20260603T000000Z
@@ -559,7 +559,7 @@ it('[section 9.7.3] matches a missing parameter through param-filter is-not-defi
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/no-partstat.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:no-partstat
         DTSTAMP:20260603T000000Z
@@ -601,7 +601,7 @@ it('[section 9.7.5] negates a text-match condition', function (): void {
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/project.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:project
         DTSTAMP:20260603T000000Z
@@ -615,7 +615,7 @@ it('[section 9.7.5] negates a text-match condition', function (): void {
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/personal-time.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:personal-time
         DTSTAMP:20260603T000000Z
@@ -661,7 +661,7 @@ it('[sections 6 and 5.3.1] grants read proxy delegates read-only access to deleg
     davPut($this, '/dav/calendars/'.$delegator['owner']->getKey().'/personal/readable.ics', $delegator['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:readable
         DTSTAMP:20260603T000000Z
@@ -686,7 +686,7 @@ it('[sections 6 and 5.3.1] grants read proxy delegates read-only access to deleg
     davPut($this, '/dav/calendars/'.$delegator['owner']->getKey().'/personal/blocked.ics', $delegate['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:blocked
         DTSTAMP:20260603T000000Z
@@ -719,7 +719,7 @@ it('[sections 6 and 5.3.1] grants write proxy delegates write access to delegate
     davPut($this, $path, $delegate['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:written-by-delegate
         DTSTAMP:20260603T000000Z
@@ -759,7 +759,7 @@ it('[RFC 4791 section 6 and RFC 3744 section 4.3] revokes proxy delegation when 
     davPut($this, '/dav/calendars/'.$delegator['owner']->getKey().'/personal/revoked.ics', $delegator['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:revoked
         DTSTAMP:20260603T000000Z

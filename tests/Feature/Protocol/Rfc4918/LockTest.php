@@ -69,7 +69,7 @@ it('[sections 6 and 9.7] rejects writes without the matching lock token', functi
     davPut($this, $fixture['path'], $fixture['actor']['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:locked-event
         DTSTAMP:20260101T120000Z
@@ -83,7 +83,7 @@ it('[sections 6 and 9.7] rejects writes without the matching lock token', functi
     $this->callDav('PUT', $fixture['path'], $fixture['actor']['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:locked-event
         DTSTAMP:20260101T120000Z

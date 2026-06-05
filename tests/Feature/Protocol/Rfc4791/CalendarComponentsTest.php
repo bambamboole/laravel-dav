@@ -14,7 +14,7 @@ it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iC
     $eventPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:mixed-event-1
         DTSTAMP:20260603T000000Z
@@ -28,7 +28,7 @@ it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iC
     $todoPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:mixed-task-1
         DTSTAMP:20260603T000000Z
@@ -41,7 +41,7 @@ it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iC
     $journalPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VJOURNAL
         UID:mixed-journal-1
         DTSTAMP:20260603T000000Z

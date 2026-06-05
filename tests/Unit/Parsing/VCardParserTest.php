@@ -14,7 +14,7 @@ it('parses contact fields', function () {
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
         VERSION:3.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         UID:contact-1
         FN:Ada Lovelace
         N:Lovelace;Ada;;;
@@ -286,7 +286,7 @@ it('parses a vCard 4.0 card, mapping KIND and the PREF parameter', function () {
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
         VERSION:4.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         UID:urn:uuid:contact-4
         KIND:org
         FN:Analytical Engines
@@ -314,7 +314,7 @@ it('parses vCard 4.0 gender, anniversary and non-organization kind fields', func
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
         VERSION:4.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         UID:urn:uuid:contact-group
         KIND:group
         FN:Research Group

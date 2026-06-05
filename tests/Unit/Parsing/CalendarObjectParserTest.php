@@ -128,7 +128,7 @@ it('parses a VEVENT with TZID timezone on DTSTART and DTEND', function () {
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-tz
         SUMMARY:Berlin Meeting
@@ -153,7 +153,7 @@ it('parses a VEVENT with STATUS, URL, and DESCRIPTION', function () {
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-rich
         SUMMARY:Team Retrospective
@@ -180,7 +180,7 @@ it('parses a VEVENT with RRULE, preserving raw and extracting core fields', func
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-recurring
         SUMMARY:Weekly Standup
@@ -206,7 +206,7 @@ it('parses a VJOURNAL and reports componentType', function () {
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VJOURNAL
         UID:journal-1
         SUMMARY:Daily Notes
@@ -228,7 +228,7 @@ it('parses a multi-day all-day event with VALUE=DATE', function () {
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:event-multiday
         SUMMARY:Summer Vacation

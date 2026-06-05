@@ -122,7 +122,7 @@ it('[section 9.2] persists a custom property through PROPPATCH and reads it back
 
     $this->callDav('PROPPATCH', $path, $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>
-        <d:propertyupdate xmlns:d="DAV:" xmlns:x="http://life-os.test/ns">
+        <d:propertyupdate xmlns:d="DAV:" xmlns:x="http://LaravelDav.test/ns">
             <d:set>
                 <d:prop>
                     <x:custom-flag>enabled</x:custom-flag>
@@ -134,7 +134,7 @@ it('[section 9.2] persists a custom property through PROPPATCH and reads it back
 
     $this->callDav('PROPFIND', $path, $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>
-        <d:propfind xmlns:d="DAV:" xmlns:x="http://life-os.test/ns">
+        <d:propfind xmlns:d="DAV:" xmlns:x="http://LaravelDav.test/ns">
             <d:prop>
                 <x:custom-flag />
             </d:prop>
@@ -234,7 +234,7 @@ it('[sections 9.2, 9.2.1 and 11.4] rejects protected property updates atomically
 
     $response = $this->callDav('PROPPATCH', $path, $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>
-        <d:propertyupdate xmlns:d="DAV:" xmlns:x="http://life-os.test/ns">
+        <d:propertyupdate xmlns:d="DAV:" xmlns:x="http://LaravelDav.test/ns">
             <d:set>
                 <d:prop>
                     <d:getetag>"client-owned"</d:getetag>
@@ -247,12 +247,12 @@ it('[sections 9.2, 9.2.1 and 11.4] rejects protected property updates atomically
 
     expect(rfc4918PropertyStatuses($response))->toMatchArray([
         '{DAV:}getetag' => 403,
-        '{http://life-os.test/ns}custom-flag' => 424,
+        '{http://LaravelDav.test/ns}custom-flag' => 424,
     ]);
 
     $readBack = $this->callDav('PROPFIND', $path, $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>
-        <d:propfind xmlns:d="DAV:" xmlns:x="http://life-os.test/ns">
+        <d:propfind xmlns:d="DAV:" xmlns:x="http://LaravelDav.test/ns">
             <d:prop>
                 <x:custom-flag />
             </d:prop>
@@ -262,7 +262,7 @@ it('[sections 9.2, 9.2.1 and 11.4] rejects protected property updates atomically
     ])->assertStatus(207);
 
     expect(rfc4918PropertyStatuses($readBack))->toBe([
-        '{http://life-os.test/ns}custom-flag' => 404,
+        '{http://LaravelDav.test/ns}custom-flag' => 404,
     ]);
 });
 
