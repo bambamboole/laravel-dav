@@ -11,7 +11,7 @@ use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Illuminate\Support\Facades\Event;
 
-it('creates a typed contact card and records a sync change', function (): void {
+it('creates a contact card and records a sync change', function (): void {
     $addressBook = DavAddressBook::factory()->create(['sync_token' => 1]);
 
     Event::fake([DavCollectionChanged::class]);
@@ -25,8 +25,8 @@ it('creates a typed contact card and records a sync change', function (): void {
         formattedName: 'Ada Lovelace',
         givenName: 'Ada',
         familyName: 'Lovelace',
-        emails: [new ContactEmailAddress(['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']])],
-        phones: [new ContactPhoneNumber(['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL']])],
+        emailAddresses: [new ContactEmailAddress(['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']])],
+        phoneNumbers: [new ContactPhoneNumber(['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL']])],
     ));
 
     expect($card)->toBeInstanceOf(DavCard::class)
@@ -49,7 +49,7 @@ it('creates a typed contact card and records a sync change', function (): void {
     });
 });
 
-it('updates a typed contact card with optimistic concurrency', function (): void {
+it('updates a contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create([
         'full_name' => 'Old Name',
         'email_addresses' => [['label' => 'work', 'value' => 'old@example.com', 'types' => ['INTERNET']]],
@@ -63,7 +63,7 @@ it('updates a typed contact card with optimistic concurrency', function (): void
         size: $card->size,
         uid: $card->uid,
         formattedName: 'New Name',
-        emails: [new ContactEmailAddress(['label' => 'home', 'value' => 'new@example.com', 'types' => ['INTERNET', 'HOME']])],
+        emailAddresses: [new ContactEmailAddress(['label' => 'home', 'value' => 'new@example.com', 'types' => ['INTERNET', 'HOME']])],
     ), expectedEtag: $etag);
 
     expect($updated->full_name)->toBe('New Name')
@@ -84,7 +84,7 @@ it('rejects stale contact card updates', function (): void {
         });
 });
 
-it('deletes a typed contact card with optimistic concurrency', function (): void {
+it('deletes a contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create();
     $addressBook = $card->addressBook;
 

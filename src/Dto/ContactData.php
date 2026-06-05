@@ -16,8 +16,8 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactVCardExtension;
 final readonly class ContactData
 {
     /**
-     * @param  array<int, ContactEmailAddress>  $emails
-     * @param  array<int, ContactPhoneNumber>  $phones
+     * @param  array<int, ContactEmailAddress>  $emailAddresses
+     * @param  array<int, ContactPhoneNumber>  $phoneNumbers
      * @param  array<int, ContactPostalAddress>  $addresses
      * @param  array<int, ContactUrl>  $urls
      * @param  array<int, ContactInstantMessage>  $instantMessages
@@ -39,8 +39,8 @@ final readonly class ContactData
         public ?string $organization = null,
         public string $contactType = 'person',
         public ?ContactDate $birthday = null,
-        public array $emails = [],
-        public array $phones = [],
+        public array $emailAddresses = [],
+        public array $phoneNumbers = [],
         public array $addresses = [],
         public array $urls = [],
         public array $instantMessages = [],
@@ -80,8 +80,8 @@ final readonly class ContactData
             organization: self::nullableString($data, 'organization'),
             contactType: self::string($data, 'contact_type') ?: self::string($data, 'contactType', 'person'),
             birthday: self::contactDate($data['birthday'] ?? null),
-            emails: self::emailAddresses($data),
-            phones: self::phoneNumbers($data),
+            emailAddresses: self::emailAddresses($data),
+            phoneNumbers: self::phoneNumbers($data),
             addresses: self::typedList($data['addresses'] ?? [], fn (array $row): ContactPostalAddress => new ContactPostalAddress($row)),
             urls: self::typedList($data['urls'] ?? [], fn (array $row): ContactUrl => new ContactUrl($row)),
             instantMessages: self::typedList($data['instant_messages'] ?? $data['instantMessages'] ?? [], fn (array $row): ContactInstantMessage => new ContactInstantMessage($row)),
@@ -119,8 +119,8 @@ final readonly class ContactData
             organization: $this->organization,
             contactType: $this->contactType,
             birthday: $this->birthday,
-            emails: $this->emails,
-            phones: $this->phones,
+            emailAddresses: $this->emailAddresses,
+            phoneNumbers: $this->phoneNumbers,
             addresses: $this->addresses,
             urls: $this->urls,
             instantMessages: $this->instantMessages,
@@ -193,7 +193,7 @@ final readonly class ContactData
      */
     private static function emailAddresses(array $data): array
     {
-        return self::typedList($data['email_addresses'] ?? $data['emails_typed'] ?? [], fn (array $row): ContactEmailAddress => new ContactEmailAddress($row));
+        return self::typedList($data['email_addresses'] ?? [], fn (array $row): ContactEmailAddress => new ContactEmailAddress($row));
     }
 
     /**
@@ -202,7 +202,7 @@ final readonly class ContactData
      */
     private static function phoneNumbers(array $data): array
     {
-        return self::typedList($data['phone_numbers'] ?? $data['phones_typed'] ?? [], fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row));
+        return self::typedList($data['phone_numbers'] ?? [], fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row));
     }
 
     /**

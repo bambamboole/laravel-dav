@@ -73,12 +73,12 @@ it('ContactData accepts typed arrays of Contact value objects', function () {
         raw: 'BEGIN:VCARD',
         etag: 'etag1',
         size: 11,
-        emails: [$email],
+        emailAddresses: [$email],
     );
 
-    expect($dto->emails)->toHaveCount(1)
-        ->and($dto->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
-        ->and($dto->emails[0]->value)->toBe('hello@example.com');
+    expect($dto->emailAddresses)->toHaveCount(1)
+        ->and($dto->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($dto->emailAddresses[0]->value)->toBe('hello@example.com');
 });
 
 it('builds ContactData from a validated array shape', function (): void {
@@ -100,10 +100,10 @@ it('builds ContactData from a validated array shape', function (): void {
     expect($data->formattedName)->toBe('Ada Lovelace')
         ->and($data->givenName)->toBe('Ada')
         ->and($data->familyName)->toBe('Lovelace')
-        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
-        ->and($data->emails[0]->value)->toBe('ada@example.com')
-        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
-        ->and($data->phones[0]->isPreferred)->toBeTrue()
+        ->and($data->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emailAddresses[0]->value)->toBe('ada@example.com')
+        ->and($data->phoneNumbers[0])->toBeInstanceOf(ContactPhoneNumber::class)
+        ->and($data->phoneNumbers[0]->isPreferred)->toBeTrue()
         ->and($data->addresses[0])->toBeInstanceOf(ContactPostalAddress::class);
 });
 
@@ -115,8 +115,8 @@ it('ignores simple contact fields in array input', function (): void {
     ]);
 
     expect($data->formattedName)->toBe('Grace Hopper')
-        ->and($data->emails)->toBe([])
-        ->and($data->phones)->toBe([]);
+        ->and($data->emailAddresses)->toBe([])
+        ->and($data->phoneNumbers)->toBe([]);
 });
 
 it('ignores simple contact lists in array input', function (): void {
@@ -125,8 +125,8 @@ it('ignores simple contact lists in array input', function (): void {
         'phones' => ['+1 555 0100'],
     ]);
 
-    expect($data->emails)->toBe([])
-        ->and($data->phones)->toBe([]);
+    expect($data->emailAddresses)->toBe([])
+        ->and($data->phoneNumbers)->toBe([]);
 });
 
 it('builds CalendarObjectData from a validated array shape', function (): void {
@@ -162,7 +162,7 @@ it('ContactData withStorageMeta preserves emails array', function () {
         raw: 'BEGIN:VCARD',
         etag: '',
         size: 0,
-        emails: [$email],
+        emailAddresses: [$email],
     );
 
     $stamped = $dto->withStorageMeta('new.vcf', 'newtag', 99);
@@ -170,8 +170,8 @@ it('ContactData withStorageMeta preserves emails array', function () {
     expect($stamped->uri)->toBe('new.vcf')
         ->and($stamped->etag)->toBe('newtag')
         ->and($stamped->size)->toBe(99)
-        ->and($stamped->emails)->toHaveCount(1)
-        ->and($stamped->emails[0]->value)->toBe('keep@example.com');
+        ->and($stamped->emailAddresses)->toHaveCount(1)
+        ->and($stamped->emailAddresses[0]->value)->toBe('keep@example.com');
 });
 
 it('CalendarData constructs with expected defaults', function () {

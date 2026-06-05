@@ -21,8 +21,8 @@ it('persists contact data as a dav card row', function (): void {
         formattedName: 'Ada Lovelace',
         givenName: 'Ada',
         familyName: 'Lovelace',
-        emails: [new ContactEmailAddress(['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']])],
-        phones: [new ContactPhoneNumber(['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL']])],
+        emailAddresses: [new ContactEmailAddress(['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']])],
+        phoneNumbers: [new ContactPhoneNumber(['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL']])],
     );
 
     $card = DavCard::createFromData($addressBook, 'contact.vcf', $data);

@@ -5,7 +5,7 @@ use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 
-it('reads typed contacts for an owner', function (): void {
+it('reads contacts for an owner', function (): void {
     $owner = config('dav.owner_model')::factory()->create();
     $otherOwner = config('dav.owner_model')::factory()->create();
     $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey()]);

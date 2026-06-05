@@ -73,11 +73,11 @@ class VCardSerializer
 
         $group = 1;
 
-        foreach ($data->emails as $email) {
+        foreach ($data->emailAddresses as $email) {
             $this->addGroupedProperty($vCard, 'EMAIL', $email->value, $email->label, $this->parameters($email), $group);
         }
 
-        foreach ($data->phones as $phone) {
+        foreach ($data->phoneNumbers as $phone) {
             $this->addGroupedProperty($vCard, 'TEL', $phone->value, $phone->label, $this->parameters($phone), $group);
         }
 
@@ -253,12 +253,12 @@ class VCardSerializer
 
     private function primaryEmail(ContactData $data): ?ContactEmailAddress
     {
-        return $data->emails[0] ?? null;
+        return $data->emailAddresses[0] ?? null;
     }
 
     private function primaryPhone(ContactData $data): ?ContactPhoneNumber
     {
-        return $data->phones[0] ?? null;
+        return $data->phoneNumbers[0] ?? null;
     }
 
     /**

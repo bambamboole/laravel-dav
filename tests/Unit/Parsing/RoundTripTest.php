@@ -89,9 +89,9 @@ it('round-trips a vcard through parse and serialize', function () {
         ->and($reparsed->department)->toBe('Research')
         ->and($reparsed->jobTitle)->toBe('Mathematician')
         ->and($reparsed->note)->toBe('First programmer')
-        ->and($reparsed->emails)->toHaveCount(1)
-        ->and($reparsed->emails[0]->value)->toBe('ada@example.com')
-        ->and($reparsed->phones[0]->value)->toBe('+491234567')
+        ->and($reparsed->emailAddresses)->toHaveCount(1)
+        ->and($reparsed->emailAddresses[0]->value)->toBe('ada@example.com')
+        ->and($reparsed->phoneNumbers[0]->value)->toBe('+491234567')
         ->and($reparsed->addresses)->toHaveCount(1)
         ->and($reparsed->addresses[0]->street)->toBe('1 Engine St')
         ->and($reparsed->addresses[0]->city)->toBe('London');
@@ -164,11 +164,11 @@ it('merges primary email and phone changes without dropping client-owned vcard c
         formattedName: 'New Name',
         givenName: 'New',
         familyName: 'Name',
-        emails: [new ContactEmailAddress([
+        emailAddresses: [new ContactEmailAddress([
             'value' => 'new@example.com',
             'types' => ['INTERNET', 'WORK'],
         ])],
-        phones: [new ContactPhoneNumber([
+        phoneNumbers: [new ContactPhoneNumber([
             'value' => '+1 999',
             'types' => ['CELL'],
         ])],
@@ -208,12 +208,12 @@ it('adds primary email and phone during merge when the existing vcard has none',
         formattedName: 'Ada Lovelace',
         givenName: 'Ada',
         familyName: 'Lovelace',
-        emails: [new ContactEmailAddress([
+        emailAddresses: [new ContactEmailAddress([
             'label' => 'work',
             'value' => 'ada@example.com',
             'types' => ['INTERNET', 'WORK'],
         ])],
-        phones: [new ContactPhoneNumber([
+        phoneNumbers: [new ContactPhoneNumber([
             'label' => 'mobile',
             'value' => '+1 555',
             'types' => ['CELL'],
