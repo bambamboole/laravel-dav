@@ -31,8 +31,8 @@ it('creates a contact card and records a sync change', function (): void {
 
     expect($card)->toBeInstanceOf(DavCard::class)
         ->and($card->uri)->toBe('contact-1.vcf')
-        ->and($card->full_name)->toBe('Ada Lovelace')
-        ->and($card->email_addresses->first())->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($card->data->formattedName)->toBe('Ada Lovelace')
+        ->and($card->data->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
         ->and($card->card_data)->toContain('FN:Ada Lovelace')
         ->and($card->card_data)->toContain('ada@example.com')
         ->and($addressBook->fresh()->sync_token)->toBe(2);
@@ -51,8 +51,10 @@ it('creates a contact card and records a sync change', function (): void {
 
 it('updates a contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create([
-        'full_name' => 'Old Name',
-        'email_addresses' => [['label' => 'work', 'value' => 'old@example.com', 'types' => ['INTERNET']]],
+        'data' => [
+            'formattedName' => 'Old Name',
+            'emailAddresses' => [['label' => 'work', 'value' => 'old@example.com', 'types' => ['INTERNET']]],
+        ],
     ]);
     $etag = $card->etag;
 
@@ -61,13 +63,13 @@ it('updates a contact card with optimistic concurrency', function (): void {
         raw: $card->card_data,
         etag: $card->etag,
         size: $card->size,
-        uid: $card->uid,
+        uid: $card->data->uid,
         formattedName: 'New Name',
         emailAddresses: [new ContactEmailAddress(['label' => 'home', 'value' => 'new@example.com', 'types' => ['INTERNET', 'HOME']])],
     ), expectedEtag: $etag);
 
-    expect($updated->full_name)->toBe('New Name')
-        ->and($updated->email_addresses->first()->value)->toBe('new@example.com')
+    expect($updated->data->formattedName)->toBe('New Name')
+        ->and($updated->data->emailAddresses[0]->value)->toBe('new@example.com')
         ->and($updated->card_data)->toContain('FN:New Name')
         ->and($updated->card_data)->toContain('new@example.com')
         ->and($updated->etag)->not->toBe($etag);

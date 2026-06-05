@@ -8,7 +8,7 @@ it('round-trips a ContactEmailAddress value object', function () {
         'label' => 'Work',
         'value' => 'test@example.com',
         'types' => ['internet', 'work'],
-        'is_preferred' => true,
+        'isPreferred' => true,
         'group' => 'item1',
     ];
 
@@ -25,16 +25,16 @@ it('round-trips a ContactEmailAddress value object', function () {
 it('round-trips a ContactPostalAddress value object using NormalizesContactData trait', function () {
     $data = [
         'label' => 'Home',
-        'po_box' => null,
+        'poBox' => null,
         'extended' => null,
         'street' => '123 Main St',
         'city' => 'Springfield',
         'region' => 'IL',
-        'postal_code' => '62701',
+        'postalCode' => '62701',
         'country' => 'United States',
-        'country_code' => 'us',
+        'countryCode' => 'us',
         'types' => ['home'],
-        'is_preferred' => false,
+        'isPreferred' => false,
         'group' => null,
     ];
 

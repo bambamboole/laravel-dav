@@ -19,16 +19,16 @@ class ContactPostalAddress implements Arrayable, JsonSerializable
     public function __construct(array $data)
     {
         $this->label = $this->nullableString($data, 'label');
-        $this->poBox = $this->nullableString($data, 'po_box') ?? $this->nullableString($data, 'poBox');
+        $this->poBox = $this->nullableString($data, 'poBox');
         $this->extended = $this->nullableString($data, 'extended');
         $this->street = $this->nullableString($data, 'street');
         $this->city = $this->nullableString($data, 'city');
         $this->region = $this->nullableString($data, 'region');
-        $this->postalCode = $this->nullableString($data, 'postal_code') ?? $this->nullableString($data, 'postalCode');
+        $this->postalCode = $this->nullableString($data, 'postalCode');
         $this->country = $this->nullableString($data, 'country');
-        $this->countryCode = $this->nullableString($data, 'country_code') ?? $this->nullableString($data, 'countryCode');
+        $this->countryCode = $this->nullableString($data, 'countryCode');
         $this->types = $this->stringList($data, 'types');
-        $this->isPreferred = $this->bool($data, 'is_preferred') || $this->bool($data, 'isPreferred');
+        $this->isPreferred = $this->bool($data, 'isPreferred');
         $this->group = $this->nullableString($data, 'group');
     }
 
@@ -64,16 +64,16 @@ class ContactPostalAddress implements Arrayable, JsonSerializable
     {
         return [
             'label' => $this->label,
-            'po_box' => $this->poBox,
+            'poBox' => $this->poBox,
             'extended' => $this->extended,
             'street' => $this->street,
             'city' => $this->city,
             'region' => $this->region,
-            'postal_code' => $this->postalCode,
+            'postalCode' => $this->postalCode,
             'country' => $this->country,
-            'country_code' => $this->countryCode,
+            'countryCode' => $this->countryCode,
             'types' => $this->types,
-            'is_preferred' => $this->isPreferred,
+            'isPreferred' => $this->isPreferred,
             'group' => $this->group,
         ];
     }

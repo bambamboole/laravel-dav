@@ -13,12 +13,12 @@ it('reads contacts for an owner', function (): void {
     $card = DavCard::factory()->create([
         'dav_address_book_id' => $addressBook->getKey(),
         'uri' => 'ada.vcf',
-        'full_name' => 'Ada Lovelace',
+        'data' => ['formattedName' => 'Ada Lovelace'],
     ]);
     DavCard::factory()->create([
         'dav_address_book_id' => $otherAddressBook->getKey(),
         'uri' => 'grace.vcf',
-        'full_name' => 'Grace Hopper',
+        'data' => ['formattedName' => 'Grace Hopper'],
     ]);
 
     $contacts = Dav::repositories()->contacts($owner)->get();
@@ -47,13 +47,13 @@ it('reads and writes contacts through an address book repository', function (): 
 
     $card = $contacts->create(ContactData::fromArray([
         'uid' => 'contact-1',
-        'formatted_name' => 'Alan Turing',
+        'formattedName' => 'Alan Turing',
         'email' => 'alan@example.com',
     ]));
     $read = $contacts->find('contact-1.vcf');
     $updated = $contacts->update($card->getKey(), ContactData::fromArray([
         'uid' => 'contact-1',
-        'formatted_name' => 'Alan Mathison Turing',
+        'formattedName' => 'Alan Mathison Turing',
         'email' => 'alan@example.com',
     ]), expectedEtag: $card->etag);
 
@@ -61,6 +61,6 @@ it('reads and writes contacts through an address book repository', function (): 
 
     expect($read)->toBeInstanceOf(ContactData::class)
         ->and($read?->formattedName)->toBe('Alan Turing')
-        ->and($updated->full_name)->toBe('Alan Mathison Turing')
+        ->and($updated->data->formattedName)->toBe('Alan Mathison Turing')
         ->and(DavCard::query()->whereKey($card->getKey())->exists())->toBeFalse();
 });

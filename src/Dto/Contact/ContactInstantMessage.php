@@ -23,7 +23,7 @@ class ContactInstantMessage implements Arrayable, JsonSerializable
         $this->username = $this->nullableString($data, 'username');
         $this->uri = $this->nullableString($data, 'uri');
         $this->types = $this->stringList($data, 'types');
-        $this->isPreferred = $this->bool($data, 'is_preferred') || $this->bool($data, 'isPreferred');
+        $this->isPreferred = $this->bool($data, 'isPreferred');
         $this->group = $this->nullableString($data, 'group');
     }
 
@@ -53,7 +53,7 @@ class ContactInstantMessage implements Arrayable, JsonSerializable
             'username' => $this->username,
             'uri' => $this->uri,
             'types' => $this->types,
-            'is_preferred' => $this->isPreferred,
+            'isPreferred' => $this->isPreferred,
             'group' => $this->group,
         ];
     }

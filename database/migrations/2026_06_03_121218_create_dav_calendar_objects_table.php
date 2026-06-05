@@ -14,15 +14,11 @@ return new class extends Migration
             $table->string('uri');
             $table->string('uid')->nullable();
             $table->string('component_type')->nullable();
-            $table->string('summary')->nullable();
-            $table->text('description')->nullable();
-            $table->string('location')->nullable();
-            $table->string('status')->nullable();
-            $table->string('url')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->boolean('is_all_day')->default(false);
             $table->string('timezone')->nullable();
+            $table->json('data')->default(json_encode([]));
             $table->string('etag');
             $table->unsignedInteger('size');
             $table->timestamp('last_modified_at');
@@ -31,7 +27,7 @@ return new class extends Migration
 
             $table->unique(['dav_calendar_id', 'uri']);
             $table->index(['dav_calendar_id', 'starts_at']);
-            $table->index('uid');
+            $table->index(['dav_calendar_id', 'component_type']);
         });
     }
 

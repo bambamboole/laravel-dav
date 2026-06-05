@@ -26,7 +26,7 @@ class ContactDate implements Arrayable, Castable, JsonSerializable
         $this->month = $this->nullableInt($data, 'month');
         $this->day = $this->nullableInt($data, 'day');
         $this->calendar = $this->nullableString($data, 'calendar');
-        $this->rawValue = $this->nullableString($data, 'raw_value') ?? $this->nullableString($data, 'rawValue');
+        $this->rawValue = $this->nullableString($data, 'rawValue');
         $this->group = $this->nullableString($data, 'group');
     }
 
@@ -44,9 +44,6 @@ class ContactDate implements Arrayable, Castable, JsonSerializable
 
     public ?string $group;
 
-    /**
-     * @param  array<int, mixed>  $arguments
-     */
     /**
      * @return CastsAttributes<ContactDate|null, string|null>
      */
@@ -91,7 +88,7 @@ class ContactDate implements Arrayable, Castable, JsonSerializable
     }
 
     /**
-     * @return array{label: ?string, year: ?int, month: ?int, day: ?int, calendar: ?string, raw_value: ?string, group: ?string}
+     * @return array{label: ?string, year: ?int, month: ?int, day: ?int, calendar: ?string, rawValue: ?string, group: ?string}
      */
     public function toArray(): array
     {
@@ -101,7 +98,7 @@ class ContactDate implements Arrayable, Castable, JsonSerializable
             'month' => $this->month,
             'day' => $this->day,
             'calendar' => $this->calendar,
-            'raw_value' => $this->rawValue,
+            'rawValue' => $this->rawValue,
             'group' => $this->group,
         ];
     }

@@ -33,8 +33,8 @@ it('creates an address book, persists a card, reads it back, and records a chang
 
     expect($card->card_data)->toBe($payload)
         ->and($card->etag)->toBe(sha1($payload))
-        ->and($card->uid)->toBe('card-1')
-        ->and($card->full_name)->toBe('Ada Lovelace');
+        ->and($card->data->uid)->toBe('card-1')
+        ->and($card->data->formattedName)->toBe('Ada Lovelace');
 
     $cards = $backend->getCards($addressBookId);
     expect($cards)->toHaveCount(1)

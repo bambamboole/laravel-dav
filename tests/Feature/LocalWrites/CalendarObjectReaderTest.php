@@ -14,12 +14,12 @@ it('reads typed calendar objects for an owner', function (): void {
     $object = DavCalendarObject::factory()->create([
         'dav_calendar_id' => $calendar->getKey(),
         'uri' => 'planning.ics',
-        'summary' => 'Planning',
+        'data' => ['summary' => 'Planning'],
     ]);
     DavCalendarObject::factory()->create([
         'dav_calendar_id' => $otherCalendar->getKey(),
         'uri' => 'private.ics',
-        'summary' => 'Private',
+        'data' => ['summary' => 'Private'],
     ]);
 
     $objects = Dav::repositories()->calendarObjects($owner)->get();
@@ -49,16 +49,16 @@ it('reads and writes calendar objects through a calendar repository', function (
     $object = $objects->create(CalendarObjectData::fromArray([
         'uid' => 'event-1',
         'summary' => 'Standup',
-        'starts_at' => '2026-01-01 09:00:00',
-        'ends_at' => '2026-01-01 09:15:00',
+        'startsAt' => '2026-01-01 09:00:00',
+        'endsAt' => '2026-01-01 09:15:00',
         'timezone' => 'UTC',
     ]));
     $read = $objects->find('event-1.ics');
     $updated = $objects->update($object->getKey(), CalendarObjectData::fromArray([
         'uid' => 'event-1',
         'summary' => 'Team standup',
-        'starts_at' => CarbonImmutable::parse('2026-01-01 09:00:00', 'UTC'),
-        'ends_at' => CarbonImmutable::parse('2026-01-01 09:15:00', 'UTC'),
+        'startsAt' => CarbonImmutable::parse('2026-01-01 09:00:00', 'UTC'),
+        'endsAt' => CarbonImmutable::parse('2026-01-01 09:15:00', 'UTC'),
         'timezone' => 'UTC',
     ]), expectedEtag: $object->etag);
 
@@ -66,6 +66,6 @@ it('reads and writes calendar objects through a calendar repository', function (
 
     expect($read)->toBeInstanceOf(CalendarObjectData::class)
         ->and($read?->summary)->toBe('Standup')
-        ->and($updated->summary)->toBe('Team standup')
+        ->and($updated->data->summary)->toBe('Team standup')
         ->and(DavCalendarObject::query()->whereKey($object->getKey())->exists())->toBeFalse();
 });

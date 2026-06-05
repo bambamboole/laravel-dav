@@ -23,15 +23,17 @@ class DavCalendarObjectFactory extends Factory
         return [
             'dav_calendar_id' => DavCalendar::factory(),
             'uri' => "{$uid}.ics",
-            'uid' => $uid,
-            'component_type' => 'VEVENT',
-            'summary' => fake()->sentence(3),
-            'description' => null,
-            'location' => null,
-            'starts_at' => $startsAt,
-            'ends_at' => $startsAt->copy()->addHour(),
-            'is_all_day' => false,
-            'timezone' => 'UTC',
+            'data' => [
+                'uid' => $uid,
+                'componentType' => 'VEVENT',
+                'summary' => fake()->sentence(3),
+                'description' => null,
+                'location' => null,
+                'startsAt' => $startsAt,
+                'endsAt' => $startsAt->copy()->addHour(),
+                'isAllDay' => false,
+                'timezone' => 'UTC',
+            ],
             'last_modified_at' => now(),
         ];
     }

@@ -9,21 +9,21 @@ it('creates a card from contact data', function (): void {
     $addressBook = DavAddressBook::factory()->create();
     $data = ContactData::fromArray([
         'uid' => 'contact-1',
-        'full_name' => 'Ada Lovelace',
-        'given_name' => 'Ada',
-        'family_name' => 'Lovelace',
-        'email_addresses' => [['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']]],
-        'phone_numbers' => [['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'is_preferred' => true]],
+        'formattedName' => 'Ada Lovelace',
+        'givenName' => 'Ada',
+        'familyName' => 'Lovelace',
+        'emailAddresses' => [['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']]],
+        'phoneNumbers' => [['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'isPreferred' => true]],
     ]);
 
     $card = DavCard::createFromData($addressBook, 'ada.vcf', $data);
 
     expect($card->addressBook->is($addressBook))->toBeTrue()
         ->and($card->uri)->toBe('ada.vcf')
-        ->and($card->uid)->toBe('contact-1')
-        ->and($card->full_name)->toBe('Ada Lovelace')
-        ->and($card->email_addresses->first()->value)->toBe('ada@example.com')
-        ->and($card->phone_numbers->first()->value)->toBe('+1 555 0100')
+        ->and($card->data->uid)->toBe('contact-1')
+        ->and($card->data->formattedName)->toBe('Ada Lovelace')
+        ->and($card->data->emailAddresses[0]->value)->toBe('ada@example.com')
+        ->and($card->data->phoneNumbers[0]->value)->toBe('+1 555 0100')
         ->and($card->card_data)->toContain('FN:Ada Lovelace');
 });
 
@@ -31,16 +31,16 @@ it('updates a card from contact data', function (): void {
     $card = DavCard::factory()->create();
     $data = ContactData::fromArray([
         'uid' => 'contact-2',
-        'full_name' => 'Grace Hopper',
-        'email_addresses' => [['label' => 'work', 'value' => 'grace@example.com', 'types' => ['INTERNET', 'WORK']]],
+        'formattedName' => 'Grace Hopper',
+        'emailAddresses' => [['label' => 'work', 'value' => 'grace@example.com', 'types' => ['INTERNET', 'WORK']]],
     ]);
 
     $card->updateFromData($data);
     $fresh = $card->fresh();
 
-    expect($fresh->uid)->toBe('contact-2')
-        ->and($fresh->full_name)->toBe('Grace Hopper')
-        ->and($fresh->email_addresses->first()->value)->toBe('grace@example.com')
+    expect($fresh->data->uid)->toBe('contact-2')
+        ->and($fresh->data->formattedName)->toBe('Grace Hopper')
+        ->and($fresh->data->emailAddresses[0]->value)->toBe('grace@example.com')
         ->and($fresh->card_data)->toContain('FN:Grace Hopper');
 });
 
@@ -50,7 +50,7 @@ it('serializes card_data from structured fields when none is supplied', function
     expect($card->card_data)->toBeString()
         ->and($card->card_data)->not->toBe('')
         ->and($card->card_data)->toContain('BEGIN:VCARD')
-        ->and($card->card_data)->toContain('FN:'.$card->full_name)
+        ->and($card->card_data)->toContain('FN:'.$card->data->formattedName)
         ->and($card->etag)->toBe(sha1($card->card_data))
         ->and($card->size)->toBe(strlen($card->card_data));
 });
@@ -70,14 +70,17 @@ it('preserves a supplied raw card_data verbatim and recomputes etag and size', f
         ->and($card->size)->toBe(strlen($raw));
 });
 
-it('serializes phonetic and maiden-name columns into card_data when none is supplied', function (): void {
+it('serializes phonetic and maiden-name data into card_data when none is supplied', function (): void {
     $card = DavCard::factory()->create([
         'card_data' => null,
-        'phonetic_given_name' => 'AY-dah',
-        'phonetic_middle_name' => 'aw-GUS-tah',
-        'phonetic_family_name' => 'LUV-lays',
-        'phonetic_organization' => 'an-uh-LIT-ik-ul',
-        'previous_family_name' => 'Byron',
+        'data' => [
+            'formattedName' => 'Ada Lovelace',
+            'phoneticGivenName' => 'AY-dah',
+            'phoneticMiddleName' => 'aw-GUS-tah',
+            'phoneticFamilyName' => 'LUV-lays',
+            'phoneticOrganization' => 'an-uh-LIT-ik-ul',
+            'previousFamilyName' => 'Byron',
+        ],
     ]);
 
     expect($card->card_data)->toContain('X-PHONETIC-FIRST-NAME:AY-dah')
@@ -93,8 +96,8 @@ it('maps a model to ContactData', function (): void {
     $data = $card->toData();
 
     expect($data)->toBeInstanceOf(ContactData::class)
-        ->and($data->formattedName)->toBe($card->full_name)
-        ->and($data->uid)->toBe($card->uid);
+        ->and($data->formattedName)->toBe($card->data->formattedName)
+        ->and($data->uid)->toBe($card->data->uid);
 });
 
 it('belongs to an address book that owns many cards', function (): void {

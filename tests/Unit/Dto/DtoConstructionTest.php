@@ -8,6 +8,7 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
 use Bambamboole\LaravelDav\Dto\Contact\ContactPostalAddress;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Dto\PrincipalData;
+use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
 
 it('keeps raw canonical and parsed fields optional', function () {
@@ -64,7 +65,7 @@ it('ContactData accepts typed arrays of Contact value objects', function () {
         'label' => 'Work',
         'value' => 'hello@example.com',
         'types' => ['work'],
-        'is_preferred' => false,
+        'isPreferred' => false,
         'group' => null,
     ]);
 
@@ -83,14 +84,14 @@ it('ContactData accepts typed arrays of Contact value objects', function () {
 
 it('builds ContactData from a validated array shape', function (): void {
     $data = ContactData::fromArray([
-        'full_name' => 'Ada Lovelace',
-        'given_name' => 'Ada',
-        'family_name' => 'Lovelace',
-        'email_addresses' => [
+        'formattedName' => 'Ada Lovelace',
+        'givenName' => 'Ada',
+        'familyName' => 'Lovelace',
+        'emailAddresses' => [
             ['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']],
         ],
-        'phone_numbers' => [
-            ['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'is_preferred' => true],
+        'phoneNumbers' => [
+            ['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'isPreferred' => true],
         ],
         'addresses' => [
             ['label' => 'home', 'street' => '1 Example Street', 'city' => 'London', 'types' => ['HOME']],
@@ -107,9 +108,49 @@ it('builds ContactData from a validated array shape', function (): void {
         ->and($data->addresses[0])->toBeInstanceOf(ContactPostalAddress::class);
 });
 
+it('builds ContactData through the DTO factory', function (): void {
+    $data = DtoFactory::contactData([
+        'formattedName' => 'Ada Lovelace',
+        'emailAddresses' => [
+            ['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']],
+        ],
+    ]);
+
+    expect($data)->toBeInstanceOf(ContactData::class)
+        ->and($data->formattedName)->toBe('Ada Lovelace')
+        ->and($data->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emailAddresses[0]->value)->toBe('ada@example.com');
+});
+
+it('rebuilds ContactData through the DTO factory with overrides', function (): void {
+    $email = new ContactEmailAddress([
+        'label' => 'Work',
+        'value' => 'ada@example.com',
+        'types' => ['internet'],
+    ]);
+
+    $data = DtoFactory::contactData(new ContactData(
+        uri: 'old.vcf',
+        raw: 'BEGIN:VCARD',
+        etag: 'old',
+        size: 10,
+        emailAddresses: [$email],
+    ), [
+        'uri' => 'new.vcf',
+        'etag' => 'new',
+        'size' => 20,
+    ]);
+
+    expect($data->uri)->toBe('new.vcf')
+        ->and($data->etag)->toBe('new')
+        ->and($data->size)->toBe(20)
+        ->and($data->emailAddresses)->toHaveCount(1)
+        ->and($data->emailAddresses[0])->toBe($email);
+});
+
 it('ignores simple contact fields in array input', function (): void {
     $data = ContactData::fromArray([
-        'full_name' => 'Grace Hopper',
+        'formattedName' => 'Grace Hopper',
         'email' => 'grace@example.com',
         'phone' => '+1 555 0101',
     ]);
@@ -133,9 +174,9 @@ it('builds CalendarObjectData from a validated array shape', function (): void {
     $data = CalendarObjectData::fromArray([
         'summary' => 'Sprint planning',
         'description' => 'Weekly planning',
-        'starts_at' => '2026-01-01 09:00:00',
-        'ends_at' => '2026-01-01 10:00:00',
-        'is_all_day' => false,
+        'startsAt' => '2026-01-01 09:00:00',
+        'endsAt' => '2026-01-01 10:00:00',
+        'isAllDay' => false,
         'timezone' => 'UTC',
     ]);
 
@@ -148,12 +189,24 @@ it('builds CalendarObjectData from a validated array shape', function (): void {
         ->and($data->timezone)->toBe('UTC');
 });
 
+it('builds CalendarObjectData through the DTO factory', function (): void {
+    $data = DtoFactory::calendarObjectData([
+        'summary' => 'Sprint planning',
+        'startsAt' => '2026-01-01 09:00:00',
+        'timezone' => 'UTC',
+    ]);
+
+    expect($data)->toBeInstanceOf(CalendarObjectData::class)
+        ->and($data->summary)->toBe('Sprint planning')
+        ->and($data->startsAt)->toBeInstanceOf(CarbonImmutable::class);
+});
+
 it('ContactData withStorageMeta preserves emails array', function () {
     $email = new ContactEmailAddress([
         'label' => null,
         'value' => 'keep@example.com',
         'types' => [],
-        'is_preferred' => false,
+        'isPreferred' => false,
         'group' => null,
     ]);
 

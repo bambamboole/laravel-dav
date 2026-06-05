@@ -28,7 +28,7 @@ it('creates a calendar object from calendar object data', function (): void {
         ->and($object->uri)->toBe('planning.ics')
         ->and($object->uid)->toBe('event-1')
         ->and($object->component_type)->toBe('VEVENT')
-        ->and($object->summary)->toBe('Planning')
+        ->and($object->data->summary)->toBe('Planning')
         ->and($object->calendar_data)->toContain('SUMMARY:Planning');
 });
 
@@ -48,7 +48,7 @@ it('updates a calendar object from calendar object data', function (): void {
     expect($object->fresh())
         ->uid->toBe('event-2')
         ->component_type->toBe('VEVENT')
-        ->summary->toBe('Updated planning')
+        ->data->summary->toBe('Updated planning')
         ->calendar_data->toContain('SUMMARY:Updated planning');
 });
 
@@ -58,7 +58,7 @@ it('serializes calendar_data from structured fields when none is supplied', func
     expect($object->calendar_data)->toBeString()
         ->and($object->calendar_data)->not->toBe('')
         ->and($object->calendar_data)->toContain('BEGIN:VCALENDAR')
-        ->and($object->calendar_data)->toContain('SUMMARY:'.$object->summary)
+        ->and($object->calendar_data)->toContain('SUMMARY:'.$object->data->summary)
         ->and($object->etag)->toBe(sha1($object->calendar_data))
         ->and($object->size)->toBe(strlen($object->calendar_data));
 });
@@ -84,7 +84,7 @@ it('maps a model to CalendarObjectData', function (): void {
     $data = $object->toData();
 
     expect($data)->toBeInstanceOf(CalendarObjectData::class)
-        ->and($data->summary)->toBe($object->summary)
+        ->and($data->summary)->toBe($object->data->summary)
         ->and($data->uid)->toBe($object->uid);
 });
 

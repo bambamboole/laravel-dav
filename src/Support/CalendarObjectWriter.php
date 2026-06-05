@@ -22,7 +22,12 @@ class CalendarObjectWriter
         return DB::transaction(function () use ($calendar, $data): DavCalendarObject {
             $uid = $data->uid ?: (string) Str::uuid();
             $uri = $data->uri !== '' ? $data->uri : $uid.'.ics';
-            $data = $this->withIdentity($data, $uri, $uid, $data->timezone ?: $calendar->timezone);
+            $data = DtoFactory::calendarObjectData($data, [
+                'uri' => $uri,
+                'uid' => $uid,
+                'componentType' => $data->componentType ?: 'VEVENT',
+                'timezone' => $data->timezone ?: $calendar->timezone,
+            ]);
             $payload = $this->serializer->serialize($data);
 
             $object = DavCalendarObject::createFromData($calendar, $uri, $data, $payload);
@@ -42,7 +47,12 @@ class CalendarObjectWriter
                 throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
-            $data = $this->withIdentity($data, $fresh->uri, $data->uid ?: $fresh->uid ?: (string) Str::uuid(), $data->timezone ?: $fresh->timezone);
+            $data = DtoFactory::calendarObjectData($data, [
+                'uri' => $fresh->uri,
+                'uid' => $data->uid ?: $fresh->uid ?: (string) Str::uuid(),
+                'componentType' => $data->componentType ?: 'VEVENT',
+                'timezone' => $data->timezone ?: $fresh->timezone,
+            ]);
             $payload = $this->serializer->merge($fresh->calendar_data, $data);
 
             $fresh->updateFromData($data, $payload);
@@ -70,26 +80,5 @@ class CalendarObjectWriter
 
             $this->changeRecorder->recordCalendarChange($calendar, $uri, DavChangeOperation::Delete);
         });
-    }
-
-    private function withIdentity(CalendarObjectData $data, string $uri, string $uid, ?string $timezone): CalendarObjectData
-    {
-        return new CalendarObjectData(
-            uri: $uri,
-            raw: $data->raw,
-            etag: $data->etag,
-            size: $data->size,
-            uid: $uid,
-            componentType: $data->componentType ?: 'VEVENT',
-            summary: $data->summary,
-            description: $data->description,
-            location: $data->location,
-            status: $data->status,
-            url: $data->url,
-            startsAt: $data->startsAt,
-            endsAt: $data->endsAt,
-            isAllDay: $data->isAllDay,
-            timezone: $timezone,
-        );
     }
 }
