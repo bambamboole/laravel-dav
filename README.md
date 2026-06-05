@@ -21,7 +21,6 @@ Expose your application's calendars and contacts to any standards-compliant clie
 The following are not implemented yet and are tracked for future releases:
 
 - **Calendar sharing & proxy delegation.**
-- **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
 
 ## Requirements
 

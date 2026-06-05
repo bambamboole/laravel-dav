@@ -30,6 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (3.0 and 4.0 are advertised in `supported-address-data`), and the typed
   `ContactData` projection now recognises the 4.0 `PREF` parameter for preferred
   values.
+- Server-side `<C:expand>` of recurring `VTODO` and `VJOURNAL` objects in
+  `calendar-query` and `calendar-multiget` REPORTs ([RFC 4791](https://datatracker.ietf.org/doc/html/rfc4791)
+  §9.6.5): sabre/vobject only expands `VEVENT`, so an `ExpandingVCalendar`
+  document subclass expands tasks and journals too (shifting each generated
+  task's `DUE` by the master's duration). With this, every `caldav-server-tester`
+  compatibility check now grades as fully supported.
 
 ### Changed
 
