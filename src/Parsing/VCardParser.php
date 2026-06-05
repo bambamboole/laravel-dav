@@ -405,6 +405,10 @@ class VCardParser
 
     private function isPreferred(Property $property): bool
     {
+        if ($this->parameterValues($property, 'PREF') !== []) {
+            return true;
+        }
+
         return collect($this->parameterValues($property, 'TYPE'))
             ->contains(fn (string $type): bool => strtolower($type) === 'pref');
     }

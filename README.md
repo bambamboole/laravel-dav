@@ -7,7 +7,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 ## Features
 
 - **Full CalDAV** — events (`VEVENT`), todos (`VTODO`), and journals (`VJOURNAL`).
-- **Full CardDAV** — contacts (`VCARD`) with rich, typed parsing.
+- **Full CardDAV** — contacts (`VCARD`) in vCard 3.0 and 4.0, stored losslessly with version content-negotiation, plus rich, typed parsing.
 - **WebDAV sync** — collection synchronization via sync tokens ([RFC 6578](https://datatracker.ietf.org/doc/html/rfc6578)).
 - **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
@@ -22,7 +22,6 @@ The following are not implemented yet and are tracked for future releases:
 
 - **RFC 6638 `schedule-tag`** — the `Schedule-Tag` header and `If-Schedule-Tag-Match` precondition are not implemented (scheduling otherwise works: auto-schedule, free/busy, availability, and iMIP).
 - **Calendar sharing & proxy delegation.**
-- **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
 
 ## Requirements
@@ -185,6 +184,10 @@ $contact->formattedName; // ?string
 $contact->organization;  // ?string
 $contact->birthday;      // ?ContactDate
 ```
+
+### vCard versions
+
+Cards are stored exactly as uploaded — a vCard 4.0 card is kept byte-for-byte in `card_data`, never normalized. The server advertises both 3.0 and 4.0 in `supported-address-data` and serves the version the client negotiates via the `Accept` header (`text/vcard; version=4.0`), defaulting to 3.0 for maximum client compatibility. jCard (`application/vcard+json`) is also negotiable through sabre's on-the-fly converter, though clients in the wild use `text/vcard`. The typed `ContactData` projection covers the common fields across both versions (including 4.0's `PREF` parameter); any property it doesn't model still round-trips losslessly through `raw`/`card_data`.
 
 ## Scheduling
 
