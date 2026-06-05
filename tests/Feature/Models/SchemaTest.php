@@ -48,3 +48,8 @@ it('has the key columns on dav_cards', function (): void {
         'card_data',
     ]))->toBeTrue();
 });
+
+it('does not create denormalized simple contact columns', function (): void {
+    expect(Schema::hasColumn('dav_cards', 'emails'))->toBeFalse()
+        ->and(Schema::hasColumn('dav_cards', 'phones'))->toBeFalse();
+});

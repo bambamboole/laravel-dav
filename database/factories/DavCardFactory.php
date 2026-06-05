@@ -38,10 +38,21 @@ class DavCardFactory extends Factory
                 'month' => fake()->numberBetween(1, 12),
                 'day' => fake()->numberBetween(1, 28),
             ],
-            'emails' => [$email],
-            'phones' => [$phone],
-            'email_addresses' => fn (array $attributes): array => self::emailAddressesFrom($attributes['emails'] ?? []),
-            'phone_numbers' => fn (array $attributes): array => self::phoneNumbersFrom($attributes['phones'] ?? []),
+            'email_addresses' => [
+                [
+                    'label' => 'work',
+                    'value' => $email,
+                    'types' => ['INTERNET', 'WORK'],
+                ],
+            ],
+            'phone_numbers' => [
+                [
+                    'label' => 'mobile',
+                    'value' => $phone,
+                    'types' => ['CELL'],
+                    'is_preferred' => true,
+                ],
+            ],
             'addresses' => [
                 [
                     'label' => 'home',
@@ -147,44 +158,5 @@ class DavCardFactory extends Factory
             ],
             'last_modified_at' => now(),
         ];
-    }
-
-    /**
-     * @return array<int, array{label: string, value: string, types: array<int, string>}>
-     */
-    private static function emailAddressesFrom(mixed $emails): array
-    {
-        if (! is_array($emails)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            fn (string $value): array => [
-                'label' => 'work',
-                'value' => $value,
-                'types' => ['INTERNET', 'WORK'],
-            ],
-            array_filter($emails, is_string(...)),
-        ));
-    }
-
-    /**
-     * @return array<int, array{label: string, value: string, types: array<int, string>, is_preferred: bool}>
-     */
-    private static function phoneNumbersFrom(mixed $phones): array
-    {
-        if (! is_array($phones)) {
-            return [];
-        }
-
-        return array_values(array_map(
-            fn (string $value): array => [
-                'label' => 'mobile',
-                'value' => $value,
-                'types' => ['CELL'],
-                'is_preferred' => true,
-            ],
-            array_filter($phones, is_string(...)),
-        ));
     }
 }

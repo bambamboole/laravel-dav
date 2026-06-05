@@ -193,33 +193,7 @@ final readonly class ContactData
      */
     private static function emailAddresses(array $data): array
     {
-        $emails = self::typedList($data['email_addresses'] ?? $data['emails_typed'] ?? [], fn (array $row): ContactEmailAddress => new ContactEmailAddress($row));
-
-        if ($emails !== []) {
-            return $emails;
-        }
-
-        $emailValues = self::stringList($data['emails'] ?? []);
-
-        if ($emailValues !== []) {
-            return array_map(
-                fn (string $email): ContactEmailAddress => new ContactEmailAddress([
-                    'value' => $email,
-                    'types' => ['INTERNET'],
-                ]),
-                $emailValues,
-            );
-        }
-
-        $email = self::nullableString($data, 'email');
-
-        return $email === null ? [] : [
-            new ContactEmailAddress([
-                'label' => 'work',
-                'value' => $email,
-                'types' => ['INTERNET', 'WORK'],
-            ]),
-        ];
+        return self::typedList($data['email_addresses'] ?? $data['emails_typed'] ?? [], fn (array $row): ContactEmailAddress => new ContactEmailAddress($row));
     }
 
     /**
@@ -228,34 +202,7 @@ final readonly class ContactData
      */
     private static function phoneNumbers(array $data): array
     {
-        $phones = self::typedList($data['phone_numbers'] ?? $data['phones_typed'] ?? [], fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row));
-
-        if ($phones !== []) {
-            return $phones;
-        }
-
-        $phoneValues = self::stringList($data['phones'] ?? []);
-
-        if ($phoneValues !== []) {
-            return array_map(
-                fn (string $phone): ContactPhoneNumber => new ContactPhoneNumber([
-                    'value' => $phone,
-                    'types' => ['CELL'],
-                ]),
-                $phoneValues,
-            );
-        }
-
-        $phone = self::nullableString($data, 'phone');
-
-        return $phone === null ? [] : [
-            new ContactPhoneNumber([
-                'label' => 'mobile',
-                'value' => $phone,
-                'types' => ['CELL'],
-                'is_preferred' => true,
-            ]),
-        ];
+        return self::typedList($data['phone_numbers'] ?? $data['phones_typed'] ?? [], fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row));
     }
 
     /**
@@ -273,23 +220,6 @@ final readonly class ContactData
         return collect($value)
             ->filter(fn (mixed $row): bool => is_array($row))
             ->map(fn (array $row): mixed => $factory($row))
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private static function stringList(mixed $value): array
-    {
-        if (! is_array($value)) {
-            return [];
-        }
-
-        return collect($value)
-            ->filter(fn (mixed $item): bool => is_string($item) || is_numeric($item))
-            ->map(fn (mixed $item): string => (string) $item)
-            ->filter(fn (string $item): bool => $item !== '')
             ->values()
             ->all();
     }

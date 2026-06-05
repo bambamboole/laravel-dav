@@ -52,7 +52,6 @@ it('creates a typed contact card and records a sync change', function (): void {
 it('updates a typed contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create([
         'full_name' => 'Old Name',
-        'emails' => ['old@example.com'],
         'email_addresses' => [['label' => 'work', 'value' => 'old@example.com', 'types' => ['INTERNET']]],
     ]);
     $etag = $card->etag;
@@ -68,7 +67,7 @@ it('updates a typed contact card with optimistic concurrency', function (): void
     ), expectedEtag: $etag);
 
     expect($updated->full_name)->toBe('New Name')
-        ->and($updated->emails)->toBe(['new@example.com'])
+        ->and($updated->email_addresses->first()->value)->toBe('new@example.com')
         ->and($updated->card_data)->toContain('FN:New Name')
         ->and($updated->card_data)->toContain('new@example.com')
         ->and($updated->etag)->not->toBe($etag);

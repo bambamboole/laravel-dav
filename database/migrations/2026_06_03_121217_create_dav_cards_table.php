@@ -32,8 +32,6 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->json('birthday')->nullable();
             $table->json('pronouns')->default(json_encode([]));
-            $table->json('emails')->default(json_encode([]));
-            $table->json('phones')->default(json_encode([]));
             $table->json('phone_numbers')->default(json_encode([]));
             $table->json('email_addresses')->default(json_encode([]));
             $table->json('addresses')->default(json_encode([]));

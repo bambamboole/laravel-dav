@@ -107,7 +107,7 @@ it('builds ContactData from a validated array shape', function (): void {
         ->and($data->addresses[0])->toBeInstanceOf(ContactPostalAddress::class);
 });
 
-it('builds ContactData from simple contact fields', function (): void {
+it('ignores simple contact fields in array input', function (): void {
     $data = ContactData::fromArray([
         'full_name' => 'Grace Hopper',
         'email' => 'grace@example.com',
@@ -115,27 +115,18 @@ it('builds ContactData from simple contact fields', function (): void {
     ]);
 
     expect($data->formattedName)->toBe('Grace Hopper')
-        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
-        ->and($data->emails[0]->value)->toBe('grace@example.com')
-        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
-        ->and($data->phones[0]->value)->toBe('+1 555 0101');
+        ->and($data->emails)->toBe([])
+        ->and($data->phones)->toBe([]);
 });
 
-it('normalizes simple contact lists into typed email and phone values', function (): void {
+it('ignores simple contact lists in array input', function (): void {
     $data = ContactData::fromArray([
         'emails' => ['ada@example.com', 'admin@example.com'],
         'phones' => ['+1 555 0100'],
     ]);
 
-    expect($data->emails)->toHaveCount(2)
-        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
-        ->and($data->emails[0]->value)->toBe('ada@example.com')
-        ->and($data->emails[0]->types)->toBe(['INTERNET'])
-        ->and($data->emails[1]->value)->toBe('admin@example.com')
-        ->and($data->phones)->toHaveCount(1)
-        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
-        ->and($data->phones[0]->value)->toBe('+1 555 0100')
-        ->and($data->phones[0]->types)->toBe(['CELL']);
+    expect($data->emails)->toBe([])
+        ->and($data->phones)->toBe([]);
 });
 
 it('builds CalendarObjectData from a validated array shape', function (): void {

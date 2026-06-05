@@ -30,8 +30,6 @@ it('persists contact data as a dav card row', function (): void {
     expect($card->full_name)->toBe('Ada Lovelace')
         ->and($card->given_name)->toBe('Ada')
         ->and($card->family_name)->toBe('Lovelace')
-        ->and($card->emails)->toBe(['ada@example.com'])
-        ->and($card->phones)->toBe(['+1 555 0100'])
         ->and($card->email_addresses->first())->toBeInstanceOf(ContactEmailAddress::class)
         ->and($card->phone_numbers->first())->toBeInstanceOf(ContactPhoneNumber::class);
 });

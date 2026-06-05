@@ -12,8 +12,8 @@ it('creates a card from contact data', function (): void {
         'full_name' => 'Ada Lovelace',
         'given_name' => 'Ada',
         'family_name' => 'Lovelace',
-        'emails' => ['ada@example.com'],
-        'phones' => ['+1 555 0100'],
+        'email_addresses' => [['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']]],
+        'phone_numbers' => [['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'is_preferred' => true]],
     ]);
 
     $card = DavCard::createFromData($addressBook, 'ada.vcf', $data);
@@ -22,8 +22,6 @@ it('creates a card from contact data', function (): void {
         ->and($card->uri)->toBe('ada.vcf')
         ->and($card->uid)->toBe('contact-1')
         ->and($card->full_name)->toBe('Ada Lovelace')
-        ->and($card->emails)->toBe(['ada@example.com'])
-        ->and($card->phones)->toBe(['+1 555 0100'])
         ->and($card->email_addresses->first()->value)->toBe('ada@example.com')
         ->and($card->phone_numbers->first()->value)->toBe('+1 555 0100')
         ->and($card->card_data)->toContain('FN:Ada Lovelace');
@@ -34,16 +32,16 @@ it('updates a card from contact data', function (): void {
     $data = ContactData::fromArray([
         'uid' => 'contact-2',
         'full_name' => 'Grace Hopper',
-        'emails' => ['grace@example.com'],
+        'email_addresses' => [['label' => 'work', 'value' => 'grace@example.com', 'types' => ['INTERNET', 'WORK']]],
     ]);
 
     $card->updateFromData($data);
+    $fresh = $card->fresh();
 
-    expect($card->fresh())
-        ->uid->toBe('contact-2')
-        ->full_name->toBe('Grace Hopper')
-        ->emails->toBe(['grace@example.com'])
-        ->card_data->toContain('FN:Grace Hopper');
+    expect($fresh->uid)->toBe('contact-2')
+        ->and($fresh->full_name)->toBe('Grace Hopper')
+        ->and($fresh->email_addresses->first()->value)->toBe('grace@example.com')
+        ->and($fresh->card_data)->toContain('FN:Grace Hopper');
 });
 
 it('serializes card_data from structured fields when none is supplied', function (): void {

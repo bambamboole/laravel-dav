@@ -32,8 +32,6 @@ use Illuminate\Support\Collection;
  * @property string|null $given_name
  * @property string|null $family_name
  * @property string|null $organization
- * @property array<array-key, mixed> $emails
- * @property array<array-key, mixed> $phones
  * @property string $etag
  * @property int $size
  * @property CarbonImmutable $last_modified_at
@@ -96,8 +94,6 @@ class DavCard extends Model
         'note',
         'birthday',
         'pronouns',
-        'emails',
-        'phones',
         'phone_numbers',
         'email_addresses',
         'addresses',
@@ -115,8 +111,6 @@ class DavCard extends Model
 
     protected $attributes = [
         'contact_type' => 'person',
-        'emails' => '[]',
-        'phones' => '[]',
         'phone_numbers' => '[]',
         'email_addresses' => '[]',
         'addresses' => '[]',
@@ -137,8 +131,6 @@ class DavCard extends Model
     protected function casts(): array
     {
         return [
-            'emails' => 'array',
-            'phones' => 'array',
             'birthday' => ContactDate::class,
             'pronouns' => AsCollection::of(ContactPronoun::class),
             'phone_numbers' => AsCollection::of(ContactPhoneNumber::class),
@@ -177,8 +169,8 @@ class DavCard extends Model
             organization: $this->organization,
             contactType: (string) ($this->contact_type ?? 'person'),
             birthday: $this->birthday,
-            emails: $this->emailAddressesFromAttributes(),
-            phones: $this->phoneNumbersFromAttributes(),
+            emails: $this->email_addresses->all(),
+            phones: $this->phone_numbers->all(),
             addresses: $this->addresses->all(),
             urls: $this->urls->all(),
             instantMessages: $this->instant_messages->all(),
@@ -247,8 +239,6 @@ class DavCard extends Model
             'note' => $data->note,
             'birthday' => $data->birthday,
             'pronouns' => $data->pronouns,
-            'emails' => array_map(fn (ContactEmailAddress $email): string => $email->value, $data->emails),
-            'phones' => array_map(fn (ContactPhoneNumber $phone): string => $phone->value, $data->phones),
             'phone_numbers' => $data->phones,
             'email_addresses' => $data->emails,
             'addresses' => $data->addresses,
@@ -266,48 +256,6 @@ class DavCard extends Model
         $payload ??= $data->raw;
 
         return blank($payload) ? null : $payload;
-    }
-
-    /**
-     * @return array<int, ContactEmailAddress>
-     */
-    private function emailAddressesFromAttributes(): array
-    {
-        $emails = $this->email_addresses->all();
-
-        if ($emails !== []) {
-            return $emails;
-        }
-
-        return collect($this->emails)
-            ->filter(fn (mixed $email): bool => is_string($email) || is_numeric($email))
-            ->map(fn (mixed $email): ContactEmailAddress => new ContactEmailAddress([
-                'value' => (string) $email,
-                'types' => ['INTERNET'],
-            ]))
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @return array<int, ContactPhoneNumber>
-     */
-    private function phoneNumbersFromAttributes(): array
-    {
-        $phones = $this->phone_numbers->all();
-
-        if ($phones !== []) {
-            return $phones;
-        }
-
-        return collect($this->phones)
-            ->filter(fn (mixed $phone): bool => is_string($phone) || is_numeric($phone))
-            ->map(fn (mixed $phone): ContactPhoneNumber => new ContactPhoneNumber([
-                'value' => (string) $phone,
-                'types' => ['CELL'],
-            ]))
-            ->values()
-            ->all();
     }
 
     /**
