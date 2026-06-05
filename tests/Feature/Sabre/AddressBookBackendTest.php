@@ -1,5 +1,6 @@
 <?php
 
+use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
@@ -10,13 +11,10 @@ function addressBookBackend(): AddressBookBackend
     return app(AddressBookBackend::class);
 }
 
-it('creates an address book, persists a card, reads it back, and records a change', function (): void {
+it('persists a card, reads it back, and records a change', function (): void {
     $owner = OwnerUser::factory()->create();
     $backend = addressBookBackend();
-
-    $addressBookId = $backend->createAddressBook('principals/'.$owner->getKey(), 'contacts', [
-        '{DAV:}displayname' => 'Contacts',
-    ]);
+    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'contacts']);
 
     $payload = contactCardPayload([
         'UID' => 'card-1',
@@ -25,7 +23,7 @@ it('creates an address book, persists a card, reads it back, and records a chang
         'EMAIL' => 'ada@example.com',
     ]);
 
-    $etag = $backend->createCard($addressBookId, 'card-1.vcf', $payload);
+    $etag = $backend->createCard($addressBook->id, 'card-1.vcf', $payload);
 
     expect($etag)->toStartWith('"');
 
@@ -36,11 +34,11 @@ it('creates an address book, persists a card, reads it back, and records a chang
         ->and($card->data->uid)->toBe('card-1')
         ->and($card->data->formattedName)->toBe('Ada Lovelace');
 
-    $cards = $backend->getCards($addressBookId);
+    $cards = $backend->getCards($addressBook->id);
     expect($cards)->toHaveCount(1)
         ->and($cards[0]['uri'])->toBe('card-1.vcf');
 
-    $single = $backend->getCard($addressBookId, 'card-1.vcf');
+    $single = $backend->getCard($addressBook->id, 'card-1.vcf');
     expect($single)->not->toBeFalse()
         ->and($single['carddata'])->toBe($payload);
 
@@ -50,12 +48,11 @@ it('creates an address book, persists a card, reads it back, and records a chang
 it('deletes a card and records the deletion', function (): void {
     $owner = OwnerUser::factory()->create();
     $backend = addressBookBackend();
-
-    $addressBookId = $backend->createAddressBook('principals/'.$owner->getKey(), 'contacts', []);
+    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'contacts']);
     $payload = contactCardPayload(['UID' => 'card-1', 'FN' => 'Ada Lovelace']);
-    $backend->createCard($addressBookId, 'card-1.vcf', $payload);
+    $backend->createCard($addressBook->id, 'card-1.vcf', $payload);
 
-    expect($backend->deleteCard($addressBookId, 'card-1.vcf'))->toBeTrue();
+    expect($backend->deleteCard($addressBook->id, 'card-1.vcf'))->toBeTrue();
 
     expect(DavCard::query()->where('uri', 'card-1.vcf')->exists())->toBeFalse()
         ->and(DavChange::query()->where('collection_type', 'address_book')->where('operation', 3)->count())->toBe(1);
