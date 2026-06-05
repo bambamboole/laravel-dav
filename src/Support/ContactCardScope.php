@@ -52,9 +52,19 @@ class ContactCardScope
         return $this->writer->update($this->model($card), $data, $expectedEtag);
     }
 
+    public function forceUpdate(DavCard|int|string $card, ContactData $data): DavCard
+    {
+        return $this->writer->forceUpdate($this->model($card), $data);
+    }
+
     public function delete(DavCard|int|string $card, string $expectedEtag): void
     {
         $this->writer->delete($this->model($card), $expectedEtag);
+    }
+
+    public function forceDelete(DavCard|int|string $card): void
+    {
+        $this->writer->forceDelete($this->model($card));
     }
 
     /**

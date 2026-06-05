@@ -49,11 +49,31 @@ class CalendarObjectWriter
 
     public function update(DavCalendarObject $object, CalendarObjectData $data, string $expectedEtag): DavCalendarObject
     {
+        return $this->updateObject($object, $data, $expectedEtag);
+    }
+
+    public function forceUpdate(DavCalendarObject $object, CalendarObjectData $data): DavCalendarObject
+    {
+        return $this->updateObject($object, $data);
+    }
+
+    public function delete(DavCalendarObject $object, string $expectedEtag): void
+    {
+        $this->deleteObject($object, $expectedEtag);
+    }
+
+    public function forceDelete(DavCalendarObject $object): void
+    {
+        $this->deleteObject($object);
+    }
+
+    private function updateObject(DavCalendarObject $object, CalendarObjectData $data, ?string $expectedEtag = null): DavCalendarObject
+    {
         return DB::transaction(function () use ($object, $data, $expectedEtag): DavCalendarObject {
             $fresh = $object->newQuery()->whereKey($object->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($fresh->etag !== $expectedEtag) {
-                throw new StaleDavResourceException;
+            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+                throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
             $data = $this->withIdentity($data, $fresh->uri, $data->uid ?: $fresh->uid ?: (string) Str::uuid(), $data->timezone ?: $fresh->timezone);
@@ -72,13 +92,13 @@ class CalendarObjectWriter
         });
     }
 
-    public function delete(DavCalendarObject $object, string $expectedEtag): void
+    private function deleteObject(DavCalendarObject $object, ?string $expectedEtag = null): void
     {
         DB::transaction(function () use ($object, $expectedEtag): void {
             $fresh = $object->newQuery()->whereKey($object->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($fresh->etag !== $expectedEtag) {
-                throw new StaleDavResourceException;
+            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+                throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
             $calendar = $fresh->calendar()->firstOrFail();

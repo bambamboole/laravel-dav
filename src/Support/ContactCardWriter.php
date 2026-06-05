@@ -49,11 +49,31 @@ class ContactCardWriter
 
     public function update(DavCard $card, ContactData $data, string $expectedEtag): DavCard
     {
+        return $this->updateCard($card, $data, $expectedEtag);
+    }
+
+    public function forceUpdate(DavCard $card, ContactData $data): DavCard
+    {
+        return $this->updateCard($card, $data);
+    }
+
+    public function delete(DavCard $card, string $expectedEtag): void
+    {
+        $this->deleteCard($card, $expectedEtag);
+    }
+
+    public function forceDelete(DavCard $card): void
+    {
+        $this->deleteCard($card);
+    }
+
+    private function updateCard(DavCard $card, ContactData $data, ?string $expectedEtag = null): DavCard
+    {
         return DB::transaction(function () use ($card, $data, $expectedEtag): DavCard {
             $fresh = $card->newQuery()->whereKey($card->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($fresh->etag !== $expectedEtag) {
-                throw new StaleDavResourceException;
+            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+                throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
             $data = $this->withIdentity($data, $fresh->uri, $data->uid ?: $fresh->uid ?: (string) Str::uuid());
@@ -72,13 +92,13 @@ class ContactCardWriter
         });
     }
 
-    public function delete(DavCard $card, string $expectedEtag): void
+    private function deleteCard(DavCard $card, ?string $expectedEtag = null): void
     {
         DB::transaction(function () use ($card, $expectedEtag): void {
             $fresh = $card->newQuery()->whereKey($card->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($fresh->etag !== $expectedEtag) {
-                throw new StaleDavResourceException;
+            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+                throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
             $addressBook = $fresh->addressBook()->firstOrFail();
