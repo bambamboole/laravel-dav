@@ -5,7 +5,6 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Events\DavCollectionChanged;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
-use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavChange;
@@ -16,7 +15,7 @@ it('creates a contact card and records a sync change', function (): void {
 
     Event::fake([DavCollectionChanged::class]);
 
-    $card = Dav::contacts()->create($addressBook, new ContactData(
+    $card = $addressBook->cards()->create(['data' => new ContactData(
         uri: '',
         raw: '',
         etag: '',
@@ -27,7 +26,7 @@ it('creates a contact card and records a sync change', function (): void {
         familyName: 'Lovelace',
         emailAddresses: [new ContactEmailAddress(['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']])],
         phoneNumbers: [new ContactPhoneNumber(['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL']])],
-    ));
+    )]);
 
     expect($card)->toBeInstanceOf(DavCard::class)
         ->and($card->uri)->toBe('contact-1.vcf')
@@ -58,7 +57,7 @@ it('updates a contact card with optimistic concurrency', function (): void {
     ]);
     $etag = $card->etag;
 
-    $updated = Dav::contacts()->update($card, new ContactData(
+    $card->expectingEtag($etag)->update(['data' => new ContactData(
         uri: $card->uri,
         raw: $card->card_data,
         etag: $card->etag,
@@ -66,19 +65,19 @@ it('updates a contact card with optimistic concurrency', function (): void {
         uid: $card->data->uid,
         formattedName: 'New Name',
         emailAddresses: [new ContactEmailAddress(['label' => 'home', 'value' => 'new@example.com', 'types' => ['INTERNET', 'HOME']])],
-    ), expectedEtag: $etag);
+    )]);
 
-    expect($updated->data->formattedName)->toBe('New Name')
-        ->and($updated->data->emailAddresses[0]->value)->toBe('new@example.com')
-        ->and($updated->card_data)->toContain('FN:New Name')
-        ->and($updated->card_data)->toContain('new@example.com')
-        ->and($updated->etag)->not->toBe($etag);
+    expect($card->data->formattedName)->toBe('New Name')
+        ->and($card->data->emailAddresses[0]->value)->toBe('new@example.com')
+        ->and($card->card_data)->toContain('FN:New Name')
+        ->and($card->card_data)->toContain('new@example.com')
+        ->and($card->etag)->not->toBe($etag);
 });
 
 it('rejects stale contact card updates', function (): void {
     $card = DavCard::factory()->create();
 
-    expect(fn () => Dav::contacts()->update($card, $card->toData(), expectedEtag: 'stale'))
+    expect(fn () => $card->expectingEtag('stale')->update(['data' => $card->data]))
         ->toThrow(function (StaleDavResourceException $exception) use ($card): bool {
             return $exception->expectedEtag === 'stale'
                 && $exception->actualEtag === $card->etag
@@ -90,7 +89,7 @@ it('deletes a contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create();
     $addressBook = $card->addressBook;
 
-    Dav::contacts()->delete($card, expectedEtag: $card->etag);
+    $card->expectingEtag($card->etag)->delete();
 
     expect(DavCard::query()->whereKey($card->getKey())->exists())->toBeFalse()
         ->and($addressBook->fresh()->sync_token)->toBe(2)

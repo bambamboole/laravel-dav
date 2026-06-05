@@ -5,9 +5,9 @@ namespace Bambamboole\LaravelDav\Sabre\CardDav;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
+use Bambamboole\LaravelDav\Parsing\VCardParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
-use Bambamboole\LaravelDav\Support\DavChangeOperation;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Support\Facades\DB;
 use Sabre\CardDAV\Backend\AbstractBackend;
@@ -28,7 +28,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     private const SyncTokenProperty = '{http://sabredav.org/ns}sync-token';
 
-    public function __construct(private UpsertContactCard $upsertContactCard) {}
+    public function __construct(private VCardParser $parser) {}
 
     /**
      * @return array<int, array<string, mixed>>
@@ -156,53 +156,34 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     public function createCard($addressBookId, $cardUri, $cardData): string
     {
-        $card = DB::transaction(function () use ($addressBookId, $cardUri, $cardData): DavCard {
-            $addressBook = $this->addressBook($addressBookId);
-            $card = $this->upsertContactCard->handle(
-                $addressBook,
-                (string) $cardUri,
-                (string) $cardData,
-            );
-
-            $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Add);
-
-            return $card;
-        });
-
-        return '"'.$card->etag.'"';
+        return '"'.$this->upsertCard($addressBookId, (string) $cardUri, (string) $cardData)->etag.'"';
     }
 
     public function updateCard($addressBookId, $cardUri, $cardData): string
     {
-        $card = DB::transaction(function () use ($addressBookId, $cardUri, $cardData): DavCard {
-            $addressBook = $this->addressBook($addressBookId);
-            $card = $this->upsertContactCard->handle(
-                $addressBook,
-                (string) $cardUri,
-                (string) $cardData,
-            );
-
-            $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Modify);
-
-            return $card;
-        });
-
-        return '"'.$card->etag.'"';
+        return '"'.$this->upsertCard($addressBookId, (string) $cardUri, (string) $cardData)->etag.'"';
     }
 
     public function deleteCard($addressBookId, $cardUri): bool
     {
         return DB::transaction(function () use ($addressBookId, $cardUri): bool {
-            $addressBook = $this->addressBook($addressBookId);
-            $deleted = (bool) $addressBook->cards()
-                ->where('uri', $cardUri)
-                ->delete();
+            $card = $this->addressBook($addressBookId)->cards()->where('uri', $cardUri)->first();
 
-            if ($deleted) {
-                $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Delete);
-            }
+            return (bool) $card?->delete();
+        });
+    }
 
-            return $deleted;
+    private function upsertCard(int|string $addressBookId, string $uri, string $payload): DavCard
+    {
+        return DB::transaction(function () use ($addressBookId, $uri, $payload): DavCard {
+            $card = $this->addressBook($addressBookId)->cards()->firstOrNew(['uri' => $uri]);
+
+            $card->fill([
+                'data' => $this->parser->parse($payload, $uri),
+                'card_data' => $payload,
+            ])->save();
+
+            return $card;
         });
     }
 

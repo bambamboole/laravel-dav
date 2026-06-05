@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
+use Bambamboole\LaravelDav\Database\Factories\Concerns\WithoutRecordingDavChanges;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -12,6 +13,8 @@ use Illuminate\Support\Carbon;
  */
 class DavCalendarObjectFactory extends Factory
 {
+    use WithoutRecordingDavChanges;
+
     protected $model = DavCalendarObject::class;
 
     /** @return array<string, mixed> */

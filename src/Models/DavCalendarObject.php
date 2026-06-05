@@ -3,15 +3,20 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Casts\CalendarObjectDataCast;
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarObjectFactory;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
+use Bambamboole\LaravelDav\Models\Concerns\TracksDavResource;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
 use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -37,6 +42,9 @@ class DavCalendarObject extends Model
     /** @use HasFactory<DavCalendarObjectFactory> */
     use HasFactory;
 
+    use QueriesDavResources;
+    use TracksDavResource;
+
     protected $table = 'dav_calendar_objects';
 
     protected $fillable = [
@@ -60,8 +68,6 @@ class DavCalendarObject extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -84,73 +90,60 @@ class DavCalendarObject extends Model
         return $this->belongsTo(Dav::modelFor('calendar', DavCalendar::class), 'dav_calendar_id');
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, DavOwner|int|string $owner): Builder
+    {
+        return $query->whereHas('calendar', fn (Builder $query): Builder => $query->where('user_id', self::resolveOwnerId($owner)));
+    }
+
     public function toData(): CalendarObjectData
     {
         return $this->data;
     }
 
-    public static function createFromData(
-        DavCalendar $calendar,
-        string $uri,
-        CalendarObjectData $data,
-        ?string $payload = null,
-        ?string $defaultComponentType = 'VEVENT',
-    ): self {
-        return $calendar->objects()->create([
-            ...self::attributesFromData($data, $defaultComponentType),
-            'uri' => $uri,
-            'calendar_data' => self::payloadFromData($data, $payload),
-            'last_modified_at' => now(),
+    protected function payloadColumn(): string
+    {
+        return 'calendar_data';
+    }
+
+    protected function changeCollection(): DavCalendar
+    {
+        return $this->calendar;
+    }
+
+    protected function applyDavDefaults(): void
+    {
+        $uid = $this->data->uid ?: (string) Str::uuid();
+        $componentType = $this->data->componentType ?: 'VEVENT';
+
+        if ($this->data->uid !== $uid || $this->data->componentType !== $componentType) {
+            $this->data = DtoFactory::calendarObjectData($this->data, [
+                'uid' => $uid,
+                'componentType' => $componentType,
+            ]);
+        }
+
+        if (blank($this->uri)) {
+            $this->uri = $uid.'.ics';
+        }
+    }
+
+    protected function buildPayload(): string
+    {
+        $data = DtoFactory::calendarObjectData($this->data, [
+            'uri' => $this->uri,
+            'timezone' => $this->data->timezone ?: $this->calendar->timezone,
         ]);
-    }
 
-    public function updateFromData(
-        CalendarObjectData $data,
-        ?string $payload = null,
-        ?string $defaultComponentType = 'VEVENT',
-    ): bool {
-        return $this->forceFill([
-            ...self::attributesFromData($data, $defaultComponentType),
-            'calendar_data' => self::payloadFromData($data, $payload),
-            'last_modified_at' => now(),
-        ])->save();
-    }
+        $serializer = app(CalendarObjectSerializer::class);
+        $original = $this->getRawOriginal('calendar_data');
 
-    /**
-     * @return array<string, mixed>
-     */
-    private static function attributesFromData(CalendarObjectData $data, ?string $defaultComponentType = 'VEVENT'): array
-    {
-        return [
-            'data' => DtoFactory::calendarObjectData($data, [
-                'componentType' => $data->componentType ?? $defaultComponentType,
-            ]),
-        ];
-    }
-
-    private static function payloadFromData(CalendarObjectData $data, ?string $payload): ?string
-    {
-        $payload ??= $data->raw;
-
-        return blank($payload) ? null : $payload;
-    }
-
-    /**
-     * Keep the payload, etag, and size consistent on every save. The iCalendar
-     * payload is derived from the structured attributes only when none was
-     * supplied (a DAV client's raw payload is authoritative); the etag and size
-     * are always a pure function of that payload.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (self $object): void {
-            if (blank($object->calendar_data)) {
-                $object->calendar_data = app(CalendarObjectSerializer::class)->serialize($object->toData());
-            }
-
-            $object->etag = sha1($object->calendar_data);
-            $object->size = strlen($object->calendar_data);
-        });
+        return $this->exists && filled($original)
+            ? $serializer->merge((string) $original, $data)
+            : $serializer->serialize($data);
     }
 
     protected static function newFactory(): DavCalendarObjectFactory

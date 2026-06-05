@@ -1,78 +1,65 @@
 <?php
 
-use Bambamboole\LaravelDav\Dto\AddressBookData;
-use Bambamboole\LaravelDav\Dto\CalendarData;
-use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 
-it('manages typed address books for an owner', function (): void {
+it('manages address books for an owner', function (): void {
     $owner = config('dav.owner_model')::factory()->create();
     $otherOwner = config('dav.owner_model')::factory()->create();
     DavAddressBook::factory()->create(['user_id' => $otherOwner->getKey(), 'uri' => 'private']);
 
-    $addressBooks = Dav::repositories()->addressBooks($owner);
-    $created = $addressBooks->create(new AddressBookData(
-        uri: 'personal',
-        displayName: 'Personal Contacts',
-        description: 'People',
-    ));
-    DavAddressBook::query()
-        ->where('user_id', $owner->getKey())
-        ->where('uri', 'personal')
-        ->firstOrFail()
-        ->forceFill(['sync_token' => 7])
-        ->save();
-    $updated = $addressBooks->update('personal', new AddressBookData(
-        uri: 'people',
-        displayName: 'People',
-        description: null,
-    ));
+    $created = DavAddressBook::create([
+        'user_id' => $owner->getKey(),
+        'uri' => 'personal',
+        'display_name' => 'Personal Contacts',
+        'description' => 'People',
+    ]);
+    $created->forceFill(['sync_token' => 7])->save();
 
-    $addressBooks->delete('people');
+    $updated = tap(DavAddressBook::forOwner($owner)->forKey('personal')->firstOrFail())
+        ->update(['uri' => 'people', 'display_name' => 'People', 'description' => null]);
 
-    expect($created->displayName)->toBe('Personal Contacts')
+    DavAddressBook::forOwner($owner)->forKey('people')->firstOrFail()->delete();
+
+    expect($created->display_name)->toBe('Personal Contacts')
         ->and($updated->uri)->toBe('people')
-        ->and($updated->syncToken)->toBe(7)
-        ->and($addressBooks->get())->toHaveCount(0)
+        ->and($updated->sync_token)->toBe(7)
+        ->and(DavAddressBook::forOwner($owner)->count())->toBe(0)
         ->and(DavAddressBook::query()->where('uri', 'private')->exists())->toBeTrue();
 });
 
-it('manages typed calendars for an owner', function (): void {
+it('manages calendars for an owner', function (): void {
     $owner = config('dav.owner_model')::factory()->create();
     $otherOwner = config('dav.owner_model')::factory()->create();
     DavCalendar::factory()->create(['user_id' => $otherOwner->getKey(), 'uri' => 'private']);
 
-    $calendars = Dav::repositories()->calendars($owner);
-    $created = $calendars->create(new CalendarData(
-        uri: 'work',
-        displayName: 'Work',
-        description: 'Team calendar',
-        color: '#ff0000',
-        timezone: 'UTC',
-        components: ['VEVENT'],
-    ));
-    DavCalendar::query()
-        ->where('user_id', $owner->getKey())
-        ->where('uri', 'work')
-        ->firstOrFail()
-        ->forceFill(['sync_token' => 7])
-        ->save();
-    $updated = $calendars->update('work', new CalendarData(
-        uri: 'team',
-        displayName: 'Team',
-        description: null,
-        color: '#00ff00',
-        timezone: 'Europe/Berlin',
-        components: ['VEVENT', 'VTODO'],
-    ));
+    $created = DavCalendar::create([
+        'user_id' => $owner->getKey(),
+        'uri' => 'work',
+        'display_name' => 'Work',
+        'description' => 'Team calendar',
+        'color' => '#ff0000',
+        'timezone' => 'UTC',
+        'components' => ['VEVENT'],
+    ]);
+    $created->forceFill(['sync_token' => 7])->save();
 
-    $calendars->delete('team');
+    $updated = tap(DavCalendar::forOwner($owner)->forKey('work')->firstOrFail())
+        ->update([
+            'uri' => 'team',
+            'display_name' => 'Team',
+            'description' => null,
+            'color' => '#00ff00',
+            'timezone' => 'Europe/Berlin',
+            'components' => ['VEVENT', 'VTODO'],
+        ]);
 
-    expect($created->displayName)->toBe('Work')
+    DavCalendar::forOwner($owner)->forKey('team')->firstOrFail()->delete();
+
+    expect($created->display_name)->toBe('Work')
         ->and($updated->uri)->toBe('team')
         ->and($updated->components)->toBe(['VEVENT', 'VTODO'])
-        ->and($updated->syncToken)->toBe(7)
-        ->and($calendars->get())->toHaveCount(0)
+        ->and($updated->sync_token)->toBe(7)
+        ->and(DavCalendar::forOwner($owner)->count())->toBe(0)
         ->and(DavCalendar::query()->where('uri', 'private')->exists())->toBeTrue();
 });

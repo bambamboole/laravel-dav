@@ -3,29 +3,16 @@
 use Bambamboole\LaravelDav\Events\DavCollectionChanged;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavChange;
-use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Support\DavChangeOperation;
+use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Support\Facades\Event;
-
-function recorder(): object
-{
-    return new class
-    {
-        use RecordsDavChanges;
-
-        public function calendar(DavCalendar $calendar, ?string $resourceUri, DavChangeOperation $operation): void
-        {
-            $this->recordCalendarChange($calendar, $resourceUri, $operation);
-        }
-    };
-}
 
 it('increments the sync token, writes a change row, and dispatches the event', function (): void {
     Event::fake([DavCollectionChanged::class]);
 
     $calendar = DavCalendar::factory()->create(['sync_token' => 1]);
 
-    recorder()->calendar($calendar, 'event.ics', DavChangeOperation::Add);
+    app(DavChangeRecorder::class)->record($calendar, 'event.ics', DavChangeOperation::Add);
 
     expect($calendar->fresh()->sync_token)->toBe(2);
 
