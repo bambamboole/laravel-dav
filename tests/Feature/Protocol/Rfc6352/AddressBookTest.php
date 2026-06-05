@@ -85,6 +85,9 @@ function rfc6352ResourceTypes(TestResponse $response): array
     return $types;
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.1
+ */
 it('[section 6.2.1] creates and deletes an address book collection through CardDAV', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -145,6 +148,10 @@ it('[section 6.2.1] creates and deletes an address book collection through CardD
         ->assertNotFound();
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.2
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.3
+ */
 it('[sections 6.2.2 and 6.2.3] exposes address book collection properties through PROPFIND', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -183,6 +190,9 @@ it('[sections 6.2.2 and 6.2.3] exposes address book collection properties throug
         ->and(rfc6352PropertyText($response, 'DAV:', 'sync-token'))->toBe('http://sabredav.org/ns/sync/7');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.3
+ */
 it('[section 6.2.3] updates address book collection properties through PROPPATCH', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -233,6 +243,9 @@ it('[section 6.2.3] updates address book collection properties through PROPPATCH
         ->and(rfc6352PropertyText($response, 'urn:ietf:params:xml:ns:carddav', 'addressbook-description'))->toBe('Team directory');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-8.6
+ */
 it('[section 8.6] returns matching contacts through addressbook-query', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -286,6 +299,9 @@ it('[section 8.6] returns matching contacts through addressbook-query', function
     }
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-8.7
+ */
 it('[section 8.7] returns requested contacts through addressbook-multiget', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -336,6 +352,10 @@ it('[section 8.7] returns requested contacts through addressbook-multiget', func
     }
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-5.1
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.3.2
+ */
 it('[sections 5.1 and 6.3.2] puts fetches and deletes a contact card through CardDAV', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

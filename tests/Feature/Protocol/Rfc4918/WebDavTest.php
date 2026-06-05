@@ -2,6 +2,9 @@
 
 use Bambamboole\LaravelDav\Models\DavCalendar;
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4918.html#section-9.1
+ */
 it('[section 9.1] serves the dav root through PROPFIND', function (): void {
     $actor = davActor();
 
@@ -11,6 +14,10 @@ it('[section 9.1] serves the dav root through PROPFIND', function (): void {
         ->assertSee('/dav/principals/', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4918.html#section-9.1
+ * @see https://www.rfc-editor.org/rfc/rfc4918.html#section-15.2
+ */
 it('[sections 9.1 and 15.2] returns the principal displayname through PROPFIND', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -30,6 +37,9 @@ it('[sections 9.1 and 15.2] returns the principal displayname through PROPFIND',
         ->assertSee($owner->name, false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4918.html#section-9.2
+ */
 it('[section 9.2] persists a custom property through PROPPATCH and reads it back', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

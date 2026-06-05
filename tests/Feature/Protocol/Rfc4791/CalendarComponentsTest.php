@@ -2,6 +2,9 @@
 
 use Bambamboole\LaravelDav\Models\DavCalendar;
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-4.1
+ */
 it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iCalendar', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

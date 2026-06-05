@@ -83,6 +83,9 @@ function rfc4791TimezoneCalendar(TestResponse $response): VCalendar
     return $calendar;
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.3.1
+ */
 it('[section 5.3.1] creates a calendar collection through MKCALENDAR', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -132,6 +135,10 @@ it('[section 5.3.1] creates a calendar collection through MKCALENDAR', function 
         ->and(rfc4791SupportedComponents($response))->toBe(['VEVENT']);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.2.2
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.2.3
+ */
 it('[sections 5.2.2 and 5.2.3] exposes calendar collection properties through PROPFIND', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -182,6 +189,10 @@ it('[sections 5.2.2 and 5.2.3] exposes calendar collection properties through PR
     }
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.2.2
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.2.3
+ */
 it('[sections 5.2.2 and 5.2.3] updates calendar collection properties through PROPPATCH', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

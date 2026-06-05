@@ -63,6 +63,9 @@ function rfc6578MultistatusDocument(TestResponse $response): DOMDocument
     return $document;
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2
+ */
 it('[section 3.2] reports calendar changes through WebDAV sync', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -88,6 +91,9 @@ it('[section 3.2] reports calendar changes through WebDAV sync', function (): vo
         ->and(rfc6578SyncToken($response))->toBe('http://sabredav.org/ns/sync/2');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2
+ */
 it('[section 3.2] reports address book changes through WebDAV sync', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -112,6 +118,9 @@ it('[section 3.2] reports address book changes through WebDAV sync', function ()
         ->and(rfc6578SyncToken($response))->toBe('http://sabredav.org/ns/sync/2');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.4
+ */
 it('[section 3.4] treats an empty sync token as an initial calendar sync', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -146,6 +155,10 @@ it('[section 3.4] treats an empty sync token as an initial calendar sync', funct
         ->and(rfc6578SyncToken($response))->toBe('http://sabredav.org/ns/sync/3');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5.2
+ */
 it('[sections 3.2 and 3.5.2] reports deleted resources with a 404 response', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -174,6 +187,9 @@ it('[sections 3.2 and 3.5.2] reports deleted resources with a 404 response', fun
         ->and(rfc6578SyncToken($response))->toBe('http://sabredav.org/ns/sync/3');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2
+ */
 it('[section 3.2] rejects invalid sync tokens', function (string $syncToken): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -191,6 +207,10 @@ it('[section 3.2] rejects invalid sync tokens', function (string $syncToken): vo
     'future token' => 'http://sabredav.org/ns/sync/999',
 ]);
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.6
+ * @see https://www.rfc-editor.org/rfc/rfc6578.html#section-3.7
+ */
 it('[sections 3.6 and 3.7] returns a page token for truncated sync reports', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

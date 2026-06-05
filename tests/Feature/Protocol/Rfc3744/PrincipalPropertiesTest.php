@@ -99,6 +99,12 @@ function rfc3744ResponseHrefs(TestResponse $response): array
     return $hrefs;
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.1
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.2
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.3
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.4
+ */
 it('[sections 4.1, 4.2, 4.3, and 4.4] exposes principal URL, alternate URI, and empty group properties', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -131,6 +137,10 @@ it('[sections 4.1, 4.2, 4.3, and 4.4] exposes principal URL, alternate URI, and 
         ->and(rfc3744PropertyHrefs($response, 'DAV:', 'group-membership'))->toBe([]);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-5.4
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-5.8
+ */
 it('[sections 5.4 and 5.8] exposes current user privileges and principal collection set', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -161,6 +171,10 @@ it('[sections 5.4 and 5.8] exposes current user privileges and principal collect
         );
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.1
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[sections 4.1 and 9.4] finds a principal by email address property', function (): void {
     $match = principalSearchActor('Ada Lovelace');
     $other = principalSearchActor('Grace Hopper');

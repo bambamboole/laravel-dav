@@ -31,6 +31,9 @@ function inboxPayloads(int|string $ownerId): array
         ->all();
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-3.2.2
+ */
 it('[section 3.2.2] delivers an iTip REQUEST to a local attendee inbox when an event is scheduled', function (): void {
     [$organizer, $attendee] = schedulingActors();
     $aEmail = $organizer['owner']->getDavPrincipalEmail();
@@ -60,6 +63,9 @@ it('[section 3.2.2] delivers an iTip REQUEST to a local attendee inbox when an e
         ->and(inboxPayloads($organizer['owner']->getKey()))->toBe([]);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-3.2.3
+ */
 it('[section 3.2.3] delivers an iTip REPLY to the organizer when an attendee updates participation status', function (): void {
     [$organizer, $attendee] = schedulingActors();
     $aEmail = $organizer['owner']->getDavPrincipalEmail();
@@ -107,6 +113,9 @@ it('[section 3.2.3] delivers an iTip REPLY to the organizer when an attendee upd
         ->and($messages[0])->toContain('PARTSTAT=ACCEPTED');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-3.2.2
+ */
 it('[section 3.2.2] delivers an iTip CANCEL to attendees when the organizer deletes the event', function (): void {
     [$organizer, $attendee] = schedulingActors();
     $aEmail = $organizer['owner']->getDavPrincipalEmail();

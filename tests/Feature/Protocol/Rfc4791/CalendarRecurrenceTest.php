@@ -29,6 +29,9 @@ function recurrenceActor(): array
     ];
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] finds a later instance of a weekly recurring VEVENT', function (): void {
     $actor = recurrenceActor();
 
@@ -60,6 +63,9 @@ it('[section 9.9] finds a later instance of a weekly recurring VEVENT', function
         ->assertSee('weekly.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] does not match a recurring VEVENT outside every instance window', function (): void {
     $actor = recurrenceActor();
 
@@ -91,6 +97,9 @@ it('[section 9.9] does not match a recurring VEVENT outside every instance windo
         ->assertDontSee('weekly.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] finds a later instance of a recurring VTODO', function (): void {
     $actor = recurrenceActor();
 
@@ -122,6 +131,9 @@ it('[section 9.9] finds a later instance of a recurring VTODO', function (): voi
         ->assertSee('recurring-task.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] matches an infinite RRULE in a far future window', function (): void {
     $actor = recurrenceActor();
 
@@ -153,6 +165,9 @@ it('[section 9.9] matches an infinite RRULE in a far future window', function ()
         ->assertSee('infinite.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] matches a recurrence overridden by a RECURRENCE-ID at its shifted time', function (): void {
     $actor = recurrenceActor();
 
@@ -204,6 +219,9 @@ it('[section 9.9] matches a recurrence overridden by a RECURRENCE-ID at its shif
         ->assertDontSee('override.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.9
+ */
 it('[section 9.9] matches an all-day yearly recurrence in the following year', function (): void {
     $actor = recurrenceActor();
 
@@ -235,6 +253,9 @@ it('[section 9.9] matches an all-day yearly recurrence in the following year', f
         ->assertSee('birthday.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.6.5
+ */
 it('[section 9.6.5] expands a recurring VEVENT into individual instances within the window', function (): void {
     $actor = recurrenceActor();
 

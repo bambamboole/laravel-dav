@@ -14,6 +14,9 @@ function freeBusyReport(TestCase $test, string $path, string $authHeader, string
         XML, ['HTTP_DEPTH' => '1']);
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.10
+ */
 it('[section 7.10] reports busy periods and ignores transparent events in a free-busy-query', function (): void {
     $actor = davActor();
     $id = $actor['owner']->getKey();
@@ -57,6 +60,9 @@ it('[section 7.10] reports busy periods and ignores transparent events in a free
         ->and($body)->not->toContain('20260601T140000Z');
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.10
+ */
 it('[section 7.10] expands a recurring event into per-instance busy periods', function (): void {
     $actor = davActor();
     $id = $actor['owner']->getKey();

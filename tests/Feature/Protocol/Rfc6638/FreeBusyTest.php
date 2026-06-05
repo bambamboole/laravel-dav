@@ -2,6 +2,9 @@
 
 use Bambamboole\LaravelDav\Models\DavCalendar;
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-4.4
+ */
 it('[section 4.4] answers a scheduling outbox free-busy request with the recipient busy periods', function (): void {
     $organizer = davActor();
     $attendee = davActor();

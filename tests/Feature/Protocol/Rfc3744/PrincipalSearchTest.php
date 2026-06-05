@@ -34,6 +34,9 @@ function principalPropertySearchReport(TestCase $test, string $authHeader, strin
     ]);
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[section 9.4] finds a principal by name and returns its displayname and calendar-home-set', function (): void {
     $match = principalSearchActor('Ada Lovelace');
     $other = principalSearchActor('Grace Hopper');
@@ -61,6 +64,9 @@ it('[section 9.4] finds a principal by name and returns its displayname and cale
         ->assertDontSee('Grace Hopper', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[section 9.4] lists all principals for authenticated users', function (): void {
     $first = principalSearchActor('Ada Lovelace');
     $second = principalSearchActor('Grace Hopper');
@@ -81,6 +87,9 @@ it('[section 9.4] lists all principals for authenticated users', function (): vo
         ->assertSee('Grace Hopper', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[section 9.4] finds a principal by name using the python caldav client query shape', function (): void {
     $match = principalSearchActor('Ada Lovelace');
     $other = principalSearchActor('Grace Hopper');
@@ -96,6 +105,9 @@ it('[section 9.4] finds a principal by name using the python caldav client query
         ->assertDontSee('Grace Hopper', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[section 9.4] lists all principals using the python caldav client query shape', function (): void {
     $first = principalSearchActor('Ada Lovelace');
     $second = principalSearchActor('Grace Hopper');
@@ -113,6 +125,9 @@ it('[section 9.4] lists all principals using the python caldav client query shap
         ->assertSee('/dav/calendars/'.$second['owner']->getKey().'/', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-9.4
+ */
 it('[section 9.4] degrades gracefully when only unsupported search properties are requested', function (): void {
     $actor = principalSearchActor('Ada Lovelace');
 
