@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('timezone')->nullable();
             $table->json('data')->default(json_encode([]));
             $table->string('etag');
+            $table->string('schedule_tag')->nullable();
             $table->unsignedInteger('size');
             $table->timestamp('last_modified_at');
             $table->longText('calendar_data');

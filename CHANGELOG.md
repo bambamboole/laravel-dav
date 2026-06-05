@@ -14,13 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `dav_scheduling_objects` table), the `Sabre\CalDAV\Schedule\Plugin` is registered,
   and principals advertise `calendar-user-address-set` plus scheduling inbox/outbox
   URLs. Auto-scheduling delivers iTip `REQUEST`/`REPLY`/`CANCEL` to local attendees'
-  inboxes, and free/busy queries work.
+  inboxes, schedule tags, and free/busy queries work.
 - iMIP email delivery ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)) for
   attendees that are not local principals, sent through Laravel Mail (transport
   configurable via `dav.scheduling.mailer`, `from` via `DAV_SCHEDULING_FROM`,
   defaulting to `MAIL_FROM_ADDRESS`) using the overridable `SchedulingMessageMail`
   mailable. The whole scheduling stack can be toggled with `dav.scheduling.enabled`
-  (on by default). `schedule-tag` remains a follow-up.
+  (on by default).
 - Calendar availability ([RFC 7953](https://datatracker.ietf.org/doc/html/rfc7953)):
   the `calendar-availability` property can be stored on a principal's scheduling
   inbox to publish working hours, and free/busy responses now mark time outside

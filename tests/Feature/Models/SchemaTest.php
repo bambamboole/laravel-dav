@@ -29,6 +29,7 @@ it('has the key columns on dav_calendar_objects', function (): void {
         'timezone',
         'data',
         'etag',
+        'schedule_tag',
         'size',
         'calendar_data',
     ]))->toBeTrue();

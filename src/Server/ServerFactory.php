@@ -11,6 +11,7 @@ use Bambamboole\LaravelDav\Sabre\DAVACL\Xml\Request\PrincipalPropertySearchRepor
 use Bambamboole\LaravelDav\Sabre\Principal\PrincipalBackend;
 use Bambamboole\LaravelDav\Sabre\PropertyStorage\PropertyBackend;
 use Bambamboole\LaravelDav\Sabre\Schedule\IMipPlugin;
+use Bambamboole\LaravelDav\Sabre\Schedule\ScheduleTagPlugin;
 use Sabre\CalDAV\CalendarRoot;
 use Sabre\CalDAV\ICSExportPlugin;
 use Sabre\CalDAV\Plugin as CalDavPlugin;
@@ -51,6 +52,7 @@ class ServerFactory
         $server->xml->elementMap['{DAV:}principal-property-search'] = PrincipalPropertySearchReport::class;
         if (config('dav.scheduling.enabled')) {
             $server->addPlugin(new SchedulePlugin);
+            $server->addPlugin(new ScheduleTagPlugin);
             $server->addPlugin(new IMipPlugin(config('dav.scheduling.from')));
         }
         $server->addPlugin(new CardDavPlugin);

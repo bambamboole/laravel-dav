@@ -31,6 +31,7 @@ use Illuminate\Support\Str;
  * @property string|null $timezone
  * @property CalendarObjectData $data
  * @property string $etag
+ * @property string|null $schedule_tag
  * @property int $size
  * @property CarbonImmutable $last_modified_at
  * @property string $calendar_data
@@ -60,6 +61,7 @@ class DavCalendarObject extends Model
         'timezone',
         'data',
         'etag',
+        'schedule_tag',
         'size',
         'last_modified_at',
         'calendar_data',
