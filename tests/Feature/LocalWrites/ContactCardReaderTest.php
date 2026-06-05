@@ -1,14 +1,15 @@
 <?php
 
 use Bambamboole\LaravelDav\Dto\ContactData;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 
 it('scopes contacts to their owner', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $otherOwner = config('dav.owner_model')::factory()->create();
-    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey()]);
-    $otherAddressBook = DavAddressBook::factory()->create(['user_id' => $otherOwner->getKey()]);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $otherOwner = (Dav::ownerModel())::factory()->create();
+    $addressBook = DavAddressBook::factory()->create(['owner_id' => $owner->getKey()]);
+    $otherAddressBook = DavAddressBook::factory()->create(['owner_id' => $otherOwner->getKey()]);
     $card = DavCard::factory()->create([
         'dav_address_book_id' => $addressBook->getKey(),
         'uri' => 'ada.vcf',
@@ -34,8 +35,8 @@ it('scopes contacts to their owner', function (): void {
 });
 
 it('creates, reads, updates and deletes contacts through the relation', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey()]);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $addressBook = DavAddressBook::factory()->create(['owner_id' => $owner->getKey()]);
 
     $card = $addressBook->cards()->create(['data' => ContactData::fromArray([
         'uid' => 'contact-1',

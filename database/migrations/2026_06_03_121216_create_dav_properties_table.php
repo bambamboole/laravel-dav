@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('path');
             $table->string('name');
-            $table->longText('value');
+            $table->string('value_type')->default('string');
+            $table->longText('value')->nullable();
             $table->timestamps();
 
             $table->unique(['path', 'name']);

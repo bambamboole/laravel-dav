@@ -30,7 +30,7 @@ it('drives the calendar backend end-to-end with the swapped model', function ():
         '{DAV:}displayname' => 'Work',
     ]);
 
-    $calendar = CustomCalendar::query()->findOrFail($calendarId);
+    $calendar = CustomCalendar::query()->findOrFail($calendarId[0]);
     expect($calendar)->toBeInstanceOf(CustomCalendar::class)
         ->and($calendar->isCustom())->toBeTrue();
 

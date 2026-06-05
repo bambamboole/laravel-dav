@@ -13,8 +13,8 @@ function schedulingActors(): array
     $organizer = davActor();
     $attendee = davActor();
 
-    DavCalendar::factory()->create(['user_id' => $organizer['owner']->getKey(), 'uri' => 'personal']);
-    DavCalendar::factory()->create(['user_id' => $attendee['owner']->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizer['owner']->getKey()]);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $attendee['owner']->getKey()]);
 
     return [$organizer, $attendee];
 }
@@ -25,7 +25,7 @@ function schedulingActors(): array
 function inboxPayloads(int|string $ownerId): array
 {
     return DavSchedulingObject::query()
-        ->where('user_id', $ownerId)
+        ->where('owner_id', $ownerId)
         ->orderBy('id')
         ->pluck('calendar_data')
         ->all();

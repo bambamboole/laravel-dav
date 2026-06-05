@@ -59,7 +59,7 @@ function workingHoursAvailability(): string
 it('[section 5] stores and returns the calendar-availability property on the scheduling inbox', function (): void {
     $actor = davActor();
     $id = $actor['owner']->getKey();
-    DavCalendar::factory()->create(['user_id' => $id, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $id]);
 
     setInboxAvailability($this, '/dav/calendars/'.$id.'/inbox/', $actor['header'], workingHoursAvailability())
         ->assertStatus(207);
@@ -82,8 +82,8 @@ it('[section 3] marks time outside the availability window as busy-unavailable i
     $aEmail = $organizer['owner']->getDavPrincipalEmail();
     $bEmail = $attendee['owner']->getDavPrincipalEmail();
 
-    DavCalendar::factory()->create(['user_id' => $aId, 'uri' => 'personal']);
-    DavCalendar::factory()->create(['user_id' => $bId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $aId]);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $bId]);
 
     setInboxAvailability($this, '/dav/calendars/'.$bId.'/inbox/', $attendee['header'], workingHoursAvailability())
         ->assertStatus(207);

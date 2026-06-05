@@ -96,7 +96,7 @@ it('[sections 3.2.10, 8.2 and 9.3] exposes schedule-tag on scheduling object res
     $attendee = davActor();
     $organizerId = $organizer['owner']->getKey();
 
-    DavCalendar::factory()->create(['user_id' => $organizerId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizerId]);
 
     $path = rfc6638CalendarObjectPath($organizerId);
     $payload = rfc6638ScheduledEventPayload(
@@ -140,7 +140,7 @@ it('[sections 3.2.10.1 and 8.3] enforces If-Schedule-Tag-Match on scheduling obj
     $attendee = davActor();
     $organizerId = $organizer['owner']->getKey();
 
-    DavCalendar::factory()->create(['user_id' => $organizerId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizerId]);
 
     $path = rfc6638CalendarObjectPath($organizerId);
     $originalPayload = rfc6638ScheduledEventPayload(
@@ -187,7 +187,7 @@ it('[section 3.2.10] changes schedule-tag for direct organizer PARTSTAT-only PUT
     $attendee = davActor();
     $organizerId = $organizer['owner']->getKey();
 
-    DavCalendar::factory()->create(['user_id' => $organizerId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizerId]);
 
     $path = rfc6638CalendarObjectPath($organizerId);
     $payload = rfc6638ScheduledEventPayload(
@@ -228,8 +228,8 @@ it('[section 3.2] keeps attendee schedule-tag stable for PARTSTAT-only auto-sche
     $organizerId = $organizer['owner']->getKey();
     $attendeeId = $attendee['owner']->getKey();
 
-    DavCalendar::factory()->create(['user_id' => $organizerId, 'uri' => 'personal']);
-    DavCalendar::factory()->create(['user_id' => $attendeeId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizerId]);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $attendeeId]);
 
     $payload = rfc6638ScheduledEventPayload(
         $organizer['owner']->getDavPrincipalEmail(),
@@ -241,7 +241,7 @@ it('[section 3.2] keeps attendee schedule-tag stable for PARTSTAT-only auto-sche
         ->assertSuccessful();
 
     $attendeeObject = DavCalendarObject::query()
-        ->whereHas('calendar', fn ($query) => $query->where('user_id', $attendeeId)->where('uri', 'personal'))
+        ->whereHas('calendar.instances', fn ($query) => $query->where('owner_id', $attendeeId)->where('uri', 'personal'))
         ->firstOrFail();
     $attendeePath = '/dav/calendars/'.$attendeeId.'/personal/'.$attendeeObject->uri;
 
@@ -270,7 +270,7 @@ it('[section 9.3] leaves non-scheduling calendar object resources without schedu
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $path = '/dav/calendars/'.$owner->getKey().'/personal/private-note.ics';
 

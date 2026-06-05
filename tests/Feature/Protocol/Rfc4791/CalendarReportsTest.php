@@ -9,7 +9,7 @@ it('[section 7.9] returns requested calendar objects through calendar-multiget',
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $eventPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR

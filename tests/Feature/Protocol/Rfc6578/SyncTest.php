@@ -70,7 +70,7 @@ it('[section 3.2] reports calendar changes through WebDAV sync', function (): vo
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $basePath = '/dav/calendars/'.$owner->getKey().'/personal/';
 
@@ -98,7 +98,7 @@ it('[section 3.2] reports address book changes through WebDAV sync', function ()
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $basePath = '/dav/addressbooks/'.$owner->getKey().'/personal/';
 
@@ -125,7 +125,7 @@ it('[section 3.4] treats an empty sync token as an initial calendar sync', funct
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $basePath = '/dav/calendars/'.$owner->getKey().'/personal/';
 
@@ -163,7 +163,7 @@ it('[sections 3.2 and 3.5.2] reports deleted resources with a 404 response', fun
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $basePath = '/dav/calendars/'.$owner->getKey().'/personal/';
 
@@ -194,7 +194,7 @@ it('[section 3.2] rejects invalid sync tokens', function (string $syncToken): vo
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davSyncReport(
         $this,
@@ -215,7 +215,7 @@ it('[sections 3.6 and 3.7] returns a page token for truncated sync reports', fun
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $basePath = '/dav/calendars/'.$owner->getKey().'/personal/';
 

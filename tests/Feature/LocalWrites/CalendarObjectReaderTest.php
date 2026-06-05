@@ -1,14 +1,15 @@
 <?php
 
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 
 it('scopes calendar objects to their owner', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $otherOwner = config('dav.owner_model')::factory()->create();
-    $calendar = DavCalendar::factory()->create(['user_id' => $owner->getKey()]);
-    $otherCalendar = DavCalendar::factory()->create(['user_id' => $otherOwner->getKey()]);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $otherOwner = (Dav::ownerModel())::factory()->create();
+    $calendar = DavCalendar::factory()->withInstance()->create(['owner_id' => $owner->getKey()]);
+    $otherCalendar = DavCalendar::factory()->withInstance()->create(['owner_id' => $otherOwner->getKey()]);
     $object = DavCalendarObject::factory()->create([
         'dav_calendar_id' => $calendar->getKey(),
         'uri' => 'planning.ics',
@@ -34,8 +35,8 @@ it('scopes calendar objects to their owner', function (): void {
 });
 
 it('creates, reads, updates and deletes calendar objects through the relation', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $calendar = DavCalendar::factory()->create(['user_id' => $owner->getKey()]);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $calendar = DavCalendar::factory()->withInstance()->create(['owner_id' => $owner->getKey()]);
 
     $object = $calendar->objects()->create(['data' => CalendarObjectData::fromArray([
         'uid' => 'event-1',

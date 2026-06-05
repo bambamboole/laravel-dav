@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  * transient, so they carry no typed DTO and are not part of the sync system.
  *
  * @property int $id
- * @property int $user_id
+ * @property int $owner_id
  * @property string $uri
  * @property string $calendar_data
  * @property string $etag
@@ -25,7 +25,7 @@ class DavSchedulingObject extends Model
     protected $table = 'dav_scheduling_objects';
 
     protected $fillable = [
-        'user_id',
+        'owner_id',
         'uri',
         'calendar_data',
         'etag',

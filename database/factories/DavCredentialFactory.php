@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCredential;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -18,7 +19,7 @@ class DavCredentialFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => config('dav.owner_model')::factory(),
+            'owner_id' => (Dav::ownerModel())::factory(),
             'name' => fake()->words(2, true),
             'username' => fake()->unique()->safeEmail(),
             'secret_hash' => Hash::make(Str::random(32)),

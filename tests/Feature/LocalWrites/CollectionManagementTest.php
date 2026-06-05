@@ -1,15 +1,17 @@
 <?php
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
+use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 
 it('scopes address book local writes to an owner', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $otherOwner = config('dav.owner_model')::factory()->create();
-    DavAddressBook::factory()->create(['user_id' => $otherOwner->getKey(), 'uri' => 'private']);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $otherOwner = (Dav::ownerModel())::factory()->create();
+    DavAddressBook::factory()->create(['owner_id' => $otherOwner->getKey(), 'uri' => 'private']);
 
     $addressBook = DavAddressBook::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'uri' => 'personal',
         'sync_token' => 7,
     ]);
@@ -27,25 +29,31 @@ it('scopes address book local writes to an owner', function (): void {
 });
 
 it('manages calendars for an owner', function (): void {
-    $owner = config('dav.owner_model')::factory()->create();
-    $otherOwner = config('dav.owner_model')::factory()->create();
-    DavCalendar::factory()->create(['user_id' => $otherOwner->getKey(), 'uri' => 'private']);
+    $owner = (Dav::ownerModel())::factory()->create();
+    $otherOwner = (Dav::ownerModel())::factory()->create();
+    DavCalendar::factory()->withInstance(['uri' => 'private'])->create(['owner_id' => $otherOwner->getKey()]);
 
     $created = DavCalendar::create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
+    ]);
+    $createdInstance = $created->instances()->create([
+        'owner_id' => $owner->getKey(),
         'uri' => 'work',
+        'access' => DavCalendarInstance::AccessOwner,
         'display_name' => 'Work',
     ]);
     $created->forceFill(['sync_token' => 7])->save();
+    $initialUri = $createdInstance->uri;
 
-    $updated = tap(DavCalendar::forOwner($owner)->forKey('work')->firstOrFail())
+    $updated = tap(DavCalendar::forOwner($owner)->forKey('work')->firstOrFail()->ownerInstance()->firstOrFail())
         ->update(['uri' => 'team']);
+    $syncToken = $created->fresh()->sync_token;
 
     DavCalendar::forOwner($owner)->forKey('team')->firstOrFail()->delete();
 
-    expect($created->uri)->toBe('work')
+    expect($initialUri)->toBe('work')
         ->and($updated->uri)->toBe('team')
-        ->and($updated->sync_token)->toBe(7)
+        ->and($syncToken)->toBe(7)
         ->and(DavCalendar::forOwner($owner)->count())->toBe(0)
-        ->and(DavCalendar::query()->where('uri', 'private')->exists())->toBeTrue();
+        ->and(DavCalendar::query()->whereHas('instances', fn ($query) => $query->where('uri', 'private'))->exists())->toBeTrue();
 });

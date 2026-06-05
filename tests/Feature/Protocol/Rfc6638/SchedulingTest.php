@@ -57,7 +57,7 @@ it('[section 2.2] provisions scheduling inbox and outbox collections in the cale
     $owner = $actor['owner'];
     $id = $owner->getKey();
 
-    DavCalendar::factory()->create(['user_id' => $id, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $id]);
 
     $this->callDav('PROPFIND', '/dav/calendars/'.$id.'/', $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>

@@ -11,7 +11,7 @@ it('[sections 4.1 and 5.3.2] puts fetches lists and deletes a calendar object th
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -63,7 +63,7 @@ it('[section 7.8] returns all calendar objects when calendar-query omits the com
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut(
         $this,
@@ -126,7 +126,7 @@ it('[section 7.8] returns matching calendar objects when a time range query omit
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut(
         $this,
@@ -213,7 +213,7 @@ it('[section 7.8] combines calendar query filters as logical and', function (): 
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut(
         $this,
@@ -305,7 +305,7 @@ it('[section 7.8] supports category text matching in calendar queries', function
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut(
         $this,
@@ -377,7 +377,7 @@ it('[section 9.7.1] matches objects without a component through comp-filter is-n
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/event-1.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -427,7 +427,7 @@ it('[section 9.7.2] matches a missing property through prop-filter is-not-define
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/with-location.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -481,7 +481,7 @@ it('[section 9.7.3] matches a property parameter through param-filter text-match
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/accepted.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -538,7 +538,7 @@ it('[section 9.7.3] matches a missing parameter through param-filter is-not-defi
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/with-partstat.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -595,7 +595,7 @@ it('[section 9.7.5] negates a text-match condition', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     davPut($this, '/dav/calendars/'.$owner->getKey().'/personal/project.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR

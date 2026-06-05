@@ -39,7 +39,7 @@ it('creates a contact card and records a sync change', function (): void {
     expect(DavChange::query()->where('collection_type', 'address_book')->where('operation', 1)->count())->toBe(1);
 
     Event::assertDispatched(DavCollectionChanged::class, function (DavCollectionChanged $event) use ($addressBook, $card): bool {
-        return $event->ownerId === (int) $addressBook->user_id
+        return $event->ownerId === (int) $addressBook->owner_id
             && $event->type === 'address_book'
             && $event->collectionId === $addressBook->getKey()
             && $event->resourceUri === $card->uri

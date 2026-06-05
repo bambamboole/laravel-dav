@@ -3,17 +3,23 @@
 use App\Models\User;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
+use Bambamboole\LaravelDav\Models\DavCalendarAttachment;
+use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
+use Bambamboole\LaravelDav\Models\DavCalendarProxyMembership;
+use Bambamboole\LaravelDav\Models\DavCalendarSubscription;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavCredential;
 
 return [
-    'owner_model' => env('DAV_OWNER_MODEL', User::class),
-    'owner_table' => 'users',
-
     'models' => [
+        'owner' => User::class,
         'calendar' => DavCalendar::class,
+        'calendar_attachment' => DavCalendarAttachment::class,
+        'calendar_instance' => DavCalendarInstance::class,
         'calendar_object' => DavCalendarObject::class,
+        'calendar_proxy_membership' => DavCalendarProxyMembership::class,
+        'calendar_subscription' => DavCalendarSubscription::class,
         'address_book' => DavAddressBook::class,
         'card' => DavCard::class,
         'credential' => DavCredential::class,

@@ -36,7 +36,7 @@ it('[section 4] emails an iTip REQUEST to an external attendee when iMIP is enab
     Mail::fake();
 
     $organizer = davActor();
-    DavCalendar::factory()->create(['user_id' => $organizer['owner']->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizer['owner']->getKey()]);
 
     invitePut($this, $organizer, 'imip-event.ics', externalInvite($organizer['owner']->getDavPrincipalEmail(), 'external@elsewhere.test'));
 
@@ -53,7 +53,7 @@ it('[section 4] emails an iTip CANCEL to an external attendee when the organizer
     Mail::fake();
 
     $organizer = davActor();
-    DavCalendar::factory()->create(['user_id' => $organizer['owner']->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizer['owner']->getKey()]);
 
     invitePut($this, $organizer, 'imip-event.ics', externalInvite($organizer['owner']->getDavPrincipalEmail(), 'external@elsewhere.test'));
 
@@ -71,7 +71,7 @@ it('does not schedule or email when scheduling is disabled', function (): void {
     Mail::fake();
 
     $organizer = davActor();
-    DavCalendar::factory()->create(['user_id' => $organizer['owner']->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizer['owner']->getKey()]);
 
     invitePut($this, $organizer, 'imip-event.ics', externalInvite($organizer['owner']->getDavPrincipalEmail(), 'external@elsewhere.test'));
 
@@ -84,8 +84,8 @@ it('does not email a local attendee — it is delivered to their inbox instead',
 
     $organizer = davActor();
     $attendee = davActor();
-    DavCalendar::factory()->create(['user_id' => $organizer['owner']->getKey(), 'uri' => 'personal']);
-    DavCalendar::factory()->create(['user_id' => $attendee['owner']->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $organizer['owner']->getKey()]);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $attendee['owner']->getKey()]);
 
     invitePut($this, $organizer, 'imip-event.ics', externalInvite(
         $organizer['owner']->getDavPrincipalEmail(),
@@ -93,5 +93,5 @@ it('does not email a local attendee — it is delivered to their inbox instead',
     ));
 
     Mail::assertNothingSent();
-    expect(DavSchedulingObject::query()->where('user_id', $attendee['owner']->getKey())->count())->toBeGreaterThan(0);
+    expect(DavSchedulingObject::query()->where('owner_id', $attendee['owner']->getKey())->count())->toBeGreaterThan(0);
 });

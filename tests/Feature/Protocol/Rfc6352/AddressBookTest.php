@@ -110,7 +110,7 @@ it('[section 6.2.1] creates an address book collection through CardDAV', functio
         ->assertCreated();
 
     $addressBook = DavAddressBook::query()
-        ->where('user_id', $owner->getKey())
+        ->where('owner_id', $owner->getKey())
         ->where('uri', 'work')
         ->firstOrFail();
 
@@ -149,7 +149,7 @@ it('[sections 6.2.2 and 6.2.3] exposes address book collection properties throug
     $owner = $actor['owner'];
 
     DavAddressBook::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'uri' => 'personal',
         'display_name' => 'Personal Contacts',
         'description' => 'People',
@@ -190,7 +190,7 @@ it('[section 6.2.3] updates address book collection properties through PROPPATCH
     $owner = $actor['owner'];
 
     DavAddressBook::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'uri' => 'personal',
         'display_name' => 'Personal Contacts',
         'description' => 'People',
@@ -210,7 +210,7 @@ it('[section 6.2.3] updates address book collection properties through PROPPATCH
         ->assertStatus(207);
 
     $addressBook = DavAddressBook::query()
-        ->where('user_id', $owner->getKey())
+        ->where('owner_id', $owner->getKey())
         ->where('uri', 'personal')
         ->firstOrFail();
 
@@ -242,7 +242,7 @@ it('[section 8.6] returns matching contacts through addressbook-query', function
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $basePath = '/dav/addressbooks/'.$owner->getKey().'/personal/';
 
@@ -298,7 +298,7 @@ it('[section 8.7] returns requested contacts through addressbook-multiget', func
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $basePath = '/dav/addressbooks/'.$owner->getKey().'/personal/';
 
@@ -352,7 +352,7 @@ it('[sections 5.1 and 6.3.2] puts fetches and deletes a contact card through Car
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
@@ -395,7 +395,7 @@ it('[section 5.1] stores a vCard 4.0 card losslessly and serves it back under co
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $payload = vcard(<<<'VCF'
         BEGIN:VCARD
@@ -443,7 +443,7 @@ it('[section 6.2.2] advertises vCard 3.0 and 4.0 in supported-address-data', fun
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'personal']);
 
     $response = $this->callDav('PROPFIND', '/dav/addressbooks/'.$owner->getKey().'/personal/', $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>

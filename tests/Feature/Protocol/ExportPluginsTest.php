@@ -60,10 +60,11 @@ it('exports a calendar collection as merged iCalendar data through the ICS expor
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    DavCalendar::factory()->withInstance([
         'uri' => 'personal',
         'display_name' => 'Personal',
+    ])->create([
+        'owner_id' => $owner->getKey(),
     ]);
 
     $basePath = '/dav/calendars/'.$owner->getKey().'/personal/';
@@ -114,7 +115,7 @@ it('exports an address book collection as vCard data through the VCF export plug
     $owner = $actor['owner'];
 
     DavAddressBook::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'uri' => 'personal',
     ]);
 

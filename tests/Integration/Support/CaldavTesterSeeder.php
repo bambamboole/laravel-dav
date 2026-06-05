@@ -46,22 +46,23 @@ class CaldavTesterSeeder extends Seeder
         ]);
 
         DavCredential::query()->create([
-            'user_id' => $owner->getKey(),
+            'owner_id' => $owner->getKey(),
             'name' => 'caldav-server-tester',
             'username' => $username,
             'secret_hash' => Hash::make(CaldavTesterFixture::SECRET),
         ]);
 
-        DavCalendar::query()->create([
-            'user_id' => $owner->getKey(),
+        DavCalendar::factory()->withInstance([
             'uri' => CaldavTesterFixture::CALENDAR_URI,
             'display_name' => CaldavTesterFixture::CALENDAR_DISPLAY_NAME,
+        ])->create([
+            'owner_id' => $owner->getKey(),
             'components' => ['VEVENT', 'VTODO', 'VJOURNAL'],
         ]);
 
         if ($withAddressBook) {
             DavAddressBook::query()->create([
-                'user_id' => $owner->getKey(),
+                'owner_id' => $owner->getKey(),
                 'uri' => CaldavTesterFixture::ADDRESS_BOOK_URI,
                 'display_name' => CaldavTesterFixture::ADDRESS_BOOK_DISPLAY_NAME,
             ]);

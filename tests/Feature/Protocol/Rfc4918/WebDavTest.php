@@ -116,7 +116,7 @@ it('[section 9.2] persists a custom property through PROPPATCH and reads it back
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $path = '/dav/calendars/'.$owner->getKey().'/personal/';
 
@@ -154,9 +154,10 @@ it('[sections 10.1 and 18.1] advertises WebDAV compliance and allowed methods th
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    DavCalendar::factory()->withInstance([
         'uri' => 'personal',
+    ])->create([
+        'owner_id' => $owner->getKey(),
     ]);
 
     $response = $this->callDav('OPTIONS', '/dav/calendars/'.$owner->getKey().'/personal/', $actor['header'])
@@ -179,9 +180,10 @@ it('[sections 9.1 and 10.2] limits PROPFIND responses by Depth header', function
     $actor = davActor();
     $owner = $actor['owner'];
 
-    $calendar = DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    $calendar = DavCalendar::factory()->withInstance([
         'uri' => 'personal',
+    ])->create([
+        'owner_id' => $owner->getKey(),
     ]);
 
     DavCalendarObject::factory()->for($calendar, 'calendar')->create([
@@ -222,9 +224,10 @@ it('[sections 9.2, 9.2.1 and 11.4] rejects protected property updates atomically
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    DavCalendar::factory()->withInstance([
         'uri' => 'personal',
+    ])->create([
+        'owner_id' => $owner->getKey(),
     ]);
 
     $path = '/dav/calendars/'.$owner->getKey().'/personal/';
@@ -272,12 +275,13 @@ it('[sections 9.6 and 9.6.1] deletes collection resources through DELETE', funct
     $owner = $actor['owner'];
 
     $collection = match ($collectionType) {
-        'calendar' => DavCalendar::factory()->create([
-            'user_id' => $owner->getKey(),
+        'calendar' => DavCalendar::factory()->withInstance([
             'uri' => 'personal',
+        ])->create([
+            'owner_id' => $owner->getKey(),
         ]),
         'address book' => DavAddressBook::factory()->create([
-            'user_id' => $owner->getKey(),
+            'owner_id' => $owner->getKey(),
             'uri' => 'personal',
         ]),
     };

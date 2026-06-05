@@ -15,12 +15,12 @@ function recurrenceActor(): array
     $username = 'dav-'.$owner->getKey();
 
     DavCredential::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'username' => $username,
         'secret_hash' => Hash::make($secret),
     ]);
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     return [
         'owner' => $owner,

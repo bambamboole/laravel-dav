@@ -13,8 +13,8 @@ it('[section 4.4] answers a scheduling outbox free-busy request with the recipie
     $aEmail = $organizer['owner']->getDavPrincipalEmail();
     $bEmail = $attendee['owner']->getDavPrincipalEmail();
 
-    DavCalendar::factory()->create(['user_id' => $aId, 'uri' => 'personal']);
-    DavCalendar::factory()->create(['user_id' => $bId, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $aId]);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $bId]);
 
     davPut($this, '/dav/calendars/'.$bId.'/personal/busy.ics', $attendee['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR

@@ -42,7 +42,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
         }
 
         return Dav::modelFor('address_book', DavAddressBook::class)::query()
-            ->where('user_id', $userId)
+            ->where('owner_id', $userId)
             ->orderBy('id')
             ->get()
             ->map(fn (DavAddressBook $addressBook): array => $this->addressBookRow($addressBook))
@@ -61,7 +61,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
         }
 
         $addressBook = Dav::modelFor('address_book', DavAddressBook::class)::query()->create([
-            'user_id' => $userId,
+            'owner_id' => $userId,
             'uri' => (string) $url,
             'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $url),
             'description' => $properties[self::DescriptionProperty] ?? null,
@@ -218,7 +218,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
         return [
             'id' => $addressBook->id,
             'uri' => $addressBook->uri,
-            'principaluri' => $this->principalUri($addressBook->user_id),
+            'principaluri' => $this->principalUri($addressBook->owner_id),
             self::DisplayNameProperty => $addressBook->display_name,
             self::DescriptionProperty => $addressBook->description,
             self::CtagProperty => (string) $addressBook->sync_token,
@@ -254,7 +254,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     private function ownerExists(int $userId): bool
     {
-        $model = config('dav.owner_model');
+        $model = Dav::ownerModel();
 
         return $model::query()->whereKey($userId)->exists();
     }

@@ -46,7 +46,7 @@ final class CalDavTester
 
         config([
             'app.debug' => true,
-            'dav.owner_model' => OwnerUser::class,
+            'dav.models.owner' => OwnerUser::class,
             'dav.realm' => 'CalDAV Server Tester',
         ]);
     }
