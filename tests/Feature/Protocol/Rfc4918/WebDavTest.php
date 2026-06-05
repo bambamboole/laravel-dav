@@ -168,8 +168,8 @@ it('[sections 10.1 and 18.1] advertises WebDAV compliance and allowed methods th
     $davFeatures = array_map('trim', explode(',', (string) $response->headers->get('DAV')));
     $allowedMethods = array_map('trim', explode(',', (string) $response->headers->get('Allow')));
 
-    expect($davFeatures)->toContain('1', '3', 'calendar-access', 'addressbook')
-        ->and($allowedMethods)->toContain('OPTIONS', 'PROPFIND', 'PROPPATCH', 'DELETE');
+    expect($davFeatures)->toContain('1', '2', '3', 'calendar-access', 'addressbook')
+        ->and($allowedMethods)->toContain('OPTIONS', 'PROPFIND', 'PROPPATCH', 'DELETE', 'LOCK', 'UNLOCK');
 });
 
 /**

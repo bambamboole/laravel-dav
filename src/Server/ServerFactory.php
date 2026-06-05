@@ -9,6 +9,7 @@ use Bambamboole\LaravelDav\Sabre\CalDav\Xml\Request\CalendarQueryReport;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
 use Bambamboole\LaravelDav\Sabre\DAVACL\EnumerablePrincipalCollection;
 use Bambamboole\LaravelDav\Sabre\DAVACL\Xml\Request\PrincipalPropertySearchReport;
+use Bambamboole\LaravelDav\Sabre\Locks\LockBackend;
 use Bambamboole\LaravelDav\Sabre\Principal\PrincipalBackend;
 use Bambamboole\LaravelDav\Sabre\PropertyStorage\PropertyBackend;
 use Bambamboole\LaravelDav\Sabre\Schedule\IMipPlugin;
@@ -21,6 +22,7 @@ use Sabre\CardDAV\AddressBookRoot;
 use Sabre\CardDAV\Plugin as CardDavPlugin;
 use Sabre\CardDAV\VCFExportPlugin;
 use Sabre\DAV\Auth\Plugin as AuthPlugin;
+use Sabre\DAV\Locks\Plugin as LocksPlugin;
 use Sabre\DAV\PropertyStorage\Plugin as PropertyStoragePlugin;
 use Sabre\DAV\Server;
 use Sabre\DAVACL\Plugin as AclPlugin;
@@ -34,6 +36,7 @@ class ServerFactory
         private readonly CalendarBackend $calendarBackend,
         private readonly AddressBookBackend $addressBookBackend,
         private readonly PropertyBackend $propertyBackend,
+        private readonly LockBackend $lockBackend,
     ) {}
 
     public function make(): Server
@@ -50,6 +53,7 @@ class ServerFactory
         $server->debugExceptions = (bool) config('app.debug');
         $server->addPlugin(new AuthPlugin($this->authBackend));
         $server->addPlugin(new PropertyStoragePlugin($this->propertyBackend));
+        $server->addPlugin(new LocksPlugin($this->lockBackend));
         $server->addPlugin(new AclPlugin);
         $server->addPlugin(new CalDavPlugin);
         $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;

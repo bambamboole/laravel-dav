@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
- * @property string $owner
+ * @property string|null $owner
  * @property int $timeout
  * @property int $created
  * @property string $token
