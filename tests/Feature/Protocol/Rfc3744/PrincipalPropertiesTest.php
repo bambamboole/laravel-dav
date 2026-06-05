@@ -53,6 +53,21 @@ function rfc3744PropertyText(TestResponse $response, string $namespace, string $
     return trim($nodes->item(0)->textContent);
 }
 
+function rfc3744PropPatchOk(TestResponse $response, string $namespace, string $localName): void
+{
+    $document = rfc3744Document($response);
+    $xpath = new DOMXPath($document);
+    $nodes = $xpath->query(sprintf(
+        '//*[namespace-uri()="%s" and local-name()="%s"]/ancestor::*[namespace-uri()="DAV:" and local-name()="propstat"]/*[namespace-uri()="DAV:" and local-name()="status"]',
+        $namespace,
+        $localName,
+    ));
+
+    expect($nodes)->not->toBeFalse()
+        ->and($nodes->length)->toBeGreaterThan(0)
+        ->and((bool) preg_match('/\s2\d\d\s/', (string) $nodes->item(0)?->textContent))->toBeTrue();
+}
+
 /**
  * @return array<int, string>
  */
@@ -169,6 +184,178 @@ it('[sections 5.4 and 5.8] exposes current user privileges and principal collect
             '{DAV:}write-content',
             '{DAV:}write-properties',
         );
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.1
+ * @see https://datatracker.ietf.org/doc/html/rfc4791#section-6
+ */
+it('[section 4.1 and RFC 4791 section 6] exposes calendar proxy principals as principal children', function (): void {
+    $actor = davActor();
+    $owner = $actor['owner'];
+
+    $response = $this->callDav('PROPFIND', '/dav/principals/'.$owner->getKey().'/', $actor['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:displayname />
+                <d:resourcetype />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '1',
+    ])
+        ->assertStatus(207);
+
+    expect(rfc3744ResponseHrefs($response))->toBe([
+        '/dav/principals/'.$owner->getKey().'/',
+        '/dav/principals/'.$owner->getKey().'/calendar-proxy-read/',
+        '/dav/principals/'.$owner->getKey().'/calendar-proxy-write/',
+    ]);
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.3
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.4
+ * @see https://datatracker.ietf.org/doc/html/rfc4791#section-6
+ */
+it('[sections 4.3 and 4.4 plus RFC 4791 section 6] stores calendar proxy group memberships', function (): void {
+    $delegator = davActor();
+    $delegate = davActor();
+
+    $response = $this->callDav('PROPPATCH', '/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/', $delegator['header'], '
+        <d:propertyupdate xmlns:d="DAV:">
+            <d:set>
+                <d:prop>
+                    <d:group-member-set>
+                        <d:href>/dav/principals/'.$delegate['owner']->getKey().'/</d:href>
+                    </d:group-member-set>
+                </d:prop>
+            </d:set>
+        </d:propertyupdate>
+        ')
+        ->assertStatus(207);
+
+    rfc3744PropPatchOk($response, 'DAV:', 'group-member-set');
+
+    $readProxyResponse = $this->callDav('PROPFIND', '/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/', $delegator['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:group-member-set />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    $delegateResponse = $this->callDav('PROPFIND', '/dav/principals/'.$delegate['owner']->getKey().'/', $delegate['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:group-membership />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    expect(rfc3744PropertyHrefs($readProxyResponse, 'DAV:', 'group-member-set'))->toBe(['/dav/principals/'.$delegate['owner']->getKey().'/'])
+        ->and(rfc3744PropertyHrefs($delegateResponse, 'DAV:', 'group-membership'))->toBe(['/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/']);
+
+    $revokeResponse = $this->callDav('PROPPATCH', '/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/', $delegator['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propertyupdate xmlns:d="DAV:">
+            <d:set>
+                <d:prop>
+                    <d:group-member-set />
+                </d:prop>
+            </d:set>
+        </d:propertyupdate>
+        XML)
+        ->assertStatus(207);
+
+    rfc3744PropPatchOk($revokeResponse, 'DAV:', 'group-member-set');
+
+    $revokedResponse = $this->callDav('PROPFIND', '/dav/principals/'.$delegate['owner']->getKey().'/', $delegate['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:group-membership />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    expect(rfc3744PropertyHrefs($revokedResponse, 'DAV:', 'group-membership'))->toBe([]);
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.3
+ * @see https://www.rfc-editor.org/rfc/rfc3744.html#section-4.4
+ * @see https://datatracker.ietf.org/doc/html/rfc4791#section-6
+ */
+it('[sections 4.3 and 4.4 plus RFC 4791 section 6] separates read and write proxy group memberships', function (): void {
+    $delegator = davActor();
+    $readDelegate = davActor();
+    $writeDelegate = davActor();
+
+    $this->callDav('PROPPATCH', '/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/', $delegator['header'], '
+        <d:propertyupdate xmlns:d="DAV:">
+            <d:set>
+                <d:prop>
+                    <d:group-member-set>
+                        <d:href>/dav/principals/'.$readDelegate['owner']->getKey().'/</d:href>
+                    </d:group-member-set>
+                </d:prop>
+            </d:set>
+        </d:propertyupdate>
+        ')
+        ->assertStatus(207);
+
+    $this->callDav('PROPPATCH', '/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-write/', $delegator['header'], '
+        <d:propertyupdate xmlns:d="DAV:">
+            <d:set>
+                <d:prop>
+                    <d:group-member-set>
+                        <d:href>/dav/principals/'.$writeDelegate['owner']->getKey().'/</d:href>
+                    </d:group-member-set>
+                </d:prop>
+            </d:set>
+        </d:propertyupdate>
+        ')
+        ->assertStatus(207);
+
+    $readResponse = $this->callDav('PROPFIND', '/dav/principals/'.$readDelegate['owner']->getKey().'/', $readDelegate['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:group-membership />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    $writeResponse = $this->callDav('PROPFIND', '/dav/principals/'.$writeDelegate['owner']->getKey().'/', $writeDelegate['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:">
+            <d:prop>
+                <d:group-membership />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    expect(rfc3744PropertyHrefs($readResponse, 'DAV:', 'group-membership'))->toBe(['/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-read/'])
+        ->and(rfc3744PropertyHrefs($writeResponse, 'DAV:', 'group-membership'))->toBe(['/dav/principals/'.$delegator['owner']->getKey().'/calendar-proxy-write/']);
 });
 
 /**

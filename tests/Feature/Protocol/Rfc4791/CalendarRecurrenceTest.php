@@ -38,7 +38,7 @@ it('[section 9.9] finds a later instance of a weekly recurring VEVENT', function
     davPut($this, $actor['path'].'weekly.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:weekly-event
         DTSTAMP:20260101T000000Z
@@ -72,7 +72,7 @@ it('[section 9.9] does not match a recurring VEVENT outside every instance windo
     davPut($this, $actor['path'].'weekly.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:weekly-event
         DTSTAMP:20260101T000000Z
@@ -106,7 +106,7 @@ it('[section 9.9] finds a later instance of a recurring VTODO', function (): voi
     davPut($this, $actor['path'].'recurring-task.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:recurring-task
         DTSTAMP:20260101T000000Z
@@ -140,7 +140,7 @@ it('[section 9.9] matches an infinite RRULE in a far future window', function ()
     davPut($this, $actor['path'].'infinite.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:infinite-event
         DTSTAMP:20000101T000000Z
@@ -174,7 +174,7 @@ it('[section 9.9] matches a recurrence overridden by a RECURRENCE-ID at its shif
     davPut($this, $actor['path'].'override.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:override-event
         DTSTAMP:20260101T000000Z
@@ -228,7 +228,7 @@ it('[section 9.9] matches an all-day yearly recurrence in the following year', f
     davPut($this, $actor['path'].'birthday.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:birthday
         DTSTAMP:20260101T000000Z
@@ -262,7 +262,7 @@ it('[section 9.6.5] expands a recurring VEVENT into individual instances within 
     davPut($this, $actor['path'].'expandable.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VEVENT
         UID:expandable-event
         DTSTAMP:20000101T000000Z
@@ -306,7 +306,7 @@ it('[section 9.6.5] expands a recurring VTODO into individual instances within t
     davPut($this, $actor['path'].'expandable-task.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:expandable-task
         DTSTAMP:20000101T000000Z
@@ -351,7 +351,7 @@ it('[section 9.6.5] expands a recurring VJOURNAL into individual instances withi
     davPut($this, $actor['path'].'expandable-journal.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VJOURNAL
         UID:expandable-journal
         DTSTAMP:20000101T000000Z
@@ -395,7 +395,7 @@ it('[section 7.9] expands a recurring VTODO requested through calendar-multiget'
     davPut($this, $href, $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTODO
         UID:multiget-task
         DTSTAMP:20000101T000000Z

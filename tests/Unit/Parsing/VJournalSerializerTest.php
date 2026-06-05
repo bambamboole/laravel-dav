@@ -7,7 +7,7 @@ it('merge preserves the VJOURNAL component type and adds no end property', funct
     $payload = ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VJOURNAL
         UID:journal-merge-2
         DTSTAMP:20260603T000000Z

@@ -2,7 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Sabre\DAVACL;
 
-use Sabre\DAVACL\Principal;
+use Sabre\CalDAV\Principal\User;
 
 /**
  * A principal node that, in addition to granting all privileges to its owner,
@@ -12,7 +12,7 @@ use Sabre\DAVACL\Principal;
  * search and enumerate all principals (and read their public properties such
  * as displayname and calendar-home-set).
  */
-class EnumerablePrincipal extends Principal
+class EnumerablePrincipal extends User
 {
     /**
      * @return array<int, array{privilege: string, principal: string, protected: bool}>

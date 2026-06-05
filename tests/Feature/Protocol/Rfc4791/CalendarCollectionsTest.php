@@ -10,7 +10,7 @@ function rfc4791CalendarTimezone(): string
     return ical(<<<'ICS'
         BEGIN:VCALENDAR
         VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
+        PRODID:-//LaravelDav//Tests//EN
         BEGIN:VTIMEZONE
         TZID:Europe/Berlin
         BEGIN:STANDARD

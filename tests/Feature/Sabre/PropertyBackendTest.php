@@ -41,20 +41,20 @@ it('removes a property when it is set to null', function (): void {
 
 it('round-trips an xml property through propPatch and propFind', function (): void {
     $backend = new PropertyBackend;
-    $value = new Complex('<x:flag xmlns:x="http://life-os.test/ns">enabled</x:flag>');
+    $value = new Complex('<x:flag xmlns:x="http://LaravelDav.test/ns">enabled</x:flag>');
 
-    $patch = new PropPatch(['{http://life-os.test/ns}custom-xml' => $value]);
+    $patch = new PropPatch(['{http://LaravelDav.test/ns}custom-xml' => $value]);
     $backend->propPatch('calendars/work', $patch);
     $patch->commit();
 
-    $find = new PropFind('calendars/work', ['{http://life-os.test/ns}custom-xml']);
+    $find = new PropFind('calendars/work', ['{http://LaravelDav.test/ns}custom-xml']);
     $backend->propFind('calendars/work', $find);
 
-    $stored = $find->get('{http://life-os.test/ns}custom-xml');
+    $stored = $find->get('{http://LaravelDav.test/ns}custom-xml');
 
     expect($stored)
         ->toBeInstanceOf(Complex::class)
-        ->and($stored->getXml())->toBe('<x:flag xmlns:x="http://life-os.test/ns">enabled</x:flag>')
+        ->and($stored->getXml())->toBe('<x:flag xmlns:x="http://LaravelDav.test/ns">enabled</x:flag>')
         ->and(DB::table('dav_properties')->where('path', 'calendars/work')->value('value_type'))->toBe('xml');
 });
 

@@ -104,7 +104,7 @@ function calendarObjectPayload(string $componentName, array $properties): string
 {
     $calendar = new VCalendar([], false);
     $calendar->add('VERSION', '2.0');
-    $calendar->add('PRODID', '-//Life OS//Tests//EN');
+    $calendar->add('PRODID', '-//LaravelDav//Tests//EN');
     $component = $calendar->createComponent($componentName, [], false);
 
     foreach ($properties as $name => $value) {
@@ -129,7 +129,7 @@ function contactCardPayload(array $properties): string
 {
     $card = new VCard([], false);
     $card->add('VERSION', '3.0');
-    $card->add('PRODID', '-//Life OS//Tests//EN');
+    $card->add('PRODID', '-//LaravelDav//Tests//EN');
 
     foreach ($properties as $name => $value) {
         if (is_array($value) && array_is_list($value)) {

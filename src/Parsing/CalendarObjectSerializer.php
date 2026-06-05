@@ -18,7 +18,7 @@ class CalendarObjectSerializer
     {
         $calendar = new VCalendar([], false);
         $calendar->add('VERSION', '2.0');
-        $calendar->add('PRODID', '-//Life OS//Calendar//EN');
+        $calendar->add('PRODID', '-//LaravelDav//Calendar//EN');
 
         $componentType = $data->componentType ?: 'VEVENT';
         $component = $calendar->createComponent($componentType, [], false);

@@ -22,7 +22,7 @@ class VCardSerializer
     {
         $vCard = new VCard([], false);
         $vCard->add('VERSION', '3.0');
-        $vCard->add('PRODID', '-//Life OS//Contacts//EN');
+        $vCard->add('PRODID', '-//LaravelDav//Contacts//EN');
         $vCard->add('UID', (string) $data->uid);
 
         $this->addIfPresent($vCard, 'FN', $data->formattedName);

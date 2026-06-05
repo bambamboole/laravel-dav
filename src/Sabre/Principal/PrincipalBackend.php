@@ -4,7 +4,9 @@ namespace Bambamboole\LaravelDav\Sabre\Principal;
 
 use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\DavCalendarProxyMembership;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 use Sabre\DAV\PropPatch;
@@ -17,6 +19,10 @@ class PrincipalBackend extends AbstractBackend
     private const DisplayNameProperty = '{DAV:}displayname';
 
     private const EmailAddressProperty = '{http://sabredav.org/ns}email-address';
+
+    private const ProxyReadPrincipal = 'calendar-proxy-read';
+
+    private const ProxyWritePrincipal = 'calendar-proxy-write';
 
     /**
      * @return array<int, array{id: int|string, uri: string, '{DAV:}displayname': string|null, '{http://sabredav.org/ns}email-address': string|null}>
@@ -39,7 +45,11 @@ class PrincipalBackend extends AbstractBackend
      */
     public function getPrincipalByPath($path): ?array
     {
-        $ownerId = $this->userIdFromPrincipalUri((string) $path);
+        $path = (string) $path;
+        $proxyPrincipal = $this->proxyPrincipal($path);
+        $ownerId = $proxyPrincipal === null
+            ? $this->userIdFromPrincipalUri($path)
+            : $proxyPrincipal['owner_id'];
 
         if ($ownerId === null) {
             return null;
@@ -47,7 +57,14 @@ class PrincipalBackend extends AbstractBackend
 
         $owner = (Dav::ownerModel())::query()->find($ownerId);
 
-        return $owner instanceof DavOwner ? $this->principalForOwner($owner) : null;
+        if (! $owner instanceof DavOwner) {
+            return null;
+        }
+
+        return $this->principalForOwner(
+            $owner,
+            $proxyPrincipal === null ? null : $path,
+        );
     }
 
     public function updatePrincipal($path, PropPatch $propPatch): int
@@ -111,7 +128,17 @@ class PrincipalBackend extends AbstractBackend
      */
     public function getGroupMemberSet($principal): array
     {
-        return [];
+        $proxyPrincipal = $this->proxyPrincipal((string) $principal);
+
+        if ($proxyPrincipal === null) {
+            return [];
+        }
+
+        return $this->proxyMembershipQuery($proxyPrincipal['owner_id'], $proxyPrincipal['access'])
+            ->orderBy('delegate_owner_id')
+            ->pluck('delegate_owner_id')
+            ->map(fn (int|string $ownerId): string => $this->principalUri($ownerId))
+            ->all();
     }
 
     /**
@@ -119,7 +146,21 @@ class PrincipalBackend extends AbstractBackend
      */
     public function getGroupMembership($principal): array
     {
-        return [];
+        $ownerId = $this->userIdFromPrincipalUri((string) $principal);
+
+        if ($ownerId === null) {
+            return [];
+        }
+
+        return Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()
+            ->where('delegate_owner_id', $ownerId)
+            ->orderBy('owner_id')
+            ->get()
+            ->map(fn (DavCalendarProxyMembership $membership): string => $this->proxyPrincipalUri(
+                $membership->owner_id,
+                $membership->access,
+            ))
+            ->all();
     }
 
     /**
@@ -127,17 +168,41 @@ class PrincipalBackend extends AbstractBackend
      */
     public function setGroupMemberSet($principal, array $members): void
     {
-        //
+        $proxyPrincipal = $this->proxyPrincipal((string) $principal);
+
+        if ($proxyPrincipal === null) {
+            return;
+        }
+
+        $memberOwnerIds = collect($members)
+            ->map(fn (string $member): ?int => $this->ownerIdFromMemberUri($member))
+            ->filter(fn (?int $ownerId): bool => $ownerId !== null && $this->ownerExists($ownerId))
+            ->unique()
+            ->values();
+
+        $this->proxyMembershipQuery($proxyPrincipal['owner_id'], $proxyPrincipal['access'])
+            ->whereNotIn('delegate_owner_id', $memberOwnerIds->all())
+            ->delete();
+
+        foreach ($memberOwnerIds as $memberOwnerId) {
+            Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()->updateOrCreate(
+                [
+                    'owner_id' => $proxyPrincipal['owner_id'],
+                    'delegate_owner_id' => $memberOwnerId,
+                ],
+                ['access' => $proxyPrincipal['access']],
+            );
+        }
     }
 
     /**
      * @return array{id: int|string, uri: string, '{DAV:}displayname': string|null, '{http://sabredav.org/ns}email-address': string|null}
      */
-    private function principalForOwner(DavOwner $owner): array
+    private function principalForOwner(DavOwner $owner, ?string $uri = null): array
     {
         return [
             'id' => $owner->getDavPrincipalId(),
-            'uri' => $this->principalUri($owner),
+            'uri' => $uri ?? $this->principalUri($owner),
             self::DisplayNameProperty => $owner->getDavPrincipalDisplayName(),
             self::EmailAddressProperty => $owner->getDavPrincipalEmail(),
         ];
@@ -173,5 +238,70 @@ class PrincipalBackend extends AbstractBackend
         }
 
         return $model;
+    }
+
+    /**
+     * @return array{owner_id: int, access: string}|null
+     */
+    private function proxyPrincipal(string $principal): ?array
+    {
+        $prefix = config('dav.principal_prefix').'/';
+
+        if (! str_starts_with($principal, $prefix)) {
+            return null;
+        }
+
+        $segments = explode('/', mb_substr($principal, mb_strlen($prefix)));
+
+        if (count($segments) !== 2 || ! ctype_digit($segments[0])) {
+            return null;
+        }
+
+        $access = match ($segments[1]) {
+            self::ProxyReadPrincipal => DavCalendarProxyMembership::AccessRead,
+            self::ProxyWritePrincipal => DavCalendarProxyMembership::AccessWrite,
+            default => null,
+        };
+
+        return $access === null ? null : [
+            'owner_id' => (int) $segments[0],
+            'access' => $access,
+        ];
+    }
+
+    private function ownerIdFromMemberUri(string $member): ?int
+    {
+        $member = trim($member, '/');
+        $baseUri = trim((string) config('dav.base_uri', '/dav/'), '/');
+
+        if ($baseUri !== '' && str_starts_with($member, $baseUri.'/')) {
+            $member = mb_substr($member, mb_strlen($baseUri) + 1);
+        }
+
+        return $this->userIdFromPrincipalUri($member);
+    }
+
+    private function ownerExists(int $ownerId): bool
+    {
+        return (Dav::ownerModel())::query()->whereKey($ownerId)->exists();
+    }
+
+    /**
+     * @return Builder<DavCalendarProxyMembership>
+     */
+    private function proxyMembershipQuery(int $ownerId, string $access): Builder
+    {
+        return Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()
+            ->where('owner_id', $ownerId)
+            ->where('access', $access);
+    }
+
+    private function proxyPrincipalUri(int|string $ownerId, string $access): string
+    {
+        $proxyName = $access === DavCalendarProxyMembership::AccessWrite
+            ? self::ProxyWritePrincipal
+            : self::ProxyReadPrincipal;
+
+        return $this->principalUri($ownerId).'/'.$proxyName;
     }
 }
