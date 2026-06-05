@@ -9,6 +9,7 @@ This package is a CalDAV/CardDAV server for Laravel, powered by `sabre/dav`. It 
 - The package ships database migrations in `database/migrations/`. Tests load them via `defineDatabaseMigrations()` in `tests/TestCase.php` and run against an in-memory SQLite connection with `RefreshDatabase`.
 - The AI tooling overrides for Boost live in `workbench/app/Support/` and are wired in `Workbench\App\Providers\WorkbenchServiceProvider`. They point Boost at the package root instead of the Testbench skeleton; they never ship with the published package.
 - Regenerate `CLAUDE.md` / `AGENTS.md` after editing files in `.ai/guidelines/` with `php artisan boost:update`.
+- Keep the public documentation up to date when behavior, configuration, or supported protocol features change.
 
 ## Comments
 

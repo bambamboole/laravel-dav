@@ -1,6 +1,9 @@
 .idea
 .DS_Store
 /vendor
+/node_modules
+/dist
+/.astro
 /composer.lock
 /.worktrees
 /.phpunit.cache

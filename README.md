@@ -10,17 +10,13 @@ Expose your application's calendars and contacts to any standards-compliant clie
 - **Full CardDAV** — contacts (`VCARD`) in vCard 3.0 and 4.0, stored losslessly with version content-negotiation, plus rich, typed parsing.
 - **WebDAV sync** — collection synchronization via sync tokens ([RFC 6578](https://datatracker.ietf.org/doc/html/rfc6578)).
 - **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), schedule tags, free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
+- **Calendar sharing** — CalendarServer-style sharing with read-only and read-write access.
+- **Calendar proxy delegation** — account-level read and write delegation through CalDAV proxy principals.
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
 - **HTTP Basic authentication** — stateless, backed by hashed credentials.
 - **Owner-agnostic** — any model that implements a small contract can own collections.
 - **Typed DTOs** — every calendar object and contact carries the verbatim `raw` payload plus best-effort, strongly-typed parsed fields.
 - **Eloquent storage** — collections and objects are plain models you can query, extend, and relate to the rest of your app.
-
-## Known limitations
-
-The following are not implemented yet and are tracked for future releases:
-
-- **Calendar sharing & proxy delegation.**
 
 ## Requirements
 
@@ -73,11 +69,13 @@ class User extends Authenticatable implements DavOwner
 }
 ```
 
-Then point `dav.owner_model` at it (defaults to `App\Models\User`), either in the published config or via the `DAV_OWNER_MODEL` environment variable:
+Then point `dav.models.owner` at it in the published config. It defaults to `App\Models\User`:
 
 ```php
 // config/dav.php
-'owner_model' => App\Models\User::class,
+'models' => [
+    'owner' => App\Models\User::class,
+],
 ```
 
 ## Creating credentials
@@ -92,9 +90,9 @@ use Illuminate\Support\Str;
 $secret = Str::random(32);
 
 DavCredential::create([
-    'user_id' => $user->id,
+    'owner_id' => $user->id,
     'name' => 'iPhone',
-    'username' => 'manuel',
+    'username' => 'iphone-'.$user->id,
     'secret_hash' => Hash::make($secret),
 ]);
 
@@ -105,7 +103,7 @@ The client then authenticates with the `username` and the plaintext `$secret`. T
 
 Only HTTP Basic authentication is supported. Deploy it behind HTTPS and issue per-client secrets as shown above. Digest authentication is intentionally not implemented: it would require storing Digest-compatible HA1 material instead of normal hashed secrets, which weakens the credential storage model this package uses.
 
-The Basic authentication realm is configurable through `dav.realm` or `DAV_REALM`; it defaults to your Laravel application name.
+The Basic authentication realm is configurable through `dav.realm`; it defaults to your Laravel application name.
 
 ## Endpoints
 
@@ -132,18 +130,24 @@ The package does **not** auto-create default calendars or address books. Your ap
 
 ```php
 use Bambamboole\LaravelDav\Models\DavCalendar;
+use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 
-DavCalendar::create([
-    'user_id' => $user->id,
-    'uri' => 'personal',
-    'display_name' => 'Personal',
-    'color' => '#3b82f6',
+$calendar = DavCalendar::create([
+    'owner_id' => $user->id,
     'components' => ['VEVENT', 'VTODO'],
 ]);
 
+$calendar->instances()->create([
+    'owner_id' => $user->id,
+    'uri' => 'personal',
+    'display_name' => 'Personal',
+    'color' => '#3b82f6',
+    'access' => DavCalendarInstance::AccessOwner,
+]);
+
 DavAddressBook::create([
-    'user_id' => $user->id,
+    'owner_id' => $user->id,
     'uri' => 'personal',
     'display_name' => 'Contacts',
 ]);
@@ -207,6 +211,17 @@ A working mail transport must be set up for delivery to succeed. Override the tr
 
 **Availability** ([RFC 7953](https://datatracker.ietf.org/doc/html/rfc7953)) — a principal can publish working hours by storing a `VAVAILABILITY` document in the `calendar-availability` property of their scheduling inbox (`PROPPATCH /dav/calendars/{owner}/inbox/`). Free/busy responses then mark time outside those windows as `BUSY-UNAVAILABLE`.
 
+## Calendar proxy delegation
+
+Calendar proxy delegation grants another local owner account-level access to a principal's calendars. Each owner exposes read and write proxy principals:
+
+```text
+/dav/principals/{owner}/calendar-proxy-read/
+/dav/principals/{owner}/calendar-proxy-write/
+```
+
+Set `DAV:group-member-set` on one of those proxy principals to add delegate principals. Read delegates can discover and read delegated calendars. Write delegates can also create, update, and delete calendar objects in the delegated owner's calendars.
+
 ## Reacting to changes
 
 Every collection mutation (a created, updated, or deleted object) fires `Bambamboole\LaravelDav\Events\DavCollectionChanged`. It is a plain event you can listen for — handy for pushing live updates to a UI:
@@ -242,24 +257,25 @@ The event exposes:
 The published `config/dav.php` exposes:
 
 | Key                         | Default                | Description                                              |
-| --------------------------- | ---------------------- | ------------------------------------------------------- |
-| `owner_model`               | `App\Models\User`      | The model that owns principals/collections.             |
-| `owner_table`               | `users`                | The owner model's table.                                |
-| `route.prefix`              | `dav`                  | URL prefix the DAV server is served under.              |
-| `route.middleware`          | `[]`                   | Extra middleware applied to the DAV routes.             |
-| `base_uri`                  | `/dav/`                | The base URI advertised to clients.                     |
-| `realm`                     | app name               | HTTP Basic authentication realm.                        |
-| `principal_prefix`          | `principals`           | Path segment for principals.                            |
-| `calendar_prefix`           | `calendars`            | Path segment for calendar collections.                  |
-| `address_book_prefix`       | `addressbooks`         | Path segment for address book collections.              |
-| `default_calendar_uri`      | `personal`             | Conventional URI for an owner's primary calendar.       |
-| `default_address_book_uri`  | `personal`             | Conventional URI for an owner's primary address book.   |
-| `models.*`                  | package models         | Override the content models (see below).                |
+| --------------------------- | ---------------------- | -------------------------------------------------------- |
+| `models.owner`              | `App\Models\User`      | The model that owns principals/collections.              |
+| `models.*`                  | package models         | Override content models with package-model subclasses.   |
+| `route.prefix`              | `dav`                  | URL prefix the DAV server is served under.               |
+| `route.middleware`          | `[]`                   | Extra middleware applied to the DAV routes.              |
+| `base_uri`                  | `null`                 | Optional base URI override; defaults to `route.prefix`.  |
+| `realm`                     | app name               | HTTP Basic authentication realm.                         |
+| `principal_prefix`          | `principals`           | Path segment for principals.                             |
+| `calendar_prefix`           | `calendars`            | Path segment for calendar collections.                   |
+| `address_book_prefix`       | `addressbooks`         | Path segment for address book collections.               |
+| `default_calendar_uri`      | `personal`             | Conventional URI for an owner's primary calendar.        |
+| `default_address_book_uri`  | `personal`             | Conventional URI for an owner's primary address book.    |
 
 ## Customizing the models
 
-The content models — `calendar`, `calendar_object`, `address_book`, `card`, and
-`credential` — are swappable. To customize one, **subclass the package model** and
+The content models — including `calendar`, `calendar_instance`,
+`calendar_object`, `calendar_attachment`, `calendar_subscription`,
+`calendar_proxy_membership`, `address_book`, `card`, `credential`, and
+`scheduling_object` — are swappable. To customize one, **subclass the package model** and
 point the matching `config('dav.models.*')` key at your subclass. Because the
 package type-hints the concrete model, your subclass satisfies every internal call
 while letting you add columns (via your own migration), casts, relations, scopes,

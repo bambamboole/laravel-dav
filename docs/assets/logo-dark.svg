@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 236 56" role="img" aria-label="LaravelDAV">
+  <g fill="none" stroke="#f8fafc" stroke-linecap="round" stroke-linejoin="round" stroke-width="3">
+    <path d="M15 11v10"/>
+    <path d="M31 11v10"/>
+    <path d="M9 17h28a6 6 0 0 1 6 6v24a6 6 0 0 1-6 6H9a6 6 0 0 1-6-6V23a6 6 0 0 1 6-6z"/>
+    <path d="M3 29h40"/>
+  </g>
+  <text x="56" y="36" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="24" font-weight="750" letter-spacing="0">LaravelDAV</text>
+</svg>

@@ -13,6 +13,10 @@
 /testbench.yaml     export-ignore
 /CHANGELOG.md       export-ignore
 /artisan            export-ignore
+/astro.config.mjs   export-ignore
+/package.json       export-ignore
+/package-lock.json  export-ignore
+/public             export-ignore
 /boost.json         export-ignore
 /.mcp.json          export-ignore
 /.codex             export-ignore
