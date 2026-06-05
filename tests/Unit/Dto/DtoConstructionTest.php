@@ -1,6 +1,7 @@
 <?php
 
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
+use Bambamboole\LaravelDav\Dto\Contact\ContactDate;
 use Bambamboole\LaravelDav\Dto\Contact\ContactEmailAddress;
 use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
 use Bambamboole\LaravelDav\Dto\Contact\ContactPostalAddress;
@@ -13,6 +14,10 @@ it('builds ContactData from a validated array shape', function (): void {
         'formattedName' => 'Ada Lovelace',
         'givenName' => 'Ada',
         'familyName' => 'Lovelace',
+        'kind' => 'individual',
+        'gender' => 'F',
+        'genderIdentity' => 'woman',
+        'anniversary' => ['label' => 'anniversary', 'year' => 2010, 'month' => 6, 'day' => 15],
         'emailAddresses' => [
             ['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']],
         ],
@@ -27,6 +32,14 @@ it('builds ContactData from a validated array shape', function (): void {
     expect($data->formattedName)->toBe('Ada Lovelace')
         ->and($data->givenName)->toBe('Ada')
         ->and($data->familyName)->toBe('Lovelace')
+        ->and($data->kind)->toBe('individual')
+        ->and($data->gender)->toBe('F')
+        ->and($data->genderIdentity)->toBe('woman')
+        ->and($data->anniversary)->toBeInstanceOf(ContactDate::class)
+        ->and($data->anniversary?->label)->toBe('anniversary')
+        ->and($data->anniversary?->year)->toBe(2010)
+        ->and($data->anniversary?->month)->toBe(6)
+        ->and($data->anniversary?->day)->toBe(15)
         ->and($data->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
         ->and($data->emailAddresses[0]->value)->toBe('ada@example.com')
         ->and($data->phoneNumbers[0])->toBeInstanceOf(ContactPhoneNumber::class)
