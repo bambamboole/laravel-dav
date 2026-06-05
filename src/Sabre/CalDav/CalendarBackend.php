@@ -7,6 +7,7 @@ use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use Bambamboole\LaravelDav\Support\DavChangeOperation;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
@@ -180,7 +181,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
                 (string) $calendarData,
             );
 
-            $this->recordCalendarChange($calendar, (string) $objectUri, self::OperationAdd);
+            $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Add);
 
             return $object;
         });
@@ -198,7 +199,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
                 (string) $calendarData,
             );
 
-            $this->recordCalendarChange($calendar, (string) $objectUri, self::OperationModify);
+            $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Modify);
 
             return $object;
         });
@@ -215,7 +216,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
                 ->delete();
 
             if ($deleted > 0) {
-                $this->recordCalendarChange($calendar, (string) $objectUri, self::OperationDelete);
+                $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Delete);
             }
         });
     }

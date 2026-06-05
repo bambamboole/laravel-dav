@@ -6,6 +6,7 @@ use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Bambamboole\LaravelDav\Server\SyncTokens;
+use Bambamboole\LaravelDav\Support\DavChangeOperation;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -13,18 +14,12 @@ use Illuminate\Database\Eloquent\Model;
 
 trait RecordsDavChanges
 {
-    private const OperationAdd = DavChangeRecorder::OperationAdd;
-
-    private const OperationModify = DavChangeRecorder::OperationModify;
-
-    private const OperationDelete = DavChangeRecorder::OperationDelete;
-
-    private function recordCalendarChange(DavCalendar $calendar, ?string $resourceUri, int $operation): void
+    private function recordCalendarChange(DavCalendar $calendar, ?string $resourceUri, DavChangeOperation $operation): void
     {
         app(DavChangeRecorder::class)->recordCalendarChange($calendar, $resourceUri, $operation);
     }
 
-    private function recordAddressBookChange(DavAddressBook $addressBook, ?string $resourceUri, int $operation): void
+    private function recordAddressBookChange(DavAddressBook $addressBook, ?string $resourceUri, DavChangeOperation $operation): void
     {
         app(DavChangeRecorder::class)->recordAddressBookChange($addressBook, $resourceUri, $operation);
     }
@@ -69,9 +64,9 @@ trait RecordsDavChanges
             $currentState = $states[$change->resource_uri] ?? null;
 
             $states[$change->resource_uri] = match ($change->operation) {
-                self::OperationAdd => 'added',
-                self::OperationModify => $currentState === 'added' ? 'added' : 'modified',
-                self::OperationDelete => 'deleted',
+                DavChangeOperation::Add->value => 'added',
+                DavChangeOperation::Modify->value => $currentState === 'added' ? 'added' : 'modified',
+                DavChangeOperation::Delete->value => 'deleted',
                 default => $currentState,
             };
         }

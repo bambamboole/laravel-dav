@@ -33,7 +33,7 @@ class ContactCardWriter
                 'last_modified_at' => now(),
             ]);
 
-            $this->changeRecorder->recordAddressBookChange($addressBook, $card->uri, DavChangeRecorder::OperationAdd);
+            $this->changeRecorder->recordAddressBookChange($addressBook, $card->uri, DavChangeOperation::Add);
 
             return $card->refresh();
         });
@@ -58,7 +58,7 @@ class ContactCardWriter
             ])->save();
 
             $addressBook = $fresh->addressBook()->firstOrFail();
-            $this->changeRecorder->recordAddressBookChange($addressBook, $fresh->uri, DavChangeRecorder::OperationModify);
+            $this->changeRecorder->recordAddressBookChange($addressBook, $fresh->uri, DavChangeOperation::Modify);
 
             return $fresh->refresh();
         });
@@ -78,7 +78,7 @@ class ContactCardWriter
 
             $fresh->delete();
 
-            $this->changeRecorder->recordAddressBookChange($addressBook, $uri, DavChangeRecorder::OperationDelete);
+            $this->changeRecorder->recordAddressBookChange($addressBook, $uri, DavChangeOperation::Delete);
         });
     }
 

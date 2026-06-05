@@ -33,7 +33,7 @@ class CalendarObjectWriter
                 'last_modified_at' => now(),
             ]);
 
-            $this->changeRecorder->recordCalendarChange($calendar, $object->uri, DavChangeRecorder::OperationAdd);
+            $this->changeRecorder->recordCalendarChange($calendar, $object->uri, DavChangeOperation::Add);
 
             return $object->refresh();
         });
@@ -58,7 +58,7 @@ class CalendarObjectWriter
             ])->save();
 
             $calendar = $fresh->calendar()->firstOrFail();
-            $this->changeRecorder->recordCalendarChange($calendar, $fresh->uri, DavChangeRecorder::OperationModify);
+            $this->changeRecorder->recordCalendarChange($calendar, $fresh->uri, DavChangeOperation::Modify);
 
             return $fresh->refresh();
         });
@@ -78,7 +78,7 @@ class CalendarObjectWriter
 
             $fresh->delete();
 
-            $this->changeRecorder->recordCalendarChange($calendar, $uri, DavChangeRecorder::OperationDelete);
+            $this->changeRecorder->recordCalendarChange($calendar, $uri, DavChangeOperation::Delete);
         });
     }
 
