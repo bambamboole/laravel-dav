@@ -290,29 +290,15 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
 
     private function isSchedulingObject(string $payload): bool
     {
-        try {
-            $calendar = Reader::read($payload);
-        } catch (\Throwable) {
-            return false;
-        }
-
-        if (! $calendar instanceof VCalendar) {
-            $calendar->destroy();
-
-            return false;
-        }
-
-        try {
-            foreach ($calendar->getBaseComponents() as $component) {
-                if (in_array($component->name, ['VEVENT', 'VTODO'], true) && isset($component->ORGANIZER) && isset($component->ATTENDEE)) {
+        return $this->withCalendar($payload, function (VCalendar $calendar): bool {
+            foreach ($this->schedulingComponents($calendar) as $component) {
+                if (isset($component->ORGANIZER) && isset($component->ATTENDEE)) {
                     return true;
                 }
             }
 
             return false;
-        } finally {
-            $calendar->destroy();
-        }
+        }) ?? false;
     }
 
     private function isAttendeeParticipantStatusOnlyChange(DavCalendar $calendar, ?string $currentPayload, string $payload): bool
@@ -335,58 +321,29 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
     {
         $owner = $calendar->user;
 
-        if (! $owner instanceof DavOwner || $owner->getDavPrincipalEmail() === null) {
+        if (! $owner instanceof DavOwner || ($email = $owner->getDavPrincipalEmail()) === null) {
             return false;
         }
 
-        try {
-            $parsed = Reader::read($payload);
-        } catch (\Throwable) {
-            return false;
-        }
-
-        if (! $parsed instanceof VCalendar) {
-            $parsed->destroy();
-
-            return false;
-        }
-
-        try {
-            foreach ($parsed->getBaseComponents() as $component) {
-                if (! in_array($component->name, ['VEVENT', 'VTODO'], true)) {
-                    continue;
-                }
-
-                if ($this->componentOrganizerMatches($component, $owner->getDavPrincipalEmail())) {
+        return $this->withCalendar($payload, function (VCalendar $parsed) use ($email): bool {
+            foreach ($this->schedulingComponents($parsed) as $component) {
+                if ($this->componentHasAddress($component, 'ORGANIZER', $email)) {
                     return false;
                 }
 
-                if ($this->componentAttendeeMatches($component, $owner->getDavPrincipalEmail())) {
+                if ($this->componentHasAddress($component, 'ATTENDEE', $email)) {
                     return true;
                 }
             }
 
             return false;
-        } finally {
-            $parsed->destroy();
-        }
+        }) ?? false;
     }
 
-    private function componentOrganizerMatches(VObject\Component $component, string $email): bool
+    private function componentHasAddress(VObject\Component $component, string $propertyName, string $email): bool
     {
-        foreach ($component->select('ORGANIZER') as $organizer) {
-            if ($organizer instanceof VObject\Property && $this->calendarAddressMatches($organizer, $email)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function componentAttendeeMatches(VObject\Component $component, string $email): bool
-    {
-        foreach ($component->select('ATTENDEE') as $attendee) {
-            if ($attendee instanceof VObject\Property && $this->calendarAddressMatches($attendee, $email)) {
+        foreach ($component->select($propertyName) as $property) {
+            if ($property instanceof VObject\Property && $this->calendarAddressMatches($property, $email)) {
                 return true;
             }
         }
@@ -401,6 +358,41 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
 
     private function calendarWithoutParticipantStatus(string $payload): ?string
     {
+        return $this->withCalendar($payload, function (VCalendar $calendar): string {
+            foreach ($this->schedulingComponents($calendar) as $component) {
+                foreach ($component->select('ORGANIZER') as $organizer) {
+                    if ($organizer instanceof VObject\Property) {
+                        unset($organizer['SCHEDULE-STATUS'], $organizer['SCHEDULE-FORCE-SEND']);
+                    }
+                }
+
+                foreach ($component->select('ATTENDEE') as $attendee) {
+                    if ($attendee instanceof VObject\Property) {
+                        unset($attendee['PARTSTAT'], $attendee['RSVP'], $attendee['SCHEDULE-STATUS'], $attendee['SCHEDULE-FORCE-SEND']);
+                    }
+                }
+            }
+
+            return $this->canonicalCalendarPayload($calendar);
+        });
+    }
+
+    private function canonicalCalendarPayload(VCalendar $calendar): string
+    {
+        $lines = preg_split('/\R/', trim($calendar->serialize())) ?: [];
+        sort($lines, SORT_STRING);
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(VCalendar): T  $callback
+     * @return T|null
+     */
+    private function withCalendar(string $payload, callable $callback)
+    {
         try {
             $calendar = Reader::read($payload);
         } catch (\Throwable) {
@@ -414,40 +406,21 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         }
 
         try {
-            foreach ($calendar->getBaseComponents() as $component) {
-                if (! in_array($component->name, ['VEVENT', 'VTODO'], true)) {
-                    continue;
-                }
-
-                foreach ($component->select('ORGANIZER') as $organizer) {
-                    if ($organizer instanceof VObject\Property) {
-                        unset($organizer['SCHEDULE-STATUS']);
-                        unset($organizer['SCHEDULE-FORCE-SEND']);
-                    }
-                }
-
-                foreach ($component->select('ATTENDEE') as $attendee) {
-                    if ($attendee instanceof VObject\Property) {
-                        unset($attendee['PARTSTAT']);
-                        unset($attendee['RSVP']);
-                        unset($attendee['SCHEDULE-STATUS']);
-                        unset($attendee['SCHEDULE-FORCE-SEND']);
-                    }
-                }
-            }
-
-            return $this->canonicalCalendarPayload($calendar);
+            return $callback($calendar);
         } finally {
             $calendar->destroy();
         }
     }
 
-    private function canonicalCalendarPayload(VCalendar $calendar): string
+    /**
+     * @return list<VObject\Component>
+     */
+    private function schedulingComponents(VCalendar $calendar): array
     {
-        $lines = preg_split('/\R/', trim($calendar->serialize())) ?: [];
-        sort($lines, SORT_STRING);
-
-        return implode("\n", $lines);
+        return array_values(array_filter(
+            $calendar->getBaseComponents(),
+            static fn (VObject\Component $component): bool => in_array($component->name, ['VEVENT', 'VTODO'], true),
+        ));
     }
 
     /**
