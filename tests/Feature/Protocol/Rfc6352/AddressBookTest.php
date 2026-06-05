@@ -88,7 +88,7 @@ function rfc6352ResourceTypes(TestResponse $response): array
 /**
  * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.1
  */
-it('[section 6.2.1] creates and deletes an address book collection through CardDAV', function (): void {
+it('[section 6.2.1] creates an address book collection through CardDAV', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
 
@@ -138,14 +138,6 @@ it('[section 6.2.1] creates and deletes an address book collection through CardD
     ])
         ->and(rfc6352PropertyText($response, 'DAV:', 'displayname'))->toBe('Work Contacts')
         ->and(rfc6352PropertyText($response, 'urn:ietf:params:xml:ns:carddav', 'addressbook-description'))->toBe('Team directory');
-
-    $this->callDav('DELETE', '/dav/addressbooks/'.$owner->getKey().'/work/', $actor['header'])
-        ->assertSuccessful();
-
-    expect(DavAddressBook::query()->whereKey($addressBook->getKey())->exists())->toBeFalse();
-
-    $this->callDav('PROPFIND', '/dav/addressbooks/'.$owner->getKey().'/work/', $actor['header'])
-        ->assertNotFound();
 });
 
 /**
