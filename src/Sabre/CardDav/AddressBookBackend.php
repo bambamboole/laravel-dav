@@ -7,6 +7,7 @@ use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Support\Facades\DB;
 use Sabre\CardDAV\Backend\AbstractBackend;
 use Sabre\CardDAV\Backend\SyncSupport;
@@ -224,7 +225,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             );
         }
 
-        return $this->changedResourceResponse($addressBook, self::AddressBookCollectionType, $syncToken, $limit);
+        return $this->changedResourceResponse($addressBook, DavChangeRecorder::AddressBookCollectionType, $syncToken, $limit);
     }
 
     /**

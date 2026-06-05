@@ -7,6 +7,7 @@ use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 use Sabre\CalDAV\Backend\AbstractBackend;
@@ -239,7 +240,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
             );
         }
 
-        return $this->changedResourceResponse($calendar, self::CalendarCollectionType, $syncToken, $limit);
+        return $this->changedResourceResponse($calendar, DavChangeRecorder::CalendarCollectionType, $syncToken, $limit);
     }
 
     /**

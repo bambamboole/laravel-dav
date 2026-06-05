@@ -2,6 +2,8 @@
 
 namespace Bambamboole\LaravelDav;
 
+use Bambamboole\LaravelDav\Support\CalendarObjectWriter;
+use Bambamboole\LaravelDav\Support\ContactCardWriter;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 
@@ -15,6 +17,21 @@ class LaravelDav
         'card' => Models\DavCard::class,
         'credential' => Models\DavCredential::class,
     ];
+
+    public function __construct(
+        private ContactCardWriter $contacts,
+        private CalendarObjectWriter $calendarObjects,
+    ) {}
+
+    public function contacts(): ContactCardWriter
+    {
+        return $this->contacts;
+    }
+
+    public function calendarObjects(): CalendarObjectWriter
+    {
+        return $this->calendarObjects;
+    }
 
     /**
      * @return class-string<Model>
