@@ -4,6 +4,8 @@ use Bambamboole\LaravelDav\Dto\AddressBookData;
 use Bambamboole\LaravelDav\Dto\CalendarData;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Dto\Contact\ContactEmailAddress;
+use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
+use Bambamboole\LaravelDav\Dto\Contact\ContactPostalAddress;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Dto\PrincipalData;
 use Carbon\CarbonImmutable;
@@ -77,6 +79,65 @@ it('ContactData accepts typed arrays of Contact value objects', function () {
     expect($dto->emails)->toHaveCount(1)
         ->and($dto->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
         ->and($dto->emails[0]->value)->toBe('hello@example.com');
+});
+
+it('builds ContactData from a validated array shape', function (): void {
+    $data = ContactData::fromArray([
+        'full_name' => 'Ada Lovelace',
+        'given_name' => 'Ada',
+        'family_name' => 'Lovelace',
+        'email_addresses' => [
+            ['label' => 'work', 'value' => 'ada@example.com', 'types' => ['INTERNET', 'WORK']],
+        ],
+        'phone_numbers' => [
+            ['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'is_preferred' => true],
+        ],
+        'addresses' => [
+            ['label' => 'home', 'street' => '1 Example Street', 'city' => 'London', 'types' => ['HOME']],
+        ],
+    ]);
+
+    expect($data->formattedName)->toBe('Ada Lovelace')
+        ->and($data->givenName)->toBe('Ada')
+        ->and($data->familyName)->toBe('Lovelace')
+        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emails[0]->value)->toBe('ada@example.com')
+        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
+        ->and($data->phones[0]->isPreferred)->toBeTrue()
+        ->and($data->addresses[0])->toBeInstanceOf(ContactPostalAddress::class);
+});
+
+it('builds ContactData from simple contact fields', function (): void {
+    $data = ContactData::fromArray([
+        'full_name' => 'Grace Hopper',
+        'email' => 'grace@example.com',
+        'phone' => '+1 555 0101',
+    ]);
+
+    expect($data->formattedName)->toBe('Grace Hopper')
+        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emails[0]->value)->toBe('grace@example.com')
+        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
+        ->and($data->phones[0]->value)->toBe('+1 555 0101');
+});
+
+it('builds CalendarObjectData from a validated array shape', function (): void {
+    $data = CalendarObjectData::fromArray([
+        'summary' => 'Sprint planning',
+        'description' => 'Weekly planning',
+        'starts_at' => '2026-01-01 09:00:00',
+        'ends_at' => '2026-01-01 10:00:00',
+        'is_all_day' => false,
+        'timezone' => 'UTC',
+    ]);
+
+    expect($data->summary)->toBe('Sprint planning')
+        ->and($data->description)->toBe('Weekly planning')
+        ->and($data->startsAt)->toBeInstanceOf(CarbonImmutable::class)
+        ->and($data->startsAt?->toDateTimeString())->toBe('2026-01-01 09:00:00')
+        ->and($data->endsAt?->toDateTimeString())->toBe('2026-01-01 10:00:00')
+        ->and($data->isAllDay)->toBeFalse()
+        ->and($data->timezone)->toBe('UTC');
 });
 
 it('ContactData withStorageMeta preserves emails array', function () {
