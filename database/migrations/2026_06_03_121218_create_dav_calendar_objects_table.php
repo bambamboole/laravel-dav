@@ -17,6 +17,7 @@ return new class extends Migration
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
             $table->boolean('is_all_day')->default(false);
+            $table->boolean('recurs')->default(false);
             $table->string('timezone')->nullable();
             $table->json('data')->default(json_encode([]));
             $table->string('etag');
@@ -27,7 +28,7 @@ return new class extends Migration
 
             $table->unique(['dav_calendar_id', 'uri']);
             $table->index(['dav_calendar_id', 'starts_at']);
-            $table->index(['dav_calendar_id', 'component_type']);
+            $table->index(['dav_calendar_id', 'component_type', 'starts_at']);
         });
     }
 

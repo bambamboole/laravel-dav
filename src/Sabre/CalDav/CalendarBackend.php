@@ -9,7 +9,9 @@ use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
+use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SyncSupport;
@@ -162,13 +164,83 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
      */
     public function calendarQuery($calendarId, array $filters): array
     {
-        return $this->calendar($calendarId)->objects()
-            ->orderBy('id')
-            ->get()
+        $query = $this->calendar($calendarId)->objects()->getQuery()->orderBy('id');
+
+        $this->narrowCalendarQuery($query, $filters);
+
+        return $query->get()
             ->filter(fn (DavCalendarObject $object): bool => $this->objectMatchesCalendarQuery($object, $filters))
             ->pluck('uri')
             ->values()
             ->all();
+    }
+
+    /**
+     * Narrow the candidate set in SQL using the denormalised columns before the
+     * (expensive) parse-and-match in PHP. Deliberately a superset: recurring
+     * objects are never excluded by a time-range because their stored
+     * starts_at/ends_at only describe the first instance.
+     *
+     * @param  Builder<DavCalendarObject>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function narrowCalendarQuery(Builder $query, array $filters): void
+    {
+        $compFilters = array_values(array_filter(
+            $filters['comp-filters'] ?? [],
+            static fn (array $filter): bool => ($filter['name'] ?? '') !== '' && ! ($filter['is-not-defined'] ?? false),
+        ));
+
+        $hasNegatedComponent = array_filter(
+            $filters['comp-filters'] ?? [],
+            static fn (array $filter): bool => (bool) ($filter['is-not-defined'] ?? false),
+        ) !== [];
+
+        if ($compFilters !== [] && ! $hasNegatedComponent) {
+            $query->whereIn('component_type', array_unique(array_map(
+                static fn (array $filter): string => strtoupper((string) $filter['name']),
+                $compFilters,
+            )));
+        }
+
+        if (count($compFilters) === 1 && is_array($compFilters[0]['time-range'] ?? null)) {
+            $this->narrowToTimeRange($query, $compFilters[0]['time-range']);
+        }
+    }
+
+    /**
+     * @param  Builder<DavCalendarObject>  $query
+     * @param  array{start?: DateTimeInterface|null, end?: DateTimeInterface|null}  $timeRange
+     */
+    private function narrowToTimeRange(Builder $query, array $timeRange): void
+    {
+        $start = $timeRange['start'] ?? null;
+        $end = $timeRange['end'] ?? null;
+
+        if ($start === null && $end === null) {
+            return;
+        }
+
+        $query->where(function (Builder $candidate) use ($start, $end): void {
+            $candidate->where('recurs', true)
+                ->orWhereNull('starts_at')
+                ->orWhere(function (Builder $bounded) use ($start, $end): void {
+                    if ($end !== null) {
+                        $bounded->where('starts_at', '<', $this->utcString($end));
+                    }
+
+                    if ($start !== null) {
+                        $bounded->where(function (Builder $open) use ($start): void {
+                            $open->whereNull('ends_at')->orWhere('ends_at', '>', $this->utcString($start));
+                        });
+                    }
+                });
+        });
+    }
+
+    private function utcString(DateTimeInterface $dateTime): string
+    {
+        return CarbonImmutable::instance($dateTime)->utc()->toDateTimeString();
     }
 
     public function createCalendarObject($calendarId, $objectUri, $calendarData): string

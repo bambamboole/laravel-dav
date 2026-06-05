@@ -35,6 +35,7 @@ class CalendarObjectParser
         $startsAt = $this->carbonFromProperty($startsAtProperty);
         $endsAt = $this->carbonFromProperty($endsAtProperty) ?? $this->impliedEventEnd($component, $startsAt, $startsAtProperty);
         $isAllDay = $this->isAllDay($startsAtProperty) || $this->isAllDay($endsAtProperty);
+        $isRecurring = $component !== null && (isset($component->RRULE) || isset($component->RDATE));
 
         try {
             return new CalendarObjectData(
@@ -52,6 +53,7 @@ class CalendarObjectParser
                 startsAt: $startsAt,
                 endsAt: $endsAt,
                 isAllDay: $isAllDay,
+                isRecurring: $isRecurring,
                 timezone: $this->timezoneFromProperty($startsAtProperty) ?? $this->timezoneFromProperty($endsAtProperty),
             );
         } finally {
