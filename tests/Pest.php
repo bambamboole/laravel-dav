@@ -1,6 +1,9 @@
 <?php
 
+use Bambamboole\LaravelDav\Models\DavCredential;
+use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 use Bambamboole\LaravelDav\Tests\TestCase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Testing\TestResponse;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Component\VCard;
@@ -22,12 +25,32 @@ function davAuthHeader(string $username, string $secret): string
     return 'Basic '.base64_encode($username.':'.$secret);
 }
 
+/**
+ * @return array{owner: OwnerUser, username: string, secret: string, header: string}
+ */
+function davActor(): array
+{
+    $owner = OwnerUser::factory()->create();
+    $secret = 'super-secret-token';
+    $username = 'dav-'.$owner->getKey();
+
+    DavCredential::factory()->create([
+        'user_id' => $owner->getKey(),
+        'username' => $username,
+        'secret_hash' => Hash::make($secret),
+    ]);
+
+    return [
+        'owner' => $owner,
+        'username' => $username,
+        'secret' => $secret,
+        'header' => davAuthHeader($username, $secret),
+    ];
+}
+
 function davPut(TestCase $test, string $path, string $authHeader, string $payload, string $contentType): TestResponse
 {
-    return $test->call('PUT', $path, [], [], [], [
-        'CONTENT_TYPE' => $contentType,
-        'HTTP_AUTHORIZATION' => $authHeader,
-    ], $payload);
+    return $test->callDav('PUT', $path, $authHeader, $payload, contentType: $contentType);
 }
 
 function davSyncReport(TestCase $test, string $path, string $authHeader, string $syncToken): TestResponse
@@ -43,10 +66,7 @@ function davSyncReport(TestCase $test, string $path, string $authHeader, string 
 </d:sync-collection>
 XML;
 
-    return $test->call('REPORT', $path, [], [], [], [
-        'CONTENT_TYPE' => 'application/xml',
-        'HTTP_AUTHORIZATION' => $authHeader,
-    ], $payload);
+    return $test->callDav('REPORT', $path, $authHeader, $payload);
 }
 
 function davCalendarQueryReport(TestCase $test, string $path, string $authHeader, string $filter, string $calendarData = '<cal:calendar-data />'): TestResponse
@@ -62,11 +82,9 @@ function davCalendarQueryReport(TestCase $test, string $path, string $authHeader
 </cal:calendar-query>
 XML;
 
-    return $test->call('REPORT', $path, [], [], [], [
-        'CONTENT_TYPE' => 'application/xml',
-        'HTTP_AUTHORIZATION' => $authHeader,
+    return $test->callDav('REPORT', $path, $authHeader, $payload, [
         'HTTP_DEPTH' => '1',
-    ], $payload);
+    ]);
 }
 
 /**

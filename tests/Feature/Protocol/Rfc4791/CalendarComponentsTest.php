@@ -4,7 +4,7 @@ use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 
-it('supports VJOURNAL: advertises it in supported-calendar-component-set', function (): void {
+it('[section 5.2.3] advertises VJOURNAL in supported-calendar-component-set', function (): void {
     $owner = OwnerUser::factory()->create();
     $calendar = DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
 
@@ -17,7 +17,7 @@ it('supports VJOURNAL: advertises it in supported-calendar-component-set', funct
     expect($componentSet->getValue())->toContain('VJOURNAL');
 });
 
-it('supports VJOURNAL: saves and loads journals in a mixed calendar, preserving raw iCalendar', function (): void {
+it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iCalendar', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
 
