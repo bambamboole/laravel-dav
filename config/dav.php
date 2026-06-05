@@ -32,4 +32,10 @@ return [
     'address_book_prefix' => 'addressbooks',
     'default_calendar_uri' => 'personal',
     'default_address_book_uri' => 'personal',
+
+    'scheduling' => [
+        'enabled' => true,
+        'mailer' => env('MAIL_MAILER'),
+        'from' => env('DAV_SCHEDULING_FROM', env('MAIL_FROM_ADDRESS', 'noreply@laravel-dav.example')),
+    ],
 ];

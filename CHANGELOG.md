@@ -9,12 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- CalDAV scheduling foundation ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)):
+- CalDAV scheduling ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)):
   the calendar backend implements `SchedulingSupport` (backed by a new
   `dav_scheduling_objects` table), the `Sabre\CalDAV\Schedule\Plugin` is registered,
-  and principals now advertise `calendar-user-address-set` plus scheduling
-  inbox/outbox URLs. Automatic iTip delivery, free/busy, iMIP, and `schedule-tag`
-  remain follow-ups.
+  and principals advertise `calendar-user-address-set` plus scheduling inbox/outbox
+  URLs. Auto-scheduling delivers iTip `REQUEST`/`REPLY`/`CANCEL` to local attendees'
+  inboxes, and free/busy queries work.
+- iMIP email delivery ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)) for
+  attendees that are not local principals, sent through Laravel Mail (transport
+  configurable via `dav.scheduling.mailer`, `from` via `DAV_SCHEDULING_FROM`,
+  defaulting to `MAIL_FROM_ADDRESS`) using the overridable `SchedulingMessageMail`
+  mailable. The whole scheduling stack can be toggled with `dav.scheduling.enabled`
+  (on by default). `schedule-tag` remains a follow-up.
 
 ### Changed
 

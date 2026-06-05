@@ -9,7 +9,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 - **Full CalDAV** — events (`VEVENT`), todos (`VTODO`), and journals (`VJOURNAL`).
 - **Full CardDAV** — contacts (`VCARD`) with rich, typed parsing.
 - **WebDAV sync** — collection synchronization via sync tokens ([RFC 6578](https://datatracker.ietf.org/doc/html/rfc6578)).
-- **CalDAV scheduling foundation** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — per-principal scheduling inbox/outbox collections and `calendar-user-address-set`, so clients discover that the server is schedule-aware.
+- **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
 - **HTTP Basic authentication** — stateless, backed by hashed credentials.
 - **Owner-agnostic** — any model that implements a small contract can own collections.
@@ -20,7 +20,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 
 The following are not implemented yet and are tracked for future releases:
 
-- **RFC 6638 auto-scheduling** — the scheduling inbox/outbox and `calendar-user-address-set` are in place, but automatic iTip delivery between attendees, free/busy queries, iMIP email, and `schedule-tag` are not yet wired up.
+- **RFC 6638 `schedule-tag`** — the `Schedule-Tag` header and `If-Schedule-Tag-Match` precondition are not implemented (scheduling otherwise works: auto-schedule, free/busy, and iMIP).
 - **Calendar sharing & proxy delegation.**
 - **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
@@ -185,6 +185,18 @@ $contact->formattedName; // ?string
 $contact->organization;  // ?string
 $contact->birthday;      // ?ContactDate
 ```
+
+## Scheduling
+
+Scheduling is **on by default**. When an event carries `ORGANIZER`/`ATTENDEE` properties, the server schedules it automatically. Attendees that are **local principals** (their email resolves to an owner) receive iTip `REQUEST`/`REPLY`/`CANCEL` messages in their scheduling inbox; free/busy queries work out of the box. Set `dav.scheduling.enabled` to `false` to turn the whole feature off.
+
+**External attendees** (emails that don't belong to a local owner) are reached by **iMIP** — email sent through your application's configured mailer. The `from` address defaults to `MAIL_FROM_ADDRESS` (falling back to `noreply@laravel-dav.example`); override it with:
+
+```dotenv
+DAV_SCHEDULING_FROM="no-reply@your-app.test"
+```
+
+A working mail transport must be set up for delivery to succeed. Override the transport with `dav.scheduling.mailer`. The email carries the invitation as a `text/calendar` attachment; to customise it, override the `Bambamboole\LaravelDav\Mail\SchedulingMessageMail` mailable.
 
 ## Reacting to changes
 
