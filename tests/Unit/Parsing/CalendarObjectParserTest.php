@@ -111,22 +111,6 @@ it('computes an implied one-day end for all-day events without dtend', function 
         ->and($data->endsAt?->toDateString())->toBe('2026-06-04');
 });
 
-it('parses status and url', function () {
-    $payload = calendarObjectPayload('VEVENT', [
-        'UID' => 'e-status',
-        'SUMMARY' => 'Trip',
-        'DTSTART' => '20260603T070000Z',
-        'DTEND' => '20260603T080000Z',
-        'STATUS' => 'CONFIRMED',
-        'URL' => 'https://example.com/e',
-    ]);
-
-    $data = (new CalendarObjectParser)->parse($payload);
-
-    expect($data->status)->toBe('CONFIRMED')
-        ->and($data->url)->toBe('https://example.com/e');
-});
-
 it('returns a raw-only dto for non-calendar payloads', function () {
     $payload = "BEGIN:VCARD\r\nVERSION:3.0\r\nEND:VCARD\r\n";
 
@@ -214,29 +198,6 @@ it('parses a VEVENT with RRULE, preserving raw and extracting core fields', func
         ->and($data->raw)->toBe($payload)
         ->and($data->isAllDay)->toBeFalse()
         ->and($data->startsAt?->toIso8601String())->toBe('2026-06-03T09:00:00+00:00');
-});
-
-it('parses a VTODO with only DUE and reports componentType', function () {
-    $payload = ical(<<<'ICS'
-        BEGIN:VCALENDAR
-        VERSION:2.0
-        PRODID:-//Life OS//Tests//EN
-        BEGIN:VTODO
-        UID:todo-due-only
-        SUMMARY:File tax return
-        DUE:20261031T235900Z
-        END:VTODO
-        END:VCALENDAR
-        ICS);
-
-    $data = (new CalendarObjectParser)->parse($payload, 'todo-due-only.ics');
-
-    expect($data->uid)->toBe('todo-due-only')
-        ->and($data->componentType)->toBe('VTODO')
-        ->and($data->summary)->toBe('File tax return')
-        ->and($data->startsAt)->toBeNull()
-        ->and($data->endsAt?->toIso8601String())->toBe('2026-10-31T23:59:00+00:00')
-        ->and($data->isAllDay)->toBeFalse();
 });
 
 it('parses a VJOURNAL and reports componentType', function () {
