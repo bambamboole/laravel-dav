@@ -280,3 +280,30 @@ it('parses a minimal contact with only FN and returns nulls for missing fields',
         ->and($data->socialProfiles)->toBe([])
         ->and($data->contactType)->toBe('person');
 });
+
+it('parses a vCard 4.0 card, mapping KIND and the PREF parameter', function () {
+    $payload = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:4.0
+        PRODID:-//Life OS//Tests//EN
+        UID:urn:uuid:contact-4
+        KIND:org
+        FN:Analytical Engines
+        ORG:Analytical Engines
+        EMAIL;PREF=1:info@example.com
+        EMAIL;TYPE=work:sales@example.com
+        TEL;TYPE=voice;PREF=1:+1-555-0100
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($payload, 'contact-4.vcf');
+
+    expect($data->uid)->toBe('urn:uuid:contact-4')
+        ->and($data->formattedName)->toBe('Analytical Engines')
+        ->and($data->contactType)->toBe('organization')
+        ->and($data->emailAddresses)->toHaveCount(2)
+        ->and($data->emailAddresses[0]->value)->toBe('info@example.com')
+        ->and($data->emailAddresses[0]->isPreferred)->toBeTrue()
+        ->and($data->emailAddresses[1]->isPreferred)->toBeFalse()
+        ->and($data->phoneNumbers[0]->isPreferred)->toBeTrue();
+});

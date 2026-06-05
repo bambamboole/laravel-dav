@@ -386,3 +386,89 @@ it('[sections 5.1 and 6.3.2] puts fetches and deletes a contact card through Car
         ->get($path)
         ->assertNotFound();
 });
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-5.1
+ * @see https://www.rfc-editor.org/rfc/rfc6350.html
+ */
+it('[section 5.1] stores a vCard 4.0 card losslessly and serves it back under content negotiation', function (): void {
+    $actor = davActor();
+    $owner = $actor['owner'];
+
+    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+
+    $payload = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:4.0
+        PRODID:-//Life OS//Tests//EN
+        UID:urn:uuid:vcard4-contact
+        FN:Ada Lovelace
+        N:Lovelace;Ada;;;
+        KIND:individual
+        GENDER:F
+        ANNIVERSARY:20100615
+        EMAIL;PREF=1:ada@example.com
+        EMAIL;TYPE=work:ada@work.example.com
+        TEL;TYPE=cell;PREF=1:+1-555-0100
+        ADR;TYPE=home:;;12 Analytical St;London;;EC1;UK
+        END:VCARD
+        VCF);
+
+    $path = '/dav/addressbooks/'.$owner->getKey().'/personal/vcard4.vcf';
+
+    davPut($this, $path, $actor['header'], $payload, 'text/vcard')->assertSuccessful();
+
+    expect(DavCard::query()->where('uri', 'vcard4.vcf')->first())
+        ->not->toBeNull()
+        ->card_data->toBe($payload);
+
+    $this->withHeaders(['Authorization' => $actor['header']])
+        ->get($path, ['Accept' => 'text/vcard; version=4.0'])
+        ->assertSuccessful()
+        ->assertContent($payload);
+
+    $downgraded = $this->withHeaders(['Authorization' => $actor['header']])
+        ->get($path, ['Accept' => 'text/vcard; version=3.0'])
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($downgraded)->toContain('VERSION:3.0')
+        ->and($downgraded)->not->toContain('VERSION:4.0');
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6352.html#section-6.2.2
+ */
+it('[section 6.2.2] advertises vCard 3.0 and 4.0 in supported-address-data', function (): void {
+    $actor = davActor();
+    $owner = $actor['owner'];
+
+    DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+
+    $response = $this->callDav('PROPFIND', '/dav/addressbooks/'.$owner->getKey().'/personal/', $actor['header'], <<<'XML'
+        <?xml version="1.0" encoding="utf-8" ?>
+        <d:propfind xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav">
+            <d:prop>
+                <card:supported-address-data />
+            </d:prop>
+        </d:propfind>
+        XML, [
+        'HTTP_DEPTH' => '0',
+    ])
+        ->assertStatus(207);
+
+    $document = new DOMDocument;
+    $document->loadXML($response->getContent());
+    $xpath = new DOMXPath($document);
+    $types = $xpath->query('//*[namespace-uri()="urn:ietf:params:xml:ns:carddav" and local-name()="address-data-type"]');
+
+    $versions = [];
+    foreach ($types as $type) {
+        if ($type instanceof DOMElement) {
+            $versions[$type->getAttribute('content-type').';'.$type->getAttribute('version')] = true;
+        }
+    }
+
+    expect($versions)->toHaveKey('text/vcard;3.0')
+        ->and($versions)->toHaveKey('text/vcard;4.0');
+});

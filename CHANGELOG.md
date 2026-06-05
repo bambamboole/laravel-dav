@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `calendar-availability` property can be stored on a principal's scheduling
   inbox to publish working hours, and free/busy responses now mark time outside
   those windows as `BUSY-UNAVAILABLE`.
+- vCard 4.0 ([RFC 6350](https://datatracker.ietf.org/doc/html/rfc6350)) support:
+  4.0 cards are stored losslessly and served via `Accept` version negotiation
+  (3.0 and 4.0 are advertised in `supported-address-data`), and the typed
+  `ContactData` projection now recognises the 4.0 `PREF` parameter for preferred
+  values.
 
 ### Changed
 
