@@ -2,7 +2,9 @@
 
 namespace Bambamboole\LaravelDav;
 
+use Bambamboole\LaravelDav\Support\AddressBookRepository;
 use Bambamboole\LaravelDav\Support\CalendarObjectWriter;
+use Bambamboole\LaravelDav\Support\CalendarRepository;
 use Bambamboole\LaravelDav\Support\ContactCardWriter;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -21,6 +23,8 @@ class LaravelDav
     public function __construct(
         private ContactCardWriter $contacts,
         private CalendarObjectWriter $calendarObjects,
+        private AddressBookRepository $addressBooks,
+        private CalendarRepository $calendars,
     ) {}
 
     public function contacts(): ContactCardWriter
@@ -31,6 +35,16 @@ class LaravelDav
     public function calendarObjects(): CalendarObjectWriter
     {
         return $this->calendarObjects;
+    }
+
+    public function addressBooks(): AddressBookRepository
+    {
+        return $this->addressBooks;
+    }
+
+    public function calendars(): CalendarRepository
+    {
+        return $this->calendars;
     }
 
     /**

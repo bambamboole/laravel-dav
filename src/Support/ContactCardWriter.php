@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class ContactCardWriter
 {
+    use ResolvesDavOwnerId;
+
     public function __construct(
         private VCardSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
@@ -37,6 +40,11 @@ class ContactCardWriter
 
             return $card->refresh();
         });
+    }
+
+    public function for(DavOwner|int|string $owner): ContactCardScope
+    {
+        return new ContactCardScope($this, $this->davOwnerId($owner));
     }
 
     public function update(DavCard $card, ContactData $data, string $expectedEtag): DavCard

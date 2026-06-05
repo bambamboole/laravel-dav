@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
 use Bambamboole\LaravelDav\Models\DavCalendar;
@@ -12,6 +13,8 @@ use Illuminate\Support\Str;
 
 class CalendarObjectWriter
 {
+    use ResolvesDavOwnerId;
+
     public function __construct(
         private CalendarObjectSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
@@ -37,6 +40,11 @@ class CalendarObjectWriter
 
             return $object->refresh();
         });
+    }
+
+    public function for(DavOwner|int|string $owner): CalendarObjectScope
+    {
+        return new CalendarObjectScope($this, $this->davOwnerId($owner));
     }
 
     public function update(DavCalendarObject $object, CalendarObjectData $data, string $expectedEtag): DavCalendarObject
