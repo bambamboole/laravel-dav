@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedInteger('created');
             $table->string('token')->unique();
             $table->unsignedTinyInteger('scope');
-            $table->unsignedTinyInteger('depth');
+            $table->integer('depth');
             $table->text('uri');
             $table->timestamps();
 
