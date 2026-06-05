@@ -2,7 +2,6 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
-use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
 use Bambamboole\LaravelDav\Models\DavCalendar;
@@ -13,8 +12,6 @@ use Illuminate\Support\Str;
 
 class CalendarObjectWriter
 {
-    use ResolvesDavOwnerId;
-
     public function __construct(
         private CalendarObjectSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
@@ -42,37 +39,12 @@ class CalendarObjectWriter
         });
     }
 
-    public function for(DavOwner|int|string $owner): CalendarObjectScope
-    {
-        return new CalendarObjectScope($this, $this->davOwnerId($owner));
-    }
-
     public function update(DavCalendarObject $object, CalendarObjectData $data, string $expectedEtag): DavCalendarObject
-    {
-        return $this->updateObject($object, $data, $expectedEtag);
-    }
-
-    public function forceUpdate(DavCalendarObject $object, CalendarObjectData $data): DavCalendarObject
-    {
-        return $this->updateObject($object, $data);
-    }
-
-    public function delete(DavCalendarObject $object, string $expectedEtag): void
-    {
-        $this->deleteObject($object, $expectedEtag);
-    }
-
-    public function forceDelete(DavCalendarObject $object): void
-    {
-        $this->deleteObject($object);
-    }
-
-    private function updateObject(DavCalendarObject $object, CalendarObjectData $data, ?string $expectedEtag = null): DavCalendarObject
     {
         return DB::transaction(function () use ($object, $data, $expectedEtag): DavCalendarObject {
             $fresh = $object->newQuery()->whereKey($object->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+            if ($fresh->etag !== $expectedEtag) {
                 throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
@@ -92,12 +64,12 @@ class CalendarObjectWriter
         });
     }
 
-    private function deleteObject(DavCalendarObject $object, ?string $expectedEtag = null): void
+    public function delete(DavCalendarObject $object, string $expectedEtag): void
     {
         DB::transaction(function () use ($object, $expectedEtag): void {
             $fresh = $object->newQuery()->whereKey($object->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+            if ($fresh->etag !== $expectedEtag) {
                 throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 

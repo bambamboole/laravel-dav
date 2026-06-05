@@ -22,10 +22,10 @@ it('reads typed calendar objects for an owner', function (): void {
         'summary' => 'Private',
     ]);
 
-    $objects = Dav::calendarObjects()->for($owner)->get();
-    $foundById = Dav::calendarObjects()->for($owner)->find($object->getKey());
-    $foundByUri = Dav::calendarObjects()->for($owner)->find('planning.ics');
-    $hidden = Dav::calendarObjects()->for($owner)->find('private.ics');
+    $objects = Dav::repositories()->calendarObjects($owner)->get();
+    $foundById = Dav::repositories()->calendarObjects($owner)->find($object->getKey());
+    $foundByUri = Dav::repositories()->calendarObjects($owner)->find('planning.ics');
+    $hidden = Dav::repositories()->calendarObjects($owner)->find('private.ics');
 
     expect($objects)->toHaveCount(1)
         ->and($objects->first())->toBeInstanceOf(CalendarObjectData::class)
@@ -35,17 +35,16 @@ it('reads typed calendar objects for an owner', function (): void {
         ->and($hidden)->toBeNull();
 });
 
-it('reads and writes calendar objects through a calendar handle', function (): void {
+it('reads and writes calendar objects through a calendar repository', function (): void {
     $owner = config('dav.owner_model')::factory()->create();
     $calendar = DavCalendar::factory()->create([
         'user_id' => $owner->getKey(),
         'uri' => 'work',
     ]);
 
-    $objects = Dav::calendars()
-        ->for($owner)
-        ->findOrFail('work')
-        ->objects();
+    $objects = Dav::repositories()
+        ->calendars($owner)
+        ->objects('work');
 
     $object = $objects->create(CalendarObjectData::fromArray([
         'uid' => 'event-1',

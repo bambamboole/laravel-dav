@@ -85,17 +85,6 @@ it('rejects stale contact card updates', function (): void {
         });
 });
 
-it('force updates a typed contact card without an expected etag', function (): void {
-    $card = DavCard::factory()->create(['full_name' => 'Old Name']);
-
-    $updated = Dav::contacts()->forceUpdate($card, ContactData::fromArray([
-        'uid' => $card->uid,
-        'formatted_name' => 'Forced Name',
-    ]));
-
-    expect($updated->full_name)->toBe('Forced Name');
-});
-
 it('deletes a typed contact card with optimistic concurrency', function (): void {
     $card = DavCard::factory()->create();
     $addressBook = $card->addressBook;
@@ -105,12 +94,4 @@ it('deletes a typed contact card with optimistic concurrency', function (): void
     expect(DavCard::query()->whereKey($card->getKey())->exists())->toBeFalse()
         ->and($addressBook->fresh()->sync_token)->toBe(2)
         ->and(DavChange::query()->where('collection_type', 'address_book')->where('operation', 3)->count())->toBe(1);
-});
-
-it('force deletes a typed contact card without an expected etag', function (): void {
-    $card = DavCard::factory()->create();
-
-    Dav::contacts()->forceDelete($card);
-
-    expect(DavCard::query()->whereKey($card->getKey())->exists())->toBeFalse();
 });

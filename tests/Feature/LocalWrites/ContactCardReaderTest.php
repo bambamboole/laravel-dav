@@ -21,10 +21,10 @@ it('reads typed contacts for an owner', function (): void {
         'full_name' => 'Grace Hopper',
     ]);
 
-    $contacts = Dav::contacts()->for($owner)->get();
-    $foundById = Dav::contacts()->for($owner)->find($card->getKey());
-    $foundByUri = Dav::contacts()->for($owner)->find('ada.vcf');
-    $hidden = Dav::contacts()->for($owner)->find('grace.vcf');
+    $contacts = Dav::repositories()->contacts($owner)->get();
+    $foundById = Dav::repositories()->contacts($owner)->find($card->getKey());
+    $foundByUri = Dav::repositories()->contacts($owner)->find('ada.vcf');
+    $hidden = Dav::repositories()->contacts($owner)->find('grace.vcf');
 
     expect($contacts)->toHaveCount(1)
         ->and($contacts->first())->toBeInstanceOf(ContactData::class)
@@ -34,17 +34,16 @@ it('reads typed contacts for an owner', function (): void {
         ->and($hidden)->toBeNull();
 });
 
-it('reads and writes contacts through an address book handle', function (): void {
+it('reads and writes contacts through an address book repository', function (): void {
     $owner = config('dav.owner_model')::factory()->create();
     $addressBook = DavAddressBook::factory()->create([
         'user_id' => $owner->getKey(),
         'uri' => 'personal',
     ]);
 
-    $contacts = Dav::addressBooks()
-        ->for($owner)
-        ->findOrFail('personal')
-        ->contacts();
+    $contacts = Dav::repositories()
+        ->addressBooks($owner)
+        ->contacts('personal');
 
     $card = $contacts->create(ContactData::fromArray([
         'uid' => 'contact-1',

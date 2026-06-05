@@ -10,7 +10,7 @@ use Bambamboole\LaravelDav\Models\DavCard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-class ContactCardScope
+class ContactCardRepository
 {
     public function __construct(
         private ContactCardWriter $writer,
@@ -41,7 +41,7 @@ class ContactCardScope
     public function create(ContactData $data): DavCard
     {
         if ($this->addressBook === null) {
-            throw new BadMethodCallException('Contacts can only be created through an address book scope.');
+            throw new BadMethodCallException('Contacts can only be created through an address book repository.');
         }
 
         return $this->writer->create($this->addressBook, $data);
@@ -52,19 +52,9 @@ class ContactCardScope
         return $this->writer->update($this->model($card), $data, $expectedEtag);
     }
 
-    public function forceUpdate(DavCard|int|string $card, ContactData $data): DavCard
-    {
-        return $this->writer->forceUpdate($this->model($card), $data);
-    }
-
     public function delete(DavCard|int|string $card, string $expectedEtag): void
     {
         $this->writer->delete($this->model($card), $expectedEtag);
-    }
-
-    public function forceDelete(DavCard|int|string $card): void
-    {
-        $this->writer->forceDelete($this->model($card));
     }
 
     /**

@@ -66,20 +66,6 @@ it('rejects stale calendar object updates', function (): void {
         });
 });
 
-it('force updates a typed calendar object without an expected etag', function (): void {
-    $object = DavCalendarObject::factory()->create(['summary' => 'Old']);
-
-    $updated = Dav::calendarObjects()->forceUpdate($object, CalendarObjectData::fromArray([
-        'uid' => $object->uid,
-        'summary' => 'Forced',
-        'starts_at' => '2026-01-01 09:00:00',
-        'ends_at' => '2026-01-01 10:00:00',
-        'timezone' => 'UTC',
-    ]));
-
-    expect($updated->summary)->toBe('Forced');
-});
-
 it('deletes a typed calendar object with optimistic concurrency', function (): void {
     $object = DavCalendarObject::factory()->create();
     $calendar = $object->calendar;
@@ -89,12 +75,4 @@ it('deletes a typed calendar object with optimistic concurrency', function (): v
     expect(DavCalendarObject::query()->whereKey($object->getKey())->exists())->toBeFalse()
         ->and($calendar->fresh()->sync_token)->toBe(2)
         ->and(DavChange::query()->where('collection_type', 'calendar')->where('operation', 3)->count())->toBe(1);
-});
-
-it('force deletes a typed calendar object without an expected etag', function (): void {
-    $object = DavCalendarObject::factory()->create();
-
-    Dav::calendarObjects()->forceDelete($object);
-
-    expect(DavCalendarObject::query()->whereKey($object->getKey())->exists())->toBeFalse();
 });

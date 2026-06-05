@@ -2,7 +2,6 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
-use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
@@ -13,8 +12,6 @@ use Illuminate\Support\Str;
 
 class ContactCardWriter
 {
-    use ResolvesDavOwnerId;
-
     public function __construct(
         private VCardSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
@@ -42,37 +39,12 @@ class ContactCardWriter
         });
     }
 
-    public function for(DavOwner|int|string $owner): ContactCardScope
-    {
-        return new ContactCardScope($this, $this->davOwnerId($owner));
-    }
-
     public function update(DavCard $card, ContactData $data, string $expectedEtag): DavCard
-    {
-        return $this->updateCard($card, $data, $expectedEtag);
-    }
-
-    public function forceUpdate(DavCard $card, ContactData $data): DavCard
-    {
-        return $this->updateCard($card, $data);
-    }
-
-    public function delete(DavCard $card, string $expectedEtag): void
-    {
-        $this->deleteCard($card, $expectedEtag);
-    }
-
-    public function forceDelete(DavCard $card): void
-    {
-        $this->deleteCard($card);
-    }
-
-    private function updateCard(DavCard $card, ContactData $data, ?string $expectedEtag = null): DavCard
     {
         return DB::transaction(function () use ($card, $data, $expectedEtag): DavCard {
             $fresh = $card->newQuery()->whereKey($card->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+            if ($fresh->etag !== $expectedEtag) {
                 throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 
@@ -92,12 +64,12 @@ class ContactCardWriter
         });
     }
 
-    private function deleteCard(DavCard $card, ?string $expectedEtag = null): void
+    public function delete(DavCard $card, string $expectedEtag): void
     {
         DB::transaction(function () use ($card, $expectedEtag): void {
             $fresh = $card->newQuery()->whereKey($card->getKey())->lockForUpdate()->firstOrFail();
 
-            if ($expectedEtag !== null && $fresh->etag !== $expectedEtag) {
+            if ($fresh->etag !== $expectedEtag) {
                 throw new StaleDavResourceException($expectedEtag, $fresh->etag, $fresh->uri);
             }
 

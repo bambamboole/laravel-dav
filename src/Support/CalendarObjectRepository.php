@@ -10,7 +10,7 @@ use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-class CalendarObjectScope
+class CalendarObjectRepository
 {
     public function __construct(
         private CalendarObjectWriter $writer,
@@ -41,7 +41,7 @@ class CalendarObjectScope
     public function create(CalendarObjectData $data): DavCalendarObject
     {
         if ($this->calendar === null) {
-            throw new BadMethodCallException('Calendar objects can only be created through a calendar scope.');
+            throw new BadMethodCallException('Calendar objects can only be created through a calendar repository.');
         }
 
         return $this->writer->create($this->calendar, $data);
@@ -52,19 +52,9 @@ class CalendarObjectScope
         return $this->writer->update($this->model($object), $data, $expectedEtag);
     }
 
-    public function forceUpdate(DavCalendarObject|int|string $object, CalendarObjectData $data): DavCalendarObject
-    {
-        return $this->writer->forceUpdate($this->model($object), $data);
-    }
-
     public function delete(DavCalendarObject|int|string $object, string $expectedEtag): void
     {
         $this->writer->delete($this->model($object), $expectedEtag);
-    }
-
-    public function forceDelete(DavCalendarObject|int|string $object): void
-    {
-        $this->writer->forceDelete($this->model($object));
     }
 
     /**
