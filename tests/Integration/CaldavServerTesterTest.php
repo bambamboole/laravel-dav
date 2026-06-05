@@ -10,8 +10,6 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
 
     expect($result->erroredChecks)->toBe([]);
 
-    // Every caldav-server-tester compatibility check now grades as fully
-    // supported, so the tester reports no deviations. Server-side `<C:expand>`
-    // of recurring VTODOs was the last remaining gap.
+    // Every compatibility check now grades as fully supported: no deviations.
     expect($result->featureNames())->toBe([]);
 });

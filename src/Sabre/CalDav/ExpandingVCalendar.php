@@ -2,7 +2,6 @@
 
 namespace Bambamboole\LaravelDav\Sabre\CalDav;
 
-use Bambamboole\LaravelDav\Server\ServerFactory;
 use DateTimeInterface;
 use DateTimeZone;
 use Sabre\VObject\Component;
@@ -13,17 +12,11 @@ use Sabre\VObject\Recur\EventIterator;
 use Sabre\VObject\Recur\NoInstancesException;
 
 /**
- * A {@see VCalendar} whose {@see self::expand()} also expands recurring VTODO
- * and VJOURNAL components, not only VEVENT.
+ * Why: sabre/vobject's VCalendar::expand() hardcodes VEVENT and silently drops
+ * recurring VTODO/VJOURNAL. Registered as the VCALENDAR document class so the
+ * CalDAV REPORT handlers expand tasks and journals too (RFC 4791 §9.6.5).
  *
- * sabre/vobject's {@see VCalendar::expand()} (RFC 4791 §9.6.5 / §7.8.3) hardcodes
- * VEVENT and silently drops recurring VTODO/VJOURNAL. Registering this subclass
- * as the VCALENDAR document class (see {@see ServerFactory})
- * makes Sabre's calendar-query and calendar-multiget REPORT handlers expand
- * tasks and journals too. Stored iCalendar payloads are untouched; only the
- * REPORT-time expansion changes.
- *
- * The expansion mirrors sabre/vobject 4.6.0; the only divergences are the wider
+ * The body mirrors sabre/vobject 4.6.0; the only divergences are the wider
  * component gate and per-instance DUE shifting for tasks.
  */
 class ExpandingVCalendar extends VCalendar
@@ -107,9 +100,8 @@ class ExpandingVCalendar extends VCalendar
     }
 
     /**
-     * Object ids of the overridden instances, so generated instances can be told
-     * apart from author-provided RECURRENCE-ID overrides (which keep their own
-     * DTSTART/DUE verbatim).
+     * Why: the iterator returns author-provided overrides by reference, so their
+     * object ids let us skip DUE shifting and keep their own DTSTART/DUE.
      *
      * @param  list<Component>  $components
      * @return array<int, true>
@@ -128,8 +120,7 @@ class ExpandingVCalendar extends VCalendar
     }
 
     /**
-     * Seconds between a recurring VTODO master's DTSTART and DUE, used to keep
-     * each generated instance's DUE the master's duration after its DTSTART.
+     * Why: each generated VTODO instance keeps the master's DTSTART→DUE gap.
      * Null when there is nothing to shift (no master, not a task, or no DUE).
      *
      * @param  list<Component>  $components
