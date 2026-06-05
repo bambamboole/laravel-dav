@@ -53,16 +53,26 @@ function davPut(TestCase $test, string $path, string $authHeader, string $payloa
     return $test->callDav('PUT', $path, $authHeader, $payload, contentType: $contentType);
 }
 
-function davSyncReport(TestCase $test, string $path, string $authHeader, string $syncToken): TestResponse
+function davSyncReport(TestCase $test, string $path, string $authHeader, ?string $syncToken, ?int $limit = null): TestResponse
 {
+    $syncTokenXml = $syncToken === null
+        ? '<d:sync-token />'
+        : '<d:sync-token>'.$syncToken.'</d:sync-token>';
+    $limitXml = $limit === null ? '' : <<<XML
+    <d:limit>
+        <d:nresults>{$limit}</d:nresults>
+    </d:limit>
+XML;
+
     $payload = <<<XML
 <?xml version="1.0" encoding="utf-8" ?>
 <d:sync-collection xmlns:d="DAV:">
-    <d:sync-token>{$syncToken}</d:sync-token>
+    {$syncTokenXml}
     <d:sync-level>1</d:sync-level>
     <d:prop>
         <d:getetag />
     </d:prop>
+    {$limitXml}
 </d:sync-collection>
 XML;
 
