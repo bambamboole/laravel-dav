@@ -33,7 +33,6 @@ Initial release.
 - **Calendar sharing and proxy delegation** are not implemented.
 - **vCard 4.0 / jCard** are not supported (vCard 3.0 only).
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) is not implemented; clients expand recurrences themselves.
-- The `caldav-server-tester` `save-load.event.timezone` check reports `broken`. Stored iCalendar (including `VTIMEZONE`) is persisted and returned verbatim, so standards-compliant clients round-trip correctly; the deviation is tracked for investigation.
 
 [Unreleased]: https://github.com/bambamboole/laravel-dav/compare/0.1.0...HEAD
 [0.1.0]: https://github.com/bambamboole/laravel-dav/releases/tag/0.1.0

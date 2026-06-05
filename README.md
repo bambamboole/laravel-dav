@@ -23,7 +23,6 @@ The following are not implemented yet and are tracked for future releases:
 - **Calendar sharing & proxy delegation.**
 - **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
-- The `caldav-server-tester` `save-load.event.timezone` check reports `broken`. Stored iCalendar (including any `VTIMEZONE`) is persisted and returned verbatim, so standards-compliant clients round-trip correctly; the deviation is under investigation.
 
 ## Requirements
 
@@ -304,8 +303,12 @@ This test is part of the default `composer test` run, so the tester binary must
 be installed wherever the suite runs:
 
 ```bash
-uv tool install caldav-server-tester
+uv tool install --with vobject caldav-server-tester
 ```
+
+The `--with vobject` extra is required: the tester's `save-load.event.timezone`
+check reads events back through the optional `vobject` library and grades the
+feature `broken` when it is missing, regardless of server behaviour.
 
 If the binary lives outside `~/.local/bin` and your `PATH`, point the test at it
 with `CALDAV_SERVER_TESTER_BIN=/path/to/caldav-server-tester`.

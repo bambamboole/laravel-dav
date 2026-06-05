@@ -12,12 +12,10 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
     expect($result->erroredChecks)->toBe([]);
 
     expect($result->featureNames())->toBe([
-        'save-load.event.timezone',
         'scheduling',
         'search.recurrences.expanded.todo',
     ]);
 
-    expect($result->support('save-load.event.timezone'))->toBe(SupportLevel::Broken);
     expect($result->support('scheduling'))->toBe(SupportLevel::Unsupported);
     expect($result->support('search.recurrences.expanded.todo'))->toBe(SupportLevel::Unsupported);
 });
