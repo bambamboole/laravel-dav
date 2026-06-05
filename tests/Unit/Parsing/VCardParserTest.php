@@ -35,14 +35,12 @@ it('parses contact fields', function () {
         ->and($data->givenName)->toBe('Ada')
         ->and($data->familyName)->toBe('Lovelace')
         ->and($data->organization)->toBe('Analytical Engines')
-        ->and($data->simpleEmails)->toBe(['ada@example.com'])
-        ->and($data->simplePhones)->toBe(['+491234567'])
-        ->and($data->emails)->toHaveCount(1)
-        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
-        ->and($data->emails[0]->value)->toBe('ada@example.com')
-        ->and($data->emails[0]->types)->toBe(['work'])
-        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
-        ->and($data->phones[0]->value)->toBe('+491234567');
+        ->and($data->emailAddresses)->toHaveCount(1)
+        ->and($data->emailAddresses[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emailAddresses[0]->value)->toBe('ada@example.com')
+        ->and($data->emailAddresses[0]->types)->toBe(['work'])
+        ->and($data->phoneNumbers[0])->toBeInstanceOf(ContactPhoneNumber::class)
+        ->and($data->phoneNumbers[0]->value)->toBe('+491234567');
 });
 
 it('parses multiple emails and phones', function () {
@@ -61,12 +59,10 @@ it('parses multiple emails and phones', function () {
 
     $data = (new VCardParser)->parse($payload);
 
-    expect($data->simpleEmails)->toBe(['grace@example.com', 'hopper@example.net'])
-        ->and($data->simplePhones)->toBe(['+491111111', '+492222222'])
-        ->and($data->emails)->toHaveCount(2)
-        ->and($data->emails[1]->value)->toBe('hopper@example.net')
-        ->and($data->emails[1]->types)->toBe(['home'])
-        ->and($data->phones)->toHaveCount(2);
+    expect($data->emailAddresses)->toHaveCount(2)
+        ->and($data->emailAddresses[1]->value)->toBe('hopper@example.net')
+        ->and($data->emailAddresses[1]->types)->toBe(['home'])
+        ->and($data->phoneNumbers)->toHaveCount(2);
 });
 
 it('parses postal addresses', function () {
@@ -230,10 +226,10 @@ it('parses apple-style grouped properties with X-ABLABEL', function () {
 
     $data = (new VCardParser)->parse($payload, 'contact-apple.vcf');
 
-    expect($data->emails)->toHaveCount(1)
-        ->and($data->emails[0]->value)->toBe('apple@example.com')
-        ->and($data->emails[0]->label)->toBe('work')
-        ->and($data->emails[0]->group)->toBe('ITEM1')
+    expect($data->emailAddresses)->toHaveCount(1)
+        ->and($data->emailAddresses[0]->value)->toBe('apple@example.com')
+        ->and($data->emailAddresses[0]->label)->toBe('work')
+        ->and($data->emailAddresses[0]->group)->toBe('ITEM1')
         ->and($data->urls)->toHaveCount(1)
         ->and($data->urls[0]->value)->toBe('https://apple.example.com')
         ->and($data->urls[0]->label)->toBe('Homepage')
@@ -276,8 +272,8 @@ it('parses a minimal contact with only FN and returns nulls for missing fields',
         ->and($data->familyName)->toBeNull()
         ->and($data->organization)->toBeNull()
         ->and($data->birthday)->toBeNull()
-        ->and($data->emails)->toBe([])
-        ->and($data->phones)->toBe([])
+        ->and($data->emailAddresses)->toBe([])
+        ->and($data->phoneNumbers)->toBe([])
         ->and($data->addresses)->toBe([])
         ->and($data->urls)->toBe([])
         ->and($data->instantMessages)->toBe([])

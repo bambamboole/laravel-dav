@@ -21,12 +21,11 @@ it('has the key columns on dav_calendar_objects', function (): void {
         'uri',
         'uid',
         'component_type',
-        'summary',
         'starts_at',
         'ends_at',
         'is_all_day',
-        'status',
-        'url',
+        'timezone',
+        'data',
         'etag',
         'size',
         'calendar_data',
@@ -37,14 +36,15 @@ it('has the key columns on dav_cards', function (): void {
     expect(Schema::hasColumns('dav_cards', [
         'dav_address_book_id',
         'uri',
-        'uid',
-        'full_name',
-        'contact_type',
-        'birthday',
-        'email_addresses',
-        'phone_numbers',
+        'data',
         'etag',
         'size',
         'card_data',
     ]))->toBeTrue();
+});
+
+it('does not create denormalized contact columns', function (): void {
+    foreach (['uid', 'full_name', 'contact_type', 'birthday', 'email_addresses', 'phone_numbers'] as $column) {
+        expect(Schema::hasColumn('dav_cards', $column))->toBeFalse();
+    }
 });

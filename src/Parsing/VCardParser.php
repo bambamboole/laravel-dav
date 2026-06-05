@@ -42,8 +42,8 @@ class VCardParser
                 organization: $organizationParts[0] ?? $this->textProperty($vCard, 'ORG'),
                 contactType: $this->contactType($vCard),
                 birthday: $birthday !== null ? new ContactDate($birthday) : null,
-                emails: array_map(fn (array $row): ContactEmailAddress => new ContactEmailAddress($row), $this->labeledTextProperties($vCard, 'EMAIL')),
-                phones: array_map(fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row), $this->labeledTextProperties($vCard, 'TEL')),
+                emailAddresses: array_map(fn (array $row): ContactEmailAddress => new ContactEmailAddress($row), $this->labeledTextProperties($vCard, 'EMAIL')),
+                phoneNumbers: array_map(fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row), $this->labeledTextProperties($vCard, 'TEL')),
                 addresses: array_map(fn (array $row): ContactPostalAddress => new ContactPostalAddress($row), $this->addresses($vCard)),
                 urls: array_map(fn (array $row): ContactUrl => new ContactUrl($row), $this->labeledTextProperties($vCard, 'URL')),
                 instantMessages: array_map(fn (array $row): ContactInstantMessage => new ContactInstantMessage($row), $this->instantMessages($vCard)),
@@ -64,8 +64,6 @@ class VCardParser
                 jobTitle: $this->textProperty($vCard, 'TITLE'),
                 department: $organizationParts[1] ?? null,
                 note: $this->textProperty($vCard, 'NOTE'),
-                simpleEmails: $this->propertyValues($vCard, 'EMAIL'),
-                simplePhones: $this->propertyValues($vCard, 'TEL'),
             );
         } finally {
             $vCard->destroy();
@@ -94,18 +92,7 @@ class VCardParser
     }
 
     /**
-     * @return array<int, string>
-     */
-    private function propertyValues(Component $component, string $name): array
-    {
-        return collect($component->select($name))
-            ->map(fn (Property $property): string => (string) $property)
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @return array<int, array{label: ?string, value: string, types: array<int, string>, is_preferred: bool, group: ?string}>
+     * @return array<int, array{label: ?string, value: string, types: array<int, string>, isPreferred: bool, group: ?string}>
      */
     private function labeledTextProperties(Component $component, string $name): array
     {
@@ -114,7 +101,7 @@ class VCardParser
                 'label' => $this->labelFor($component, $property),
                 'value' => (string) $property,
                 'types' => $this->parameterValues($property, 'TYPE'),
-                'is_preferred' => $this->isPreferred($property),
+                'isPreferred' => $this->isPreferred($property),
                 'group' => $this->group($property),
             ])
             ->values()
@@ -132,16 +119,16 @@ class VCardParser
 
                 return [
                     'label' => $this->labelFor($component, $property),
-                    'po_box' => $parts[0] ?? null,
+                    'poBox' => $parts[0] ?? null,
                     'extended' => $parts[1] ?? null,
                     'street' => $parts[2] ?? null,
                     'city' => $parts[3] ?? null,
                     'region' => $parts[4] ?? null,
-                    'postal_code' => $parts[5] ?? null,
+                    'postalCode' => $parts[5] ?? null,
                     'country' => $parts[6] ?? null,
-                    'country_code' => null,
+                    'countryCode' => null,
                     'types' => $this->parameterValues($property, 'TYPE'),
-                    'is_preferred' => $this->isPreferred($property),
+                    'isPreferred' => $this->isPreferred($property),
                     'group' => $this->group($property),
                 ];
             })
@@ -167,7 +154,7 @@ class VCardParser
                     'username' => $username,
                     'uri' => $uri,
                     'types' => $this->parameterValues($property, 'TYPE'),
-                    'is_preferred' => $this->isPreferred($property),
+                    'isPreferred' => $this->isPreferred($property),
                     'group' => $this->group($property),
                 ];
             });
@@ -180,7 +167,7 @@ class VCardParser
                     'username' => (string) $property,
                     'uri' => $service.':'.(string) $property,
                     'types' => $this->parameterValues($property, 'TYPE'),
-                    'is_preferred' => $this->isPreferred($property),
+                    'isPreferred' => $this->isPreferred($property),
                     'group' => $this->group($property),
                 ]);
             }
@@ -200,7 +187,7 @@ class VCardParser
                 'service' => $this->parameterValues($property, 'TYPE')[0] ?? null,
                 'username' => null,
                 'url' => (string) $property,
-                'user_identifier' => null,
+                'userIdentifier' => null,
                 'group' => $this->group($property),
             ])
             ->values()
@@ -330,7 +317,7 @@ class VCardParser
             'month' => $month,
             'day' => $day,
             'calendar' => null,
-            'raw_value' => $rawValue,
+            'rawValue' => $rawValue,
             'group' => $this->group($property),
         ];
     }

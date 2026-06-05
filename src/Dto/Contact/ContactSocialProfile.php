@@ -22,7 +22,7 @@ class ContactSocialProfile implements Arrayable, JsonSerializable
         $this->service = $this->nullableString($data, 'service');
         $this->username = $this->nullableString($data, 'username');
         $this->url = $this->nullableString($data, 'url');
-        $this->userIdentifier = $this->nullableString($data, 'user_identifier') ?? $this->nullableString($data, 'userIdentifier');
+        $this->userIdentifier = $this->nullableString($data, 'userIdentifier');
         $this->group = $this->nullableString($data, 'group');
     }
 
@@ -48,7 +48,7 @@ class ContactSocialProfile implements Arrayable, JsonSerializable
             'service' => $this->service,
             'username' => $this->username,
             'url' => $this->url,
-            'user_identifier' => $this->userIdentifier,
+            'userIdentifier' => $this->userIdentifier,
             'group' => $this->group,
         ];
     }

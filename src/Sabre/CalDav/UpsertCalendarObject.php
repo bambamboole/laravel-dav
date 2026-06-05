@@ -8,29 +8,17 @@ use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 
 class UpsertCalendarObject
 {
-    public function __construct(private CalendarObjectParser $parser) {}
+    public function __construct(
+        private CalendarObjectParser $parser,
+    ) {}
 
     public function handle(DavCalendar $calendar, string $uri, string $payload): DavCalendarObject
     {
         $parsed = $this->parser->parse($payload, $uri);
+        $object = $calendar->objects()->firstOrNew(['uri' => $uri]);
 
-        return $calendar->objects()->updateOrCreate(
-            ['uri' => $uri],
-            [
-                'uid' => $parsed->uid,
-                'component_type' => $parsed->componentType,
-                'summary' => $parsed->summary,
-                'description' => $parsed->description,
-                'location' => $parsed->location,
-                'status' => $parsed->status,
-                'url' => $parsed->url,
-                'starts_at' => $parsed->startsAt,
-                'ends_at' => $parsed->endsAt,
-                'is_all_day' => $parsed->isAllDay,
-                'timezone' => $parsed->timezone,
-                'calendar_data' => $payload,
-                'last_modified_at' => now(),
-            ],
-        );
+        $object->updateFromData($parsed, $payload, defaultComponentType: null);
+
+        return $object->refresh();
     }
 }

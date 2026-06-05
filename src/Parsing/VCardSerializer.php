@@ -73,24 +73,12 @@ class VCardSerializer
 
         $group = 1;
 
-        if ($data->emails !== []) {
-            foreach ($data->emails as $email) {
-                $this->addGroupedProperty($vCard, 'EMAIL', $email->value, $email->label, $this->parameters($email), $group);
-            }
-        } else {
-            foreach ($data->simpleEmails as $email) {
-                $vCard->add('EMAIL', $email, ['TYPE' => 'INTERNET']);
-            }
+        foreach ($data->emailAddresses as $email) {
+            $this->addGroupedProperty($vCard, 'EMAIL', $email->value, $email->label, $this->parameters($email), $group);
         }
 
-        if ($data->phones !== []) {
-            foreach ($data->phones as $phone) {
-                $this->addGroupedProperty($vCard, 'TEL', $phone->value, $phone->label, $this->parameters($phone), $group);
-            }
-        } else {
-            foreach ($data->simplePhones as $phone) {
-                $vCard->add('TEL', $phone, ['TYPE' => 'CELL']);
-            }
+        foreach ($data->phoneNumbers as $phone) {
+            $this->addGroupedProperty($vCard, 'TEL', $phone->value, $phone->label, $this->parameters($phone), $group);
         }
 
         foreach ($data->addresses as $address) {
@@ -265,34 +253,12 @@ class VCardSerializer
 
     private function primaryEmail(ContactData $data): ?ContactEmailAddress
     {
-        if ($data->emails !== []) {
-            return $data->emails[0];
-        }
-
-        if ($data->simpleEmails !== []) {
-            return new ContactEmailAddress([
-                'value' => $data->simpleEmails[0],
-                'types' => ['INTERNET'],
-            ]);
-        }
-
-        return null;
+        return $data->emailAddresses[0] ?? null;
     }
 
     private function primaryPhone(ContactData $data): ?ContactPhoneNumber
     {
-        if ($data->phones !== []) {
-            return $data->phones[0];
-        }
-
-        if ($data->simplePhones !== []) {
-            return new ContactPhoneNumber([
-                'value' => $data->simplePhones[0],
-                'types' => ['CELL'],
-            ]);
-        }
-
-        return null;
+        return $data->phoneNumbers[0] ?? null;
     }
 
     /**

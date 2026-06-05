@@ -7,6 +7,8 @@ use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
+use Bambamboole\LaravelDav\Support\DavChangeOperation;
+use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Support\Facades\DB;
 use Sabre\CardDAV\Backend\AbstractBackend;
 use Sabre\CardDAV\Backend\SyncSupport;
@@ -162,7 +164,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
                 (string) $cardData,
             );
 
-            $this->recordAddressBookChange($addressBook, (string) $cardUri, self::OperationAdd);
+            $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Add);
 
             return $card;
         });
@@ -180,7 +182,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
                 (string) $cardData,
             );
 
-            $this->recordAddressBookChange($addressBook, (string) $cardUri, self::OperationModify);
+            $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Modify);
 
             return $card;
         });
@@ -197,7 +199,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
                 ->delete();
 
             if ($deleted) {
-                $this->recordAddressBookChange($addressBook, (string) $cardUri, self::OperationDelete);
+                $this->recordAddressBookChange($addressBook, (string) $cardUri, DavChangeOperation::Delete);
             }
 
             return $deleted;
@@ -224,7 +226,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             );
         }
 
-        return $this->changedResourceResponse($addressBook, self::AddressBookCollectionType, $syncToken, $limit);
+        return $this->changedResourceResponse($addressBook, DavChangeRecorder::AddressBookCollectionType, $syncToken, $limit);
     }
 
     /**

@@ -2,9 +2,15 @@
 
 namespace Bambamboole\LaravelDav\Dto;
 
+use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Support\Arrayable;
+use JsonSerializable;
 
-final readonly class CalendarObjectData
+/**
+ * @implements Arrayable<string, mixed>
+ */
+final readonly class CalendarObjectData implements Arrayable, JsonSerializable
 {
     public function __construct(
         public string $uri,
@@ -24,24 +30,36 @@ final readonly class CalendarObjectData
         public ?string $timezone = null,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return DtoFactory::calendarObjectData($data);
+    }
+
     public function withStorageMeta(string $uri, string $etag, int $size): self
     {
-        return new self(
-            uri: $uri,
-            raw: $this->raw,
-            etag: $etag,
-            size: $size,
-            uid: $this->uid,
-            componentType: $this->componentType,
-            summary: $this->summary,
-            description: $this->description,
-            location: $this->location,
-            status: $this->status,
-            url: $this->url,
-            startsAt: $this->startsAt,
-            endsAt: $this->endsAt,
-            isAllDay: $this->isAllDay,
-            timezone: $this->timezone,
-        );
+        return DtoFactory::calendarObjectData($this, [
+            'uri' => $uri,
+            'etag' => $etag,
+            'size' => $size,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return DtoFactory::calendarObjectDataArray($this);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

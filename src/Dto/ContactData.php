@@ -12,12 +12,18 @@ use Bambamboole\LaravelDav\Dto\Contact\ContactRelation;
 use Bambamboole\LaravelDav\Dto\Contact\ContactSocialProfile;
 use Bambamboole\LaravelDav\Dto\Contact\ContactUrl;
 use Bambamboole\LaravelDav\Dto\Contact\ContactVCardExtension;
+use Bambamboole\LaravelDav\Support\DtoFactory;
+use Illuminate\Contracts\Support\Arrayable;
+use JsonSerializable;
 
-final readonly class ContactData
+/**
+ * @implements Arrayable<string, mixed>
+ */
+final readonly class ContactData implements Arrayable, JsonSerializable
 {
     /**
-     * @param  array<int, ContactEmailAddress>  $emails
-     * @param  array<int, ContactPhoneNumber>  $phones
+     * @param  array<int, ContactEmailAddress>  $emailAddresses
+     * @param  array<int, ContactPhoneNumber>  $phoneNumbers
      * @param  array<int, ContactPostalAddress>  $addresses
      * @param  array<int, ContactUrl>  $urls
      * @param  array<int, ContactInstantMessage>  $instantMessages
@@ -26,8 +32,6 @@ final readonly class ContactData
      * @param  array<int, ContactRelation>  $relations
      * @param  array<int, ContactVCardExtension>  $extensions
      * @param  array<int, ContactPronoun>  $pronouns
-     * @param  array<int, string>  $simpleEmails  Plain email strings extracted from EMAIL properties, retained alongside the typed $emails so a card carrying only untyped emails round-trips losslessly.
-     * @param  array<int, string>  $simplePhones  Plain phone strings extracted from TEL properties, retained alongside the typed $phones.
      */
     public function __construct(
         public string $uri,
@@ -41,8 +45,8 @@ final readonly class ContactData
         public ?string $organization = null,
         public string $contactType = 'person',
         public ?ContactDate $birthday = null,
-        public array $emails = [],
-        public array $phones = [],
+        public array $emailAddresses = [],
+        public array $phoneNumbers = [],
         public array $addresses = [],
         public array $urls = [],
         public array $instantMessages = [],
@@ -63,48 +67,38 @@ final readonly class ContactData
         public ?string $jobTitle = null,
         public ?string $department = null,
         public ?string $note = null,
-        public array $simpleEmails = [],
-        public array $simplePhones = [],
     ) {}
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        return DtoFactory::contactData($data);
+    }
 
     public function withStorageMeta(string $uri, string $etag, int $size): self
     {
-        return new self(
-            uri: $uri,
-            raw: $this->raw,
-            etag: $etag,
-            size: $size,
-            uid: $this->uid,
-            formattedName: $this->formattedName,
-            givenName: $this->givenName,
-            familyName: $this->familyName,
-            organization: $this->organization,
-            contactType: $this->contactType,
-            birthday: $this->birthday,
-            emails: $this->emails,
-            phones: $this->phones,
-            addresses: $this->addresses,
-            urls: $this->urls,
-            instantMessages: $this->instantMessages,
-            socialProfiles: $this->socialProfiles,
-            dates: $this->dates,
-            relations: $this->relations,
-            extensions: $this->extensions,
-            pronouns: $this->pronouns,
-            namePrefix: $this->namePrefix,
-            middleName: $this->middleName,
-            phoneticGivenName: $this->phoneticGivenName,
-            phoneticMiddleName: $this->phoneticMiddleName,
-            phoneticFamilyName: $this->phoneticFamilyName,
-            phoneticOrganization: $this->phoneticOrganization,
-            previousFamilyName: $this->previousFamilyName,
-            nameSuffix: $this->nameSuffix,
-            nickname: $this->nickname,
-            jobTitle: $this->jobTitle,
-            department: $this->department,
-            note: $this->note,
-            simpleEmails: $this->simpleEmails,
-            simplePhones: $this->simplePhones,
-        );
+        return DtoFactory::contactData($this, [
+            'uri' => $uri,
+            'etag' => $etag,
+            'size' => $size,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        return DtoFactory::contactDataArray($this);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

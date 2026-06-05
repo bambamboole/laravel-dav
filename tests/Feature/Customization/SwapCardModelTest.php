@@ -43,7 +43,7 @@ it('drives the address book backend end-to-end with the swapped card model', fun
     expect($card)->toBeInstanceOf(CustomCard::class)
         ->and($card->isCustom())->toBeTrue()
         ->and($card->dav_address_book_id)->toBe($addressBookId)
-        ->and($card->full_name)->toBe('Ada Lovelace');
+        ->and($card->data->formattedName)->toBe('Ada Lovelace');
 
     $single = $backend->getCard($addressBookId, 'card-1.vcf');
     expect($single)->not->toBeFalse()

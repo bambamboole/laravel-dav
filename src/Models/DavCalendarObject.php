@@ -2,10 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Models;
 
+use Bambamboole\LaravelDav\Casts\CalendarObjectDataCast;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarObjectFactory;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
+use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,21 +19,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $uri
  * @property string|null $uid
  * @property string|null $component_type
- * @property string|null $summary
- * @property string|null $description
- * @property string|null $location
  * @property CarbonImmutable|null $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property bool $is_all_day
  * @property string|null $timezone
+ * @property CalendarObjectData $data
  * @property string $etag
  * @property int $size
  * @property CarbonImmutable $last_modified_at
  * @property string $calendar_data
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
- * @property string|null $status
- * @property string|null $url
  * @property-read DavCalendar $calendar
  */
 class DavCalendarObject extends Model
@@ -46,19 +44,19 @@ class DavCalendarObject extends Model
         'uri',
         'uid',
         'component_type',
-        'summary',
-        'description',
-        'location',
-        'status',
-        'url',
         'starts_at',
         'ends_at',
         'is_all_day',
         'timezone',
+        'data',
         'etag',
         'size',
         'last_modified_at',
         'calendar_data',
+    ];
+
+    protected $attributes = [
+        'data' => '[]',
     ];
 
     /**
@@ -72,6 +70,7 @@ class DavCalendarObject extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'is_all_day' => 'boolean',
+            'data' => CalendarObjectDataCast::class,
             'size' => 'integer',
             'last_modified_at' => 'datetime',
         ];
@@ -87,23 +86,53 @@ class DavCalendarObject extends Model
 
     public function toData(): CalendarObjectData
     {
-        return new CalendarObjectData(
-            uri: (string) $this->uri,
-            raw: (string) ($this->calendar_data ?? ''),
-            etag: (string) ($this->etag ?? ''),
-            size: (int) ($this->size ?? 0),
-            uid: $this->uid,
-            componentType: $this->component_type,
-            summary: $this->summary,
-            description: $this->description,
-            location: $this->location,
-            status: $this->status,
-            url: $this->url,
-            startsAt: $this->starts_at ? CarbonImmutable::instance($this->starts_at) : null,
-            endsAt: $this->ends_at ? CarbonImmutable::instance($this->ends_at) : null,
-            isAllDay: (bool) $this->is_all_day,
-            timezone: $this->timezone,
-        );
+        return $this->data;
+    }
+
+    public static function createFromData(
+        DavCalendar $calendar,
+        string $uri,
+        CalendarObjectData $data,
+        ?string $payload = null,
+        ?string $defaultComponentType = 'VEVENT',
+    ): self {
+        return $calendar->objects()->create([
+            ...self::attributesFromData($data, $defaultComponentType),
+            'uri' => $uri,
+            'calendar_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ]);
+    }
+
+    public function updateFromData(
+        CalendarObjectData $data,
+        ?string $payload = null,
+        ?string $defaultComponentType = 'VEVENT',
+    ): bool {
+        return $this->forceFill([
+            ...self::attributesFromData($data, $defaultComponentType),
+            'calendar_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function attributesFromData(CalendarObjectData $data, ?string $defaultComponentType = 'VEVENT'): array
+    {
+        return [
+            'data' => DtoFactory::calendarObjectData($data, [
+                'componentType' => $data->componentType ?? $defaultComponentType,
+            ]),
+        ];
+    }
+
+    private static function payloadFromData(CalendarObjectData $data, ?string $payload): ?string
+    {
+        $payload ??= $data->raw;
+
+        return blank($payload) ? null : $payload;
     }
 
     /**
