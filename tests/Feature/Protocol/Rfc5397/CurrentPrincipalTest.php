@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc5397.html#section-3
+ */
 it('[section 3] returns the current user principal from the dav root', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

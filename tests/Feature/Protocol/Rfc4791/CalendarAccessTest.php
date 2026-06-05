@@ -3,6 +3,10 @@
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-4.1
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-5.3.2
+ */
 it('[sections 4.1 and 5.3.2] puts fetches lists and deletes a calendar object through CalDAV', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -52,6 +56,9 @@ it('[sections 4.1 and 5.3.2] puts fetches lists and deletes a calendar object th
         ->assertNotFound();
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.8
+ */
 it('[section 7.8] returns all calendar objects when calendar-query omits the component type filter', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -112,6 +119,9 @@ it('[section 7.8] returns all calendar objects when calendar-query omits the com
         ->assertSee('task-1.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.8
+ */
 it('[section 7.8] returns matching calendar objects when a time range query omits the component type filter', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -196,6 +206,9 @@ it('[section 7.8] returns matching calendar objects when a time range query omit
         ->assertDontSee('outside-range.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.8
+ */
 it('[section 7.8] combines calendar query filters as logical and', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -285,6 +298,9 @@ it('[section 7.8] combines calendar query filters as logical and', function (): 
         ->assertDontSee('wrong-date.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.8
+ */
 it('[section 7.8] supports category text matching in calendar queries', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -354,6 +370,9 @@ it('[section 7.8] supports category text matching in calendar queries', function
         ->assertDontSee('finance-event.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.7.1
+ */
 it('[section 9.7.1] matches objects without a component through comp-filter is-not-defined', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -401,6 +420,9 @@ it('[section 9.7.1] matches objects without a component through comp-filter is-n
         ->assertDontSee('event-1.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.7.2
+ */
 it('[section 9.7.2] matches a missing property through prop-filter is-not-defined', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -452,6 +474,9 @@ it('[section 9.7.2] matches a missing property through prop-filter is-not-define
         ->assertDontSee('with-location.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.7.3
+ */
 it('[section 9.7.3] matches a property parameter through param-filter text-match', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -506,6 +531,9 @@ it('[section 9.7.3] matches a property parameter through param-filter text-match
         ->assertDontSee('declined.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.7.3
+ */
 it('[section 9.7.3] matches a missing parameter through param-filter is-not-defined', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -560,6 +588,9 @@ it('[section 9.7.3] matches a missing parameter through param-filter is-not-defi
         ->assertDontSee('with-partstat.ics', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.7.5
+ */
 it('[section 9.7.5] negates a text-match condition', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

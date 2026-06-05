@@ -23,6 +23,9 @@ function schedulingItip(string $uid): string
     ])."\r\n";
 }
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-2.1
+ */
 it('[section 2.1] advertises the calendar-user-address-set and scheduling URLs on a principal', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -46,6 +49,9 @@ it('[section 2.1] advertises the calendar-user-address-set and scheduling URLs o
         ->assertSee('/dav/calendars/'.$id.'/outbox/', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-2.2
+ */
 it('[section 2.2] provisions scheduling inbox and outbox collections in the calendar home', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
@@ -68,6 +74,9 @@ it('[section 2.2] provisions scheduling inbox and outbox collections in the cale
         ->assertSee('schedule-outbox', false);
 });
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc6638.html#section-4
+ */
 it('[section 4] delivers an iTip message into a principal scheduling inbox', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];

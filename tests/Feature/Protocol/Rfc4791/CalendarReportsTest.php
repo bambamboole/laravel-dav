@@ -2,6 +2,9 @@
 
 use Bambamboole\LaravelDav\Models\DavCalendar;
 
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.9
+ */
 it('[section 7.9] returns requested calendar objects through calendar-multiget', function (): void {
     $actor = davActor();
     $owner = $actor['owner'];
