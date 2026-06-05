@@ -16,7 +16,7 @@ it('creates a card from contact data', function (): void {
         'phoneNumbers' => [['label' => 'mobile', 'value' => '+1 555 0100', 'types' => ['CELL'], 'isPreferred' => true]],
     ]);
 
-    $card = DavCard::createFromData($addressBook, 'ada.vcf', $data);
+    $card = $addressBook->cards()->create(['uri' => 'ada.vcf', 'data' => $data]);
 
     expect($card->addressBook->is($addressBook))->toBeTrue()
         ->and($card->uri)->toBe('ada.vcf')
@@ -35,7 +35,7 @@ it('updates a card from contact data', function (): void {
         'emailAddresses' => [['label' => 'work', 'value' => 'grace@example.com', 'types' => ['INTERNET', 'WORK']]],
     ]);
 
-    $card->updateFromData($data);
+    $card->update(['data' => $data]);
     $fresh = $card->fresh();
 
     expect($fresh->data->uid)->toBe('contact-2')

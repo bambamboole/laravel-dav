@@ -22,7 +22,7 @@ it('creates a calendar object from calendar object data', function (): void {
         timezone: 'Europe/Berlin',
     );
 
-    $object = DavCalendarObject::createFromData($calendar, 'planning.ics', $data);
+    $object = $calendar->objects()->create(['uri' => 'planning.ics', 'data' => $data]);
 
     expect($object->calendar->is($calendar))->toBeTrue()
         ->and($object->uri)->toBe('planning.ics')
@@ -43,7 +43,7 @@ it('updates a calendar object from calendar object data', function (): void {
         summary: 'Updated planning',
     );
 
-    $object->updateFromData($data);
+    $object->update(['data' => $data]);
 
     expect($object->fresh())
         ->uid->toBe('event-2')

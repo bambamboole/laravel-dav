@@ -7,23 +7,12 @@ use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Bambamboole\LaravelDav\Server\SyncTokens;
 use Bambamboole\LaravelDav\Support\DavChangeOperation;
-use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
 trait RecordsDavChanges
 {
-    private function recordCalendarChange(DavCalendar $calendar, ?string $resourceUri, DavChangeOperation $operation): void
-    {
-        app(DavChangeRecorder::class)->recordCalendarChange($calendar, $resourceUri, $operation);
-    }
-
-    private function recordAddressBookChange(DavAddressBook $addressBook, ?string $resourceUri, DavChangeOperation $operation): void
-    {
-        app(DavChangeRecorder::class)->recordAddressBookChange($addressBook, $resourceUri, $operation);
-    }
-
     private function davSyncToken(int $syncToken): string
     {
         return SyncTokens::Prefix.$syncToken;

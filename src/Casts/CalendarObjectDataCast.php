@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Casts;
 
+use Bambamboole\LaravelDav\Casts\Concerns\DecodesJsonColumn;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Support\DtoFactory;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
@@ -13,6 +14,8 @@ use JsonException;
  */
 class CalendarObjectDataCast implements CastsAttributes
 {
+    use DecodesJsonColumn;
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -51,25 +54,5 @@ class CalendarObjectDataCast implements CastsAttributes
             'is_all_day' => $data->isAllDay,
             'timezone' => $data->timezone,
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     *
-     * @throws JsonException
-     */
-    private function decode(mixed $value): array
-    {
-        if (is_array($value)) {
-            return $value;
-        }
-
-        if (! is_string($value) || trim($value) === '') {
-            return [];
-        }
-
-        $decoded = json_decode($value, associative: true, flags: JSON_THROW_ON_ERROR);
-
-        return is_array($decoded) ? $decoded : [];
     }
 }

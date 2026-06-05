@@ -2,20 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Dto\Contact;
 
-use Bambamboole\LaravelDav\Dto\Contact\Concerns\NormalizesContactData;
 use Illuminate\Contracts\Database\Eloquent\Castable;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
-use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
-use JsonSerializable;
 
-/**
- * @implements Arrayable<string, mixed>
- */
-class ContactDate implements Arrayable, Castable, JsonSerializable
+class ContactDate extends ContactValue implements Castable
 {
-    use NormalizesContactData;
-
     /**
      * @param  array<string, mixed>  $data
      */
@@ -101,13 +93,5 @@ class ContactDate implements Arrayable, Castable, JsonSerializable
             'rawValue' => $this->rawValue,
             'group' => $this->group,
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->toArray();
     }
 }

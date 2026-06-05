@@ -5,9 +5,9 @@ namespace Bambamboole\LaravelDav\Sabre\CalDav;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
+use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
-use Bambamboole\LaravelDav\Support\DavChangeOperation;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
@@ -38,7 +38,7 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     private const SyncTokenProperty = '{http://sabredav.org/ns}sync-token';
 
-    public function __construct(private UpsertCalendarObject $upsertCalendarObject) {}
+    public function __construct(private CalendarObjectParser $parser) {}
 
     /**
      * @return array<int, array<string, mixed>>
@@ -173,51 +173,32 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
 
     public function createCalendarObject($calendarId, $objectUri, $calendarData): string
     {
-        $object = DB::transaction(function () use ($calendarId, $objectUri, $calendarData): DavCalendarObject {
-            $calendar = $this->calendar($calendarId);
-            $object = $this->upsertCalendarObject->handle(
-                $calendar,
-                (string) $objectUri,
-                (string) $calendarData,
-            );
-
-            $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Add);
-
-            return $object;
-        });
-
-        return '"'.$object->etag.'"';
+        return '"'.$this->upsertObject($calendarId, (string) $objectUri, (string) $calendarData)->etag.'"';
     }
 
     public function updateCalendarObject($calendarId, $objectUri, $calendarData): string
     {
-        $object = DB::transaction(function () use ($calendarId, $objectUri, $calendarData): DavCalendarObject {
-            $calendar = $this->calendar($calendarId);
-            $object = $this->upsertCalendarObject->handle(
-                $calendar,
-                (string) $objectUri,
-                (string) $calendarData,
-            );
-
-            $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Modify);
-
-            return $object;
-        });
-
-        return '"'.$object->etag.'"';
+        return '"'.$this->upsertObject($calendarId, (string) $objectUri, (string) $calendarData)->etag.'"';
     }
 
     public function deleteCalendarObject($calendarId, $objectUri): void
     {
         DB::transaction(function () use ($calendarId, $objectUri): void {
-            $calendar = $this->calendar($calendarId);
-            $deleted = $calendar->objects()
-                ->where('uri', $objectUri)
-                ->delete();
+            $this->calendar($calendarId)->objects()->where('uri', $objectUri)->first()?->delete();
+        });
+    }
 
-            if ($deleted > 0) {
-                $this->recordCalendarChange($calendar, (string) $objectUri, DavChangeOperation::Delete);
-            }
+    private function upsertObject(int|string $calendarId, string $uri, string $payload): DavCalendarObject
+    {
+        return DB::transaction(function () use ($calendarId, $uri, $payload): DavCalendarObject {
+            $object = $this->calendar($calendarId)->objects()->firstOrNew(['uri' => $uri]);
+
+            $object->fill([
+                'data' => $this->parser->parse($payload, $uri),
+                'calendar_data' => $payload,
+            ])->save();
+
+            return $object;
         });
     }
 

@@ -2,17 +2,8 @@
 
 namespace Bambamboole\LaravelDav\Dto\Contact;
 
-use Bambamboole\LaravelDav\Dto\Contact\Concerns\NormalizesContactData;
-use Illuminate\Contracts\Support\Arrayable;
-use JsonSerializable;
-
-/**
- * @implements Arrayable<string, mixed>
- */
-class ContactRelation implements Arrayable, JsonSerializable
+class ContactRelation extends ContactValue
 {
-    use NormalizesContactData;
-
     /**
      * @param  array<string, mixed>  $data
      */
@@ -39,13 +30,5 @@ class ContactRelation implements Arrayable, JsonSerializable
             'name' => $this->name,
             'group' => $this->group,
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function jsonSerialize(): array
-    {
-        return $this->toArray();
     }
 }

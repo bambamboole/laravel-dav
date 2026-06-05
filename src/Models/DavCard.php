@@ -3,14 +3,20 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Casts\ContactDataCast;
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCardFactory;
 use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
+use Bambamboole\LaravelDav\Models\Concerns\TracksDavResource;
 use Bambamboole\LaravelDav\Parsing\VCardSerializer;
+use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -30,6 +36,9 @@ class DavCard extends Model
     /** @use HasFactory<DavCardFactory> */
     use HasFactory;
 
+    use QueriesDavResources;
+    use TracksDavResource;
+
     protected $table = 'dav_cards';
 
     protected $fillable = [
@@ -47,8 +56,6 @@ class DavCard extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -68,63 +75,65 @@ class DavCard extends Model
         return $this->belongsTo(Dav::modelFor('address_book', DavAddressBook::class), 'dav_address_book_id');
     }
 
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, DavOwner|int|string $owner): Builder
+    {
+        return $query->whereHas('addressBook', fn (Builder $query): Builder => $query->where('user_id', self::resolveOwnerId($owner)));
+    }
+
     public function toData(): ContactData
     {
         return $this->data;
     }
 
-    public static function createFromData(DavAddressBook $addressBook, string $uri, ContactData $data, ?string $payload = null): self
+    protected function payloadColumn(): string
     {
-        return $addressBook->cards()->create([
-            ...self::attributesFromData($data),
-            'uri' => $uri,
-            'card_data' => self::payloadFromData($data, $payload),
-            'last_modified_at' => now(),
-        ]);
+        return 'card_data';
     }
 
-    public function updateFromData(ContactData $data, ?string $payload = null): bool
+    protected function changeCollection(): DavAddressBook
     {
-        return $this->forceFill([
-            ...self::attributesFromData($data),
-            'card_data' => self::payloadFromData($data, $payload),
-            'last_modified_at' => now(),
-        ])->save();
+        return $this->addressBook;
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private static function attributesFromData(ContactData $data): array
+    protected function applyDavDefaults(): void
     {
-        return [
-            'data' => $data,
-        ];
+        $uid = $this->data->uid ?: $this->originalUid() ?: (string) Str::uuid();
+
+        if ($this->data->uid !== $uid) {
+            $this->data = DtoFactory::contactData($this->data, ['uid' => $uid]);
+        }
+
+        if (blank($this->uri)) {
+            $this->uri = $uid.'.vcf';
+        }
     }
 
-    private static function payloadFromData(ContactData $data, ?string $payload): ?string
+    protected function buildPayload(): string
     {
-        $payload ??= $data->raw;
+        $serializer = app(VCardSerializer::class);
+        $original = $this->getRawOriginal('card_data');
 
-        return blank($payload) ? null : $payload;
+        return $this->exists && filled($original)
+            ? $serializer->merge((string) $original, $this->data)
+            : $serializer->serialize($this->data);
     }
 
-    /**
-     * Keep the payload, etag, and size consistent on every save. The vCard
-     * payload is derived from the structured attributes only when none was
-     * supplied (a DAV client's raw payload is authoritative); the etag and size
-     * are always a pure function of that payload.
-     */
-    protected static function booted(): void
+    private function originalUid(): ?string
     {
-        static::saving(function (self $card): void {
-            if (blank($card->card_data)) {
-                $card->card_data = app(VCardSerializer::class)->serialize($card->toData());
-            }
+        $original = $this->getRawOriginal('data');
 
-            $card->etag = sha1($card->card_data);
-            $card->size = strlen($card->card_data);
-        });
+        if (! is_string($original) || $original === '') {
+            return null;
+        }
+
+        $decoded = json_decode($original, true);
+        $uid = is_array($decoded) ? ($decoded['uid'] ?? null) : null;
+
+        return is_string($uid) ? $uid : null;
     }
 
     protected static function newFactory(): DavCardFactory

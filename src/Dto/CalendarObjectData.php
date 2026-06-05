@@ -52,7 +52,7 @@ final readonly class CalendarObjectData implements Arrayable, JsonSerializable
      */
     public function toArray(): array
     {
-        return DtoFactory::calendarObjectDataArray($this);
+        return DtoFactory::dataArray($this);
     }
 
     /**

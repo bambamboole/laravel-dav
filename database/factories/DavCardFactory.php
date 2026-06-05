@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
+use Bambamboole\LaravelDav\Database\Factories\Concerns\WithoutRecordingDavChanges;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -11,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DavCardFactory extends Factory
 {
+    use WithoutRecordingDavChanges;
+
     protected $model = DavCard::class;
 
     /** @return array<string, mixed> */

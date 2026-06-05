@@ -2,9 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Models;
 
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavAddressBookFactory;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +30,8 @@ class DavAddressBook extends Model
 {
     /** @use HasFactory<DavAddressBookFactory> */
     use HasFactory;
+
+    use QueriesDavResources;
 
     protected $table = 'dav_address_books';
 
@@ -63,6 +68,15 @@ class DavAddressBook extends Model
         $ownerModel = config('dav.owner_model');
 
         return $this->belongsTo($ownerModel);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, DavOwner|int|string $owner): Builder
+    {
+        return $query->where('user_id', self::resolveOwnerId($owner));
     }
 
     /**

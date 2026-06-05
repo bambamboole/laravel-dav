@@ -6,6 +6,7 @@ use Bambamboole\LaravelDav\Events\DavCollectionChanged;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavChange;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 class DavChangeRecorder
@@ -14,18 +15,39 @@ class DavChangeRecorder
 
     public const AddressBookCollectionType = 'address_book';
 
-    public function recordCalendarChange(DavCalendar $calendar, ?string $resourceUri, DavChangeOperation $operation): void
+    private static bool $recording = true;
+
+    /**
+     * Run the callback without recording any DAV changes (e.g. seeding or
+     * bulk imports that should not generate sync history).
+     *
+     * @template TReturn
+     *
+     * @param  Closure(): TReturn  $callback
+     * @return TReturn
+     */
+    public static function withoutRecording(Closure $callback): mixed
     {
-        $this->recordChange($calendar, self::CalendarCollectionType, $resourceUri, $operation);
+        $previous = self::$recording;
+        self::$recording = false;
+
+        try {
+            return $callback();
+        } finally {
+            self::$recording = $previous;
+        }
     }
 
-    public function recordAddressBookChange(DavAddressBook $addressBook, ?string $resourceUri, DavChangeOperation $operation): void
+    public function record(DavCalendar|DavAddressBook $collection, ?string $resourceUri, DavChangeOperation $operation): void
     {
-        $this->recordChange($addressBook, self::AddressBookCollectionType, $resourceUri, $operation);
-    }
+        if (! self::$recording) {
+            return;
+        }
 
-    public function recordChange(DavCalendar|DavAddressBook $collection, string $type, ?string $resourceUri, DavChangeOperation $operation): void
-    {
+        $type = $collection instanceof DavCalendar
+            ? self::CalendarCollectionType
+            : self::AddressBookCollectionType;
+
         DB::transaction(function () use ($collection, $type, $resourceUri, $operation): void {
             $lockedCollection = $collection->newQuery()
                 ->whereKey($collection->getKey())
