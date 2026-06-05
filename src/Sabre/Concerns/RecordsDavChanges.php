@@ -41,7 +41,7 @@ trait RecordsDavChanges
      * @param  Collection<int, DavChange>  $changes
      * @return array{syncToken: string, added: array<int, string>, modified: array<int, string>, deleted: array<int, string>, result_truncated: bool}
      */
-    private function davChangeResponse(int $currentSyncToken, Collection $changes, bool $resultTruncated = false): array
+    private function davChangeResponse(int $syncToken, Collection $changes, bool $resultTruncated = false): array
     {
         $states = [];
 
@@ -61,7 +61,7 @@ trait RecordsDavChanges
         }
 
         $result = [
-            'syncToken' => $this->davSyncToken($currentSyncToken),
+            'syncToken' => $this->davSyncToken($syncToken),
             'added' => [],
             'modified' => [],
             'deleted' => [],
@@ -139,7 +139,11 @@ trait RecordsDavChanges
             $changes = $changes->take($syncLimit);
         }
 
-        return $this->davChangeResponse($currentSyncToken, $changes, $resultTruncated);
+        $responseSyncToken = $resultTruncated
+            ? (int) $changes->last()?->sync_token
+            : $currentSyncToken;
+
+        return $this->davChangeResponse($responseSyncToken, $changes, $resultTruncated);
     }
 
     private function syncLimit(mixed $limit): ?int
