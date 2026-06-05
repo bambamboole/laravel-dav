@@ -27,6 +27,7 @@ final readonly class CalendarObjectData implements Arrayable, JsonSerializable
         public ?CarbonImmutable $startsAt = null,
         public ?CarbonImmutable $endsAt = null,
         public bool $isAllDay = false,
+        public bool $isRecurring = false,
         public ?string $timezone = null,
     ) {}
 

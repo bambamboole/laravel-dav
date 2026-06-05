@@ -23,7 +23,8 @@ it('parses event fields without discarding the raw payload', function () {
         ->and($data->componentType)->toBe('VEVENT')
         ->and($data->summary)->toBe('Deep Work')
         ->and($data->location)->toBe('Office')
-        ->and($data->isAllDay)->toBeFalse();
+        ->and($data->isAllDay)->toBeFalse()
+        ->and($data->isRecurring)->toBeFalse();
 });
 
 it('marks date-only events as all day', function () {
@@ -197,6 +198,7 @@ it('parses a VEVENT with RRULE, preserving raw and extracting core fields', func
         ->and($data->summary)->toBe('Weekly Standup')
         ->and($data->raw)->toBe($payload)
         ->and($data->isAllDay)->toBeFalse()
+        ->and($data->isRecurring)->toBeTrue()
         ->and($data->startsAt?->toIso8601String())->toBe('2026-06-03T09:00:00+00:00');
 });
 

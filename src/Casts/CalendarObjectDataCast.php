@@ -31,13 +31,14 @@ class CalendarObjectDataCast implements CastsAttributes
             'startsAt' => $attributes['starts_at'] ?? null,
             'endsAt' => $attributes['ends_at'] ?? null,
             'isAllDay' => $attributes['is_all_day'] ?? false,
+            'isRecurring' => $attributes['recurs'] ?? false,
             'timezone' => $attributes['timezone'] ?? null,
         ]);
     }
 
     /**
      * @param  array<string, mixed>  $attributes
-     * @return array{data: string, uid: string|null, component_type: string|null, starts_at: mixed, ends_at: mixed, is_all_day: bool, timezone: string|null}
+     * @return array{data: string, uid: string|null, component_type: string|null, starts_at: mixed, ends_at: mixed, is_all_day: bool, recurs: bool, timezone: string|null}
      *
      * @throws JsonException
      */
@@ -52,6 +53,7 @@ class CalendarObjectDataCast implements CastsAttributes
             'starts_at' => $data->startsAt,
             'ends_at' => $data->endsAt,
             'is_all_day' => $data->isAllDay,
+            'recurs' => $data->isRecurring,
             'timezone' => $data->timezone,
         ];
     }

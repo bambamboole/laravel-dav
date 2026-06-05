@@ -24,6 +24,7 @@ it('has the key columns on dav_calendar_objects', function (): void {
         'starts_at',
         'ends_at',
         'is_all_day',
+        'recurs',
         'timezone',
         'data',
         'etag',

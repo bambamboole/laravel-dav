@@ -104,6 +104,7 @@ final class DtoFactory
             startsAt: self::dateTime($data['startsAt'] ?? null, self::nullableString($data, 'timezone')),
             endsAt: self::dateTime($data['endsAt'] ?? null, self::nullableString($data, 'timezone')),
             isAllDay: self::bool($data['isAllDay'] ?? false),
+            isRecurring: self::bool($data['isRecurring'] ?? false),
             timezone: self::nullableString($data, 'timezone'),
         );
     }
@@ -123,6 +124,7 @@ final class DtoFactory
             'startsAt',
             'endsAt',
             'isAllDay',
+            'isRecurring',
             'timezone',
         ]));
     }

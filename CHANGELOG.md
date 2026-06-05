@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `calendar-query` REPORTs now narrow candidates in SQL using the denormalised
+  `component_type`/`starts_at`/`ends_at` columns before parsing, instead of
+  loading and parsing every object in the calendar. Recurring objects (a new
+  `recurs` column) are always kept as candidates so recurrence expansion stays
+  correct.
+
 ## [0.1.0] - 2026-06-04
 
 Initial release.

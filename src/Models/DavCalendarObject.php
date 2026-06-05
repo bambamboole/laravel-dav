@@ -27,6 +27,7 @@ use Illuminate\Support\Str;
  * @property CarbonImmutable|null $starts_at
  * @property CarbonImmutable|null $ends_at
  * @property bool $is_all_day
+ * @property bool $recurs
  * @property string|null $timezone
  * @property CalendarObjectData $data
  * @property string $etag
@@ -55,6 +56,7 @@ class DavCalendarObject extends Model
         'starts_at',
         'ends_at',
         'is_all_day',
+        'recurs',
         'timezone',
         'data',
         'etag',
@@ -76,6 +78,7 @@ class DavCalendarObject extends Model
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',
             'is_all_day' => 'boolean',
+            'recurs' => 'boolean',
             'data' => CalendarObjectDataCast::class,
             'size' => 'integer',
             'last_modified_at' => 'datetime',
