@@ -296,3 +296,132 @@ it('[section 9.6.5] expands a recurring VEVENT into individual instances within 
         ->assertSee('DTSTART:20000212T120000Z', false)
         ->assertDontSee('RRULE', false);
 });
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.6.5
+ */
+it('[section 9.6.5] expands a recurring VTODO into individual instances within the window', function (): void {
+    $actor = recurrenceActor();
+
+    davPut($this, $actor['path'].'expandable-task.ics', $actor['header'], ical(<<<'ICS'
+        BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//Life OS//Tests//EN
+        BEGIN:VTODO
+        UID:expandable-task
+        DTSTAMP:20000101T000000Z
+        SUMMARY:Water the plants
+        DTSTART:20000205T090000Z
+        DUE:20000205T170000Z
+        RRULE:FREQ=WEEKLY
+        END:VTODO
+        END:VCALENDAR
+        ICS), 'text/calendar')->assertSuccessful();
+
+    $response = davCalendarQueryReport(
+        $this,
+        $actor['path'],
+        $actor['header'],
+        <<<'XML'
+            <cal:filter>
+                <cal:comp-filter name="VCALENDAR">
+                    <cal:comp-filter name="VTODO">
+                        <cal:time-range start="20000212T000000Z" end="20000213T000000Z" />
+                    </cal:comp-filter>
+                </cal:comp-filter>
+            </cal:filter>
+            XML,
+        '<cal:calendar-data><cal:expand start="20000212T000000Z" end="20000213T000000Z" /></cal:calendar-data>',
+    );
+
+    $response->assertStatus(207)
+        ->assertSee('expandable-task.ics', false)
+        ->assertSee('RECURRENCE-ID:20000212T090000Z', false)
+        ->assertSee('DTSTART:20000212T090000Z', false)
+        ->assertSee('DUE:20000212T170000Z', false)
+        ->assertDontSee('RRULE', false);
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-9.6.5
+ */
+it('[section 9.6.5] expands a recurring VJOURNAL into individual instances within the window', function (): void {
+    $actor = recurrenceActor();
+
+    davPut($this, $actor['path'].'expandable-journal.ics', $actor['header'], ical(<<<'ICS'
+        BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//Life OS//Tests//EN
+        BEGIN:VJOURNAL
+        UID:expandable-journal
+        DTSTAMP:20000101T000000Z
+        SUMMARY:Daily log
+        DTSTART:20000205T080000Z
+        RRULE:FREQ=WEEKLY
+        END:VJOURNAL
+        END:VCALENDAR
+        ICS), 'text/calendar')->assertSuccessful();
+
+    $response = davCalendarQueryReport(
+        $this,
+        $actor['path'],
+        $actor['header'],
+        <<<'XML'
+            <cal:filter>
+                <cal:comp-filter name="VCALENDAR">
+                    <cal:comp-filter name="VJOURNAL">
+                        <cal:time-range start="20000212T000000Z" end="20000213T000000Z" />
+                    </cal:comp-filter>
+                </cal:comp-filter>
+            </cal:filter>
+            XML,
+        '<cal:calendar-data><cal:expand start="20000212T000000Z" end="20000213T000000Z" /></cal:calendar-data>',
+    );
+
+    $response->assertStatus(207)
+        ->assertSee('expandable-journal.ics', false)
+        ->assertSee('RECURRENCE-ID:20000212T080000Z', false)
+        ->assertSee('DTSTART:20000212T080000Z', false)
+        ->assertDontSee('RRULE', false);
+});
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc4791.html#section-7.9
+ */
+it('[section 7.9] expands a recurring VTODO requested through calendar-multiget', function (): void {
+    $actor = recurrenceActor();
+    $href = $actor['path'].'multiget-task.ics';
+
+    davPut($this, $href, $actor['header'], ical(<<<'ICS'
+        BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//Life OS//Tests//EN
+        BEGIN:VTODO
+        UID:multiget-task
+        DTSTAMP:20000101T000000Z
+        SUMMARY:Weekly review
+        DTSTART:20000205T090000Z
+        DUE:20000205T100000Z
+        RRULE:FREQ=WEEKLY
+        END:VTODO
+        END:VCALENDAR
+        ICS), 'text/calendar')->assertSuccessful();
+
+    $response = $this->callDav('REPORT', $actor['path'], $actor['header'], <<<XML
+        <?xml version="1.0" encoding="utf-8" ?>
+        <cal:calendar-multiget xmlns:d="DAV:" xmlns:cal="urn:ietf:params:xml:ns:caldav">
+            <d:prop>
+                <d:getetag />
+                <cal:calendar-data><cal:expand start="20000212T000000Z" end="20000213T000000Z" /></cal:calendar-data>
+            </d:prop>
+            <d:href>{$href}</d:href>
+        </cal:calendar-multiget>
+        XML, ['HTTP_DEPTH' => '1']);
+
+    $response->assertStatus(207)
+        ->assertSee('multiget-task.ics', false)
+        ->assertSee('RECURRENCE-ID:20000212T090000Z', false)
+        ->assertSee('DTSTART:20000212T090000Z', false)
+        ->assertSee('DUE:20000212T100000Z', false)
+        ->assertDontSee('RRULE', false);
+});

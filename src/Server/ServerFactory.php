@@ -4,6 +4,7 @@ namespace Bambamboole\LaravelDav\Server;
 
 use Bambamboole\LaravelDav\Sabre\Auth\BasicAuthBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
+use Bambamboole\LaravelDav\Sabre\CalDav\ExpandingVCalendar;
 use Bambamboole\LaravelDav\Sabre\CalDav\Xml\Request\CalendarQueryReport;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
 use Bambamboole\LaravelDav\Sabre\DAVACL\EnumerablePrincipalCollection;
@@ -23,6 +24,7 @@ use Sabre\DAV\Auth\Plugin as AuthPlugin;
 use Sabre\DAV\PropertyStorage\Plugin as PropertyStoragePlugin;
 use Sabre\DAV\Server;
 use Sabre\DAVACL\Plugin as AclPlugin;
+use Sabre\VObject\Component\VCalendar;
 
 class ServerFactory
 {
@@ -36,6 +38,8 @@ class ServerFactory
 
     public function make(): Server
     {
+        VCalendar::$componentMap['VCALENDAR'] = ExpandingVCalendar::class;
+
         $server = new Server([
             new EnumerablePrincipalCollection($this->principalBackend),
             new CalendarRoot($this->principalBackend, $this->calendarBackend),

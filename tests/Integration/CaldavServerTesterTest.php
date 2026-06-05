@@ -2,7 +2,6 @@
 
 use Bambamboole\LaravelDav\Tests\Integration\Support\CalDavTester;
 use Bambamboole\LaravelDav\Tests\Integration\Support\CaldavTesterResult;
-use Bambamboole\LaravelDav\Tests\Integration\Support\SupportLevel;
 
 it('captures the caldav-server-tester compatibility status quo', function (): void {
     $result = CalDavTester::runCompatibilityTests();
@@ -11,9 +10,8 @@ it('captures the caldav-server-tester compatibility status quo', function (): vo
 
     expect($result->erroredChecks)->toBe([]);
 
-    expect($result->featureNames())->toBe([
-        'search.recurrences.expanded.todo',
-    ]);
-
-    expect($result->support('search.recurrences.expanded.todo'))->toBe(SupportLevel::Unsupported);
+    // Every caldav-server-tester compatibility check now grades as fully
+    // supported, so the tester reports no deviations. Server-side `<C:expand>`
+    // of recurring VTODOs was the last remaining gap.
+    expect($result->featureNames())->toBe([]);
 });
