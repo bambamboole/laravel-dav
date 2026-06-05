@@ -52,7 +52,7 @@ class ServerFactory
             new AddressBookRoot($this->principalBackend, $this->addressBookBackend),
         ]);
 
-        $server->setBaseUri((string) config('dav.base_uri'));
+        $server->setBaseUri($this->baseUri());
         $server->debugExceptions = (bool) config('app.debug');
         $server->addPlugin(new AuthPlugin($this->authBackend));
         $server->addPlugin(new PropertyStoragePlugin($this->propertyBackend));
@@ -75,5 +75,18 @@ class ServerFactory
         $server->addPlugin(new VCFExportPlugin);
 
         return $server;
+    }
+
+    private function baseUri(): string
+    {
+        $configuredBaseUri = config('dav.base_uri');
+
+        if (is_string($configuredBaseUri) && $configuredBaseUri !== '') {
+            return $configuredBaseUri;
+        }
+
+        $prefix = trim((string) config('dav.route.prefix', 'dav'), '/');
+
+        return $prefix === '' ? '/' : "/{$prefix}/";
     }
 }
