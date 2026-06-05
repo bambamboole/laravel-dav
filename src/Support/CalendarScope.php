@@ -2,10 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
+use Bambamboole\LaravelDav\Dto\CalendarData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class CalendarScope
 {
@@ -36,15 +38,51 @@ class CalendarScope
         return new CalendarHandle($this->objects, $this->resourceQuery($id)->firstOrFail());
     }
 
+    public function create(CalendarData $data): CalendarHandle
+    {
+        $calendar = $this->modelClass()::query()->create([
+            'user_id' => $this->ownerId,
+            'uri' => $data->uri,
+            'display_name' => $data->displayName ?? $data->uri,
+            'description' => $data->description,
+            'color' => $data->color,
+            'timezone' => $data->timezone,
+            'components' => $data->components ?: ['VEVENT', 'VTODO', 'VJOURNAL'],
+            'sync_token' => $data->syncToken,
+        ]);
+
+        return new CalendarHandle($this->objects, $calendar->refresh());
+    }
+
+    public function update(DavCalendar|CalendarHandle|int|string $calendar, CalendarData $data): CalendarHandle
+    {
+        return DB::transaction(function () use ($calendar, $data): CalendarHandle {
+            $model = $this->model($calendar);
+
+            $model->forceFill([
+                'uri' => $data->uri,
+                'display_name' => $data->displayName ?? $data->uri,
+                'description' => $data->description,
+                'color' => $data->color,
+                'timezone' => $data->timezone,
+                'components' => $data->components ?: ['VEVENT', 'VTODO', 'VJOURNAL'],
+            ])->save();
+
+            return new CalendarHandle($this->objects, $model->refresh());
+        });
+    }
+
+    public function delete(DavCalendar|CalendarHandle|int|string $calendar): void
+    {
+        $this->model($calendar)->delete();
+    }
+
     /**
      * @return Builder<DavCalendar>
      */
     private function query(): Builder
     {
-        /** @var class-string<DavCalendar> $model */
-        $model = Dav::modelFor('calendar', DavCalendar::class);
-
-        return $model::query()
+        return $this->modelClass()::query()
             ->where('user_id', $this->ownerId)
             ->orderBy('id');
     }
@@ -62,5 +100,24 @@ class CalendarScope
 
                 $query->orWhere('uri', $id);
             });
+    }
+
+    private function model(DavCalendar|CalendarHandle|int|string $calendar): DavCalendar
+    {
+        if ($calendar instanceof CalendarHandle) {
+            $calendar = $calendar->model;
+        }
+
+        return $calendar instanceof DavCalendar
+            ? $this->resourceQuery((string) $calendar->getKey())->firstOrFail()
+            : $this->resourceQuery($calendar)->firstOrFail();
+    }
+
+    /**
+     * @return class-string<DavCalendar>
+     */
+    private function modelClass(): string
+    {
+        return Dav::modelFor('calendar', DavCalendar::class);
     }
 }

@@ -2,10 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Support;
 
+use Bambamboole\LaravelDav\Dto\AddressBookData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AddressBookScope
 {
@@ -36,15 +38,45 @@ class AddressBookScope
         return new AddressBookHandle($this->contacts, $this->resourceQuery($id)->firstOrFail());
     }
 
+    public function create(AddressBookData $data): AddressBookHandle
+    {
+        $addressBook = $this->modelClass()::query()->create([
+            'user_id' => $this->ownerId,
+            'uri' => $data->uri,
+            'display_name' => $data->displayName ?? $data->uri,
+            'description' => $data->description,
+            'sync_token' => $data->syncToken,
+        ]);
+
+        return new AddressBookHandle($this->contacts, $addressBook->refresh());
+    }
+
+    public function update(DavAddressBook|AddressBookHandle|int|string $addressBook, AddressBookData $data): AddressBookHandle
+    {
+        return DB::transaction(function () use ($addressBook, $data): AddressBookHandle {
+            $model = $this->model($addressBook);
+
+            $model->forceFill([
+                'uri' => $data->uri,
+                'display_name' => $data->displayName ?? $data->uri,
+                'description' => $data->description,
+            ])->save();
+
+            return new AddressBookHandle($this->contacts, $model->refresh());
+        });
+    }
+
+    public function delete(DavAddressBook|AddressBookHandle|int|string $addressBook): void
+    {
+        $this->model($addressBook)->delete();
+    }
+
     /**
      * @return Builder<DavAddressBook>
      */
     private function query(): Builder
     {
-        /** @var class-string<DavAddressBook> $model */
-        $model = Dav::modelFor('address_book', DavAddressBook::class);
-
-        return $model::query()
+        return $this->modelClass()::query()
             ->where('user_id', $this->ownerId)
             ->orderBy('id');
     }
@@ -62,5 +94,24 @@ class AddressBookScope
 
                 $query->orWhere('uri', $id);
             });
+    }
+
+    private function model(DavAddressBook|AddressBookHandle|int|string $addressBook): DavAddressBook
+    {
+        if ($addressBook instanceof AddressBookHandle) {
+            $addressBook = $addressBook->model;
+        }
+
+        return $addressBook instanceof DavAddressBook
+            ? $this->resourceQuery((string) $addressBook->getKey())->firstOrFail()
+            : $this->resourceQuery($addressBook)->firstOrFail();
+    }
+
+    /**
+     * @return class-string<DavAddressBook>
+     */
+    private function modelClass(): string
+    {
+        return Dav::modelFor('address_book', DavAddressBook::class);
     }
 }
