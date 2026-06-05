@@ -97,6 +97,9 @@ function revokeCalendarShare(mixed $test, string $path, string $authHeader, stri
         XML);
 }
 
+/**
+ * @see https://sabre.io/dav/caldav-sharing/
+ */
 it('shares calendars through dav and enforces read write revoke access', function (): void {
     $ownerActor = davActor();
     $shareeActor = davActor();
