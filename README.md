@@ -20,7 +20,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 
 The following are not implemented yet and are tracked for future releases:
 
-- **RFC 6638 `schedule-tag`** — the `Schedule-Tag` header and `If-Schedule-Tag-Match` precondition are not implemented (scheduling otherwise works: auto-schedule, free/busy, and iMIP).
+- **RFC 6638 `schedule-tag`** — the `Schedule-Tag` header and `If-Schedule-Tag-Match` precondition are not implemented (scheduling otherwise works: auto-schedule, free/busy, availability, and iMIP).
 - **Calendar sharing & proxy delegation.**
 - **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
@@ -197,6 +197,8 @@ DAV_SCHEDULING_FROM="no-reply@your-app.test"
 ```
 
 A working mail transport must be set up for delivery to succeed. Override the transport with `dav.scheduling.mailer`. The email carries the invitation as a `text/calendar` attachment; to customise it, override the `Bambamboole\LaravelDav\Mail\SchedulingMessageMail` mailable.
+
+**Availability** ([RFC 7953](https://datatracker.ietf.org/doc/html/rfc7953)) — a principal can publish working hours by storing a `VAVAILABILITY` document in the `calendar-availability` property of their scheduling inbox (`PROPPATCH /dav/calendars/{owner}/inbox/`). Free/busy responses then mark time outside those windows as `BUSY-UNAVAILABLE`.
 
 ## Reacting to changes
 
