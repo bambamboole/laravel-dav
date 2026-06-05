@@ -26,7 +26,7 @@ function authBackend(): object
 it('authenticates a valid credential and touches last_used_at', function (): void {
     $owner = OwnerUser::factory()->create();
     $credential = DavCredential::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'username' => 'caldav-user',
         'secret_hash' => Hash::make('s3cret'),
         'last_used_at' => null,

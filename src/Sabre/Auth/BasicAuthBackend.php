@@ -17,7 +17,7 @@ class BasicAuthBackend extends AbstractBasic
 {
     use ResolvesPrincipalUri;
 
-    private ?Model $user = null;
+    private ?Model $owner = null;
 
     private ?string $currentUser = null;
 
@@ -28,7 +28,7 @@ class BasicAuthBackend extends AbstractBasic
 
     public function user(): ?Model
     {
-        return $this->user;
+        return $this->owner;
     }
 
     /**
@@ -36,7 +36,7 @@ class BasicAuthBackend extends AbstractBasic
      */
     public function check(RequestInterface $request, ResponseInterface $response): array
     {
-        $this->user = null;
+        $this->owner = null;
         $this->currentUser = null;
 
         $auth = new HTTP\Auth\Basic(
@@ -62,7 +62,7 @@ class BasicAuthBackend extends AbstractBasic
     {
         $credential = Dav::modelFor('credential', DavCredential::class)::query()
             ->where('username', $username)
-            ->with('user')
+            ->with('owner')
             ->first();
 
         if (! $credential || ! Hash::check($password, $credential->secret_hash)) {
@@ -73,9 +73,9 @@ class BasicAuthBackend extends AbstractBasic
             'last_used_at' => now(),
         ])->save();
 
-        $owner = $credential->user;
+        $owner = $credential->owner;
 
-        $this->user = $owner;
+        $this->owner = $owner;
         $this->currentUser = $this->principalUri(
             $owner instanceof DavOwner ? $owner : $owner->getKey(),
         );

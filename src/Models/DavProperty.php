@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property string $path
  * @property string $name
- * @property string $value
+ * @property string $value_type
+ * @property string|null $value
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
  */
@@ -23,7 +24,12 @@ class DavProperty extends Model
     protected $fillable = [
         'path',
         'name',
+        'value_type',
         'value',
+    ];
+
+    protected $attributes = [
+        'value_type' => 'string',
     ];
 
     protected static function newFactory(): DavPropertyFactory

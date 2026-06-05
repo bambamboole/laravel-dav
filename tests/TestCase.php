@@ -41,8 +41,7 @@ abstract class TestCase extends Orchestra
     {
         Date::use(CarbonImmutable::class);
 
-        $app['config']->set('dav.owner_model', OwnerUser::class);
-        $app['config']->set('dav.owner_table', 'users');
+        $app['config']->set('dav.models.owner', OwnerUser::class);
     }
 
     protected function defineDatabaseMigrations(): void

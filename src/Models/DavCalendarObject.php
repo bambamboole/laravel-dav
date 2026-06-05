@@ -12,6 +12,7 @@ use Bambamboole\LaravelDav\Models\Concerns\TracksDavResource;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
 use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -99,9 +100,10 @@ class DavCalendarObject extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, DavOwner|int|string $owner): Builder
+    #[Scope]
+    protected function forOwner(Builder $query, DavOwner|int|string $owner): Builder
     {
-        return $query->whereHas('calendar', fn (Builder $query): Builder => $query->where('user_id', self::resolveOwnerId($owner)));
+        return $query->whereHas('calendar.instances', fn (Builder $query): Builder => $query->where('owner_id', self::resolveOwnerId($owner)));
     }
 
     public function toData(): CalendarObjectData
@@ -140,7 +142,7 @@ class DavCalendarObject extends Model
     {
         $data = DtoFactory::calendarObjectData($this->data, [
             'uri' => $this->uri,
-            'timezone' => $this->data->timezone ?: $this->calendar->timezone,
+            'timezone' => $this->data->timezone ?: $this->calendar->ownerInstance?->timezone,
         ]);
 
         $serializer = app(CalendarObjectSerializer::class);

@@ -18,6 +18,7 @@ class DavPropertyFactory extends Factory
         return [
             'path' => '/dav/'.fake()->uuid(),
             'name' => '{DAV:}displayname',
+            'value_type' => 'string',
             'value' => fake()->words(2, true),
         ];
     }

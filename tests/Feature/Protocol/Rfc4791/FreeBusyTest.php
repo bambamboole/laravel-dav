@@ -20,7 +20,7 @@ function freeBusyReport(TestCase $test, string $path, string $authHeader, string
 it('[section 7.10] reports busy periods and ignores transparent events in a free-busy-query', function (): void {
     $actor = davActor();
     $id = $actor['owner']->getKey();
-    DavCalendar::factory()->create(['user_id' => $id, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $id]);
 
     davPut($this, '/dav/calendars/'.$id.'/personal/busy.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR
@@ -66,7 +66,7 @@ it('[section 7.10] reports busy periods and ignores transparent events in a free
 it('[section 7.10] expands a recurring event into per-instance busy periods', function (): void {
     $actor = davActor();
     $id = $actor['owner']->getKey();
-    DavCalendar::factory()->create(['user_id' => $id, 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $id]);
 
     davPut($this, '/dav/calendars/'.$id.'/personal/daily.ics', $actor['header'], ical(<<<'ICS'
         BEGIN:VCALENDAR

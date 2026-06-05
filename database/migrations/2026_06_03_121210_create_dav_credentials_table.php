@@ -1,5 +1,6 @@
 <?php
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -10,8 +11,8 @@ return new class extends Migration
     {
         Schema::create('dav_credentials', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                ->constrained(config('dav.owner_table', 'users'))
+            $table->foreignId('owner_id')
+                ->constrained(Dav::ownerTable())
                 ->cascadeOnDelete();
             $table->string('name');
             $table->string('username')->unique();

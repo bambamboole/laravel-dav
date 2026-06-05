@@ -106,15 +106,14 @@ it('[section 5.3.1] creates a calendar collection through MKCALENDAR', function 
         XML)
         ->assertCreated();
 
-    $calendar = DavCalendar::query()
-        ->where('user_id', $owner->getKey())
-        ->where('uri', 'work')
-        ->firstOrFail();
+    $calendar = DavCalendar::forOwner($owner)->forKey('work')->firstOrFail();
+    $calendarInstance = $calendar->ownerInstance()->firstOrFail();
 
-    expect($calendar)
+    expect($calendarInstance)
         ->display_name->toBe('Work')
-        ->description->toBe('Team calendar')
-        ->components->toBe(['VEVENT']);
+        ->description->toBe('Team calendar');
+
+    expect($calendar->components)->toBe(['VEVENT']);
 
     $response = $this->callDav('PROPFIND', '/dav/calendars/'.$owner->getKey().'/work/', $actor['header'], <<<'XML'
         <?xml version="1.0" encoding="utf-8" ?>
@@ -144,13 +143,14 @@ it('[sections 5.2.2 and 5.2.3] exposes calendar collection properties through PR
     $owner = $actor['owner'];
     $timezone = rfc4791CalendarTimezone();
 
-    DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    DavCalendar::factory()->withInstance([
         'uri' => 'personal',
         'display_name' => 'Personal',
         'description' => 'Main calendar',
         'color' => '#3A87ADFF',
         'timezone' => $timezone,
+    ])->create([
+        'owner_id' => $owner->getKey(),
         'components' => ['VEVENT', 'VTODO'],
         'sync_token' => 7,
     ]);
@@ -198,12 +198,13 @@ it('[sections 5.2.2 and 5.2.3] updates calendar collection properties through PR
     $owner = $actor['owner'];
     $timezone = rfc4791CalendarTimezone();
 
-    DavCalendar::factory()->create([
-        'user_id' => $owner->getKey(),
+    DavCalendar::factory()->withInstance([
         'uri' => 'personal',
         'display_name' => 'Personal',
         'description' => 'Main calendar',
         'color' => '#3A87ADFF',
+    ])->create([
+        'owner_id' => $owner->getKey(),
     ]);
 
     $this->callDav('PROPPATCH', '/dav/calendars/'.$owner->getKey().'/personal/', $actor['header'], <<<XML
@@ -221,17 +222,15 @@ it('[sections 5.2.2 and 5.2.3] updates calendar collection properties through PR
         XML)
         ->assertStatus(207);
 
-    $calendar = DavCalendar::query()
-        ->where('user_id', $owner->getKey())
-        ->where('uri', 'personal')
-        ->firstOrFail();
+    $calendar = DavCalendar::forOwner($owner)->forKey('personal')->firstOrFail();
+    $calendarInstance = $calendar->ownerInstance()->firstOrFail();
 
-    expect($calendar)
+    expect($calendarInstance)
         ->display_name->toBe('Work')
         ->description->toBe('Team calendar')
         ->color->toBe('#CC0000FF');
 
-    expect(str_replace(["\r\n", "\r"], "\n", (string) $calendar->timezone))
+    expect(str_replace(["\r\n", "\r"], "\n", (string) $calendarInstance->timezone))
         ->toBe(str_replace(["\r\n", "\r"], "\n", $timezone));
 
     $response = $this->callDav('PROPFIND', '/dav/calendars/'.$owner->getKey().'/personal/', $actor['header'], <<<'XML'

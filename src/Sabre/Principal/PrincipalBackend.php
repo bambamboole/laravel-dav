@@ -3,8 +3,8 @@
 namespace Bambamboole\LaravelDav\Sabre\Principal;
 
 use Bambamboole\LaravelDav\Contracts\DavOwner;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 use Sabre\DAV\PropPatch;
@@ -27,7 +27,7 @@ class PrincipalBackend extends AbstractBackend
             return [];
         }
 
-        return $this->ownerQuery()
+        return (Dav::ownerModel())::query()
             ->orderBy('id')
             ->get()
             ->map(fn (Model $owner): array => $this->principalForOwner($this->asOwner($owner)))
@@ -45,7 +45,7 @@ class PrincipalBackend extends AbstractBackend
             return null;
         }
 
-        $owner = $this->ownerQuery()->find($ownerId);
+        $owner = (Dav::ownerModel())::query()->find($ownerId);
 
         return $owner instanceof DavOwner ? $this->principalForOwner($owner) : null;
     }
@@ -66,7 +66,7 @@ class PrincipalBackend extends AbstractBackend
         }
 
         if ($searchProperties === []) {
-            return $this->ownerQuery()
+            return (Dav::ownerModel())::query()
                 ->orderBy('id')
                 ->get()
                 ->map(fn (Model $owner): string => $this->principalUri($this->asOwner($owner)))
@@ -82,7 +82,7 @@ class PrincipalBackend extends AbstractBackend
             return [];
         }
 
-        return $this->ownerQuery()
+        return (Dav::ownerModel())::query()
             ->orderBy('id')
             ->get()
             ->filter(fn (Model $owner): bool => $this->matchesSearch($this->asOwner($owner), $supportedProperties, $test))
@@ -99,7 +99,7 @@ class PrincipalBackend extends AbstractBackend
 
         $email = mb_substr($uri, 7);
 
-        $owner = $this->ownerQuery()
+        $owner = (Dav::ownerModel())::query()
             ->get()
             ->first(fn (Model $owner): bool => $this->asOwner($owner)->getDavPrincipalEmail() === $email);
 
@@ -166,21 +166,10 @@ class PrincipalBackend extends AbstractBackend
             : ! in_array(false, $matches, true);
     }
 
-    /**
-     * @return Builder<Model>
-     */
-    private function ownerQuery(): Builder
-    {
-        /** @var class-string<Model> $model */
-        $model = config('dav.owner_model');
-
-        return $model::query();
-    }
-
     private function asOwner(Model $model): DavOwner
     {
         if (! $model instanceof DavOwner) {
-            throw new RuntimeException(sprintf('The dav.owner_model [%s] must implement %s.', $model::class, DavOwner::class));
+            throw new RuntimeException(sprintf('The dav.models.owner [%s] must implement %s.', $model::class, DavOwner::class));
         }
 
         return $model;

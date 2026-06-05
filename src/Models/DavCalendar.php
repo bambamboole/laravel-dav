@@ -7,25 +7,25 @@ use Bambamboole\LaravelDav\Database\Factories\DavCalendarFactory;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
- * @property int $user_id
- * @property string $uri
- * @property string $display_name
- * @property string|null $description
- * @property string|null $color
- * @property string|null $timezone
+ * @property int $owner_id
  * @property array<array-key, mixed> $components
  * @property int $sync_token
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
+ * @property-read Collection<int, DavCalendarInstance> $instances
+ * @property-read int|null $instances_count
+ * @property-read DavCalendarInstance|null $ownerInstance
  * @property-read Collection<int, DavCalendarObject> $objects
  * @property-read int|null $objects_count
  */
@@ -39,12 +39,7 @@ class DavCalendar extends Model
     protected $table = 'dav_calendars';
 
     protected $fillable = [
-        'user_id',
-        'uri',
-        'display_name',
-        'description',
-        'color',
-        'timezone',
+        'owner_id',
         'components',
         'sync_token',
     ];
@@ -70,21 +65,52 @@ class DavCalendar extends Model
     /**
      * @return BelongsTo<Model, $this>
      */
-    public function user(): BelongsTo
+    public function owner(): BelongsTo
     {
-        /** @var class-string<Model> $ownerModel */
-        $ownerModel = config('dav.owner_model');
-
-        return $this->belongsTo($ownerModel);
+        return $this->belongsTo(Dav::ownerModel(), 'owner_id');
     }
 
     /**
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, DavOwner|int|string $owner): Builder
+    #[Scope]
+    protected function forOwner(Builder $query, DavOwner|int|string $owner): Builder
     {
-        return $query->where('user_id', self::resolveOwnerId($owner));
+        return $query->where('owner_id', self::resolveOwnerId($owner));
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function forKey(Builder $query, int|string $id): Builder
+    {
+        return $query->where(function (Builder $query) use ($id): void {
+            if (is_numeric($id)) {
+                $query->whereKey($id);
+            }
+
+            $query->orWhereHas('instances', fn (Builder $query): Builder => $query->where('uri', $id));
+        });
+    }
+
+    /**
+     * @return HasMany<DavCalendarInstance, $this>
+     */
+    public function instances(): HasMany
+    {
+        return $this->hasMany(Dav::modelFor('calendar_instance', DavCalendarInstance::class), 'dav_calendar_id');
+    }
+
+    /**
+     * @return HasOne<DavCalendarInstance, $this>
+     */
+    public function ownerInstance(): HasOne
+    {
+        return $this->hasOne(Dav::modelFor('calendar_instance', DavCalendarInstance::class), 'dav_calendar_id')
+            ->where('access', DavCalendarInstance::AccessOwner);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Database\Factories;
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,7 +17,7 @@ class DavAddressBookFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => config('dav.owner_model')::factory(),
+            'owner_id' => (Dav::ownerModel())::factory(),
             'uri' => fake()->unique()->slug(2),
             'display_name' => fake()->words(2, true),
             'description' => null,

@@ -3,6 +3,7 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavCredentialFactory;
+use Bambamboole\LaravelDav\Facades\Dav;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $user_id
+ * @property int $owner_id
  * @property string $name
  * @property string $username
  * @property string $secret_hash
@@ -26,7 +27,7 @@ class DavCredential extends Model
     protected $table = 'dav_credentials';
 
     protected $fillable = [
-        'user_id',
+        'owner_id',
         'name',
         'username',
         'secret_hash',
@@ -52,12 +53,9 @@ class DavCredential extends Model
     /**
      * @return BelongsTo<Model, $this>
      */
-    public function user(): BelongsTo
+    public function owner(): BelongsTo
     {
-        /** @var class-string<Model> $ownerModel */
-        $ownerModel = config('dav.owner_model');
-
-        return $this->belongsTo($ownerModel);
+        return $this->belongsTo(Dav::ownerModel(), 'owner_id');
     }
 
     protected static function newFactory(): DavCredentialFactory

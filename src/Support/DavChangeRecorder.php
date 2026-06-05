@@ -67,7 +67,7 @@ class DavChangeRecorder
             ]);
 
             DavCollectionChanged::dispatch(
-                (int) $lockedCollection->user_id,
+                (int) $lockedCollection->owner_id,
                 $type,
                 (int) $lockedCollection->getKey(),
                 $resourceUri,

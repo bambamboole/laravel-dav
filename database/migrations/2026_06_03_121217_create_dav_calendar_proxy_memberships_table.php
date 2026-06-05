@@ -9,23 +9,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('dav_address_books', function (Blueprint $table) {
+        Schema::create('dav_calendar_proxy_memberships', function (Blueprint $table) {
             $table->id();
             $table->foreignId('owner_id')
                 ->constrained(Dav::ownerTable())
                 ->cascadeOnDelete();
-            $table->string('uri');
-            $table->string('display_name');
-            $table->text('description')->nullable();
-            $table->unsignedBigInteger('sync_token')->default(1);
+            $table->foreignId('delegate_owner_id')
+                ->constrained(Dav::ownerTable())
+                ->cascadeOnDelete();
+            $table->string('access');
             $table->timestamps();
 
-            $table->unique(['owner_id', 'uri']);
+            $table->unique(['owner_id', 'delegate_owner_id']);
+            $table->index(['delegate_owner_id', 'access']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('dav_address_books');
+        Schema::dropIfExists('dav_calendar_proxy_memberships');
     }
 };

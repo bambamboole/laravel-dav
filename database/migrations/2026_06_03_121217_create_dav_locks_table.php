@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('dav_locks', function (Blueprint $table) {
             $table->id();
-            $table->string('owner');
+            $table->text('owner')->nullable();
             $table->unsignedInteger('timeout');
             $table->unsignedInteger('created');
             $table->string('token')->unique();
@@ -18,6 +18,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('depth');
             $table->text('uri');
             $table->timestamps();
+
+            $table->index('uri');
+            $table->index('created');
         });
     }
 

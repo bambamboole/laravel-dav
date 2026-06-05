@@ -35,7 +35,7 @@ function davActor(): array
     $username = 'dav-'.$owner->getKey();
 
     DavCredential::factory()->create([
-        'user_id' => $owner->getKey(),
+        'owner_id' => $owner->getKey(),
         'username' => $username,
         'secret_hash' => Hash::make($secret),
     ]);

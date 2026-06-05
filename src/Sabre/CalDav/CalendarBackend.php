@@ -5,6 +5,7 @@ namespace Bambamboole\LaravelDav\Sabre\CalDav;
 use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
+use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Models\DavSchedulingObject;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
@@ -22,6 +23,7 @@ use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\PropPatch;
+use Sabre\DAV\Sharing\Plugin as SharingPlugin;
 use Sabre\DAV\StringUtil;
 use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
@@ -57,18 +59,22 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
             return [];
         }
 
-        return Dav::modelFor('calendar', DavCalendar::class)::query()
-            ->where('user_id', $userId)
+        return Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()
+            ->with('calendar')
+            ->whereHas('calendar')
+            ->where('owner_id', $userId)
+            ->orderBy('order')
             ->orderBy('id')
             ->get()
-            ->map(fn (DavCalendar $calendar): array => $this->calendarRow($calendar))
+            ->map(fn (DavCalendarInstance $instance): array => $this->calendarRow($instance))
             ->all();
     }
 
     /**
      * @param  array<string, mixed>  $properties
+     * @return array{0: int, 1: int}
      */
-    public function createCalendar($principalUri, $calendarUri, array $properties): int
+    public function createCalendar($principalUri, $calendarUri, array $properties): array
     {
         $userId = $this->userIdFromPrincipalUri((string) $principalUri);
 
@@ -77,17 +83,22 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         }
 
         $calendar = Dav::modelFor('calendar', DavCalendar::class)::query()->create([
-            'user_id' => $userId,
-            'uri' => (string) $calendarUri,
-            'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $calendarUri),
-            'description' => $properties[self::DescriptionProperty] ?? null,
-            'color' => $properties[self::ColorProperty] ?? null,
-            'timezone' => $properties[self::TimezoneProperty] ?? null,
+            'owner_id' => $userId,
             'components' => $this->componentsFromProperty($properties[self::SupportedComponentsProperty] ?? null),
             'sync_token' => 1,
         ]);
 
-        return (int) $calendar->id;
+        $instance = $calendar->instances()->create([
+            'owner_id' => $userId,
+            'uri' => (string) $calendarUri,
+            'access' => DavCalendarInstance::AccessOwner,
+            'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $calendarUri),
+            'description' => $properties[self::DescriptionProperty] ?? null,
+            'color' => $properties[self::ColorProperty] ?? null,
+            'timezone' => $properties[self::TimezoneProperty] ?? null,
+        ]);
+
+        return [(int) $calendar->id, (int) $instance->id];
     }
 
     public function updateCalendar($calendarId, PropPatch $propPatch): void
@@ -99,26 +110,34 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
             self::TimezoneProperty,
             self::SupportedComponentsProperty,
         ], function (array $mutations) use ($calendarId): bool {
-            $calendar = Dav::model('calendar')::query()->find($calendarId);
+            $calendar = $this->calendar($calendarId);
+            $instance = $this->calendarInstance($calendarId) ?? $calendar->ownerInstance()->first();
 
-            if (! $calendar) {
+            if (! $instance) {
                 return false;
             }
 
-            $values = [];
+            $calendarValues = [];
+            $instanceValues = [];
 
             foreach ($mutations as $property => $value) {
                 match ($property) {
-                    self::DisplayNameProperty => $values['display_name'] = $value,
-                    self::DescriptionProperty => $values['description'] = $value,
-                    self::ColorProperty => $values['color'] = $value,
-                    self::TimezoneProperty => $values['timezone'] = $value,
-                    self::SupportedComponentsProperty => $values['components'] = $this->componentsFromProperty($value),
+                    self::DisplayNameProperty => $instanceValues['display_name'] = $value,
+                    self::DescriptionProperty => $instanceValues['description'] = $value,
+                    self::ColorProperty => $instanceValues['color'] = $value,
+                    self::TimezoneProperty => $instanceValues['timezone'] = $value,
+                    self::SupportedComponentsProperty => $calendarValues['components'] = $this->componentsFromProperty($value),
                     default => null,
                 };
             }
 
-            $calendar->forceFill($values)->save();
+            if ($calendarValues !== []) {
+                $calendar->forceFill($calendarValues)->save();
+            }
+
+            if ($instanceValues !== []) {
+                $instance->forceFill($instanceValues)->save();
+            }
 
             return true;
         });
@@ -126,7 +145,21 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
 
     public function deleteCalendar($calendarId): void
     {
-        Dav::model('calendar')::query()->whereKey($calendarId)->delete();
+        $instance = $this->calendarInstance($calendarId);
+
+        if ($instance !== null && $instance->access !== DavCalendarInstance::AccessOwner) {
+            $instance->delete();
+
+            return;
+        }
+
+        $calendarKey = $this->calendarKey($calendarId);
+
+        Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()
+            ->where('dav_calendar_id', $calendarKey)
+            ->delete();
+
+        Dav::model('calendar')::query()->whereKey($calendarKey)->delete();
     }
 
     /**
@@ -264,7 +297,7 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         });
     }
 
-    private function upsertObject(int|string $calendarId, string $uri, string $payload): DavCalendarObject
+    private function upsertObject(mixed $calendarId, string $uri, string $payload): DavCalendarObject
     {
         return DB::transaction(function () use ($calendarId, $uri, $payload): DavCalendarObject {
             $calendar = $this->calendar($calendarId);
@@ -319,7 +352,7 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
 
     private function isAttendeeSchedulingObject(DavCalendar $calendar, string $payload): bool
     {
-        $owner = $calendar->user;
+        $owner = $calendar->owner;
 
         if (! $owner instanceof DavOwner || ($email = $owner->getDavPrincipalEmail()) === null) {
             return false;
@@ -428,7 +461,7 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
      */
     public function getChangesForCalendar($calendarId, $syncToken, $syncLevel, $limit = null): ?array
     {
-        $calendar = Dav::modelFor('calendar', DavCalendar::class)::query()->find($calendarId);
+        $calendar = Dav::modelFor('calendar', DavCalendar::class)::query()->find($this->calendarKey($calendarId));
         $syncToken = (string) $syncToken;
 
         if (! $calendar) {
@@ -449,20 +482,24 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
     /**
      * @return array<string, mixed>
      */
-    private function calendarRow(DavCalendar $calendar): array
+    private function calendarRow(DavCalendarInstance $instance): array
     {
+        $calendar = $instance->calendar;
         $components = $calendar->components ?: ['VEVENT', 'VTODO', 'VJOURNAL'];
 
         return [
-            'id' => $calendar->id,
-            'uri' => $calendar->uri,
-            'principaluri' => $this->principalUri($calendar->user_id),
-            self::DisplayNameProperty => $calendar->display_name,
-            self::DescriptionProperty => $calendar->description,
-            self::ColorProperty => $calendar->color,
-            self::TimezoneProperty => $this->calendarTimezoneProperty($calendar->timezone),
+            'id' => [(int) $calendar->id, (int) $instance->id],
+            'uri' => $instance->uri,
+            'principaluri' => $this->principalUri($instance->owner_id),
+            self::DisplayNameProperty => $instance->display_name,
+            self::DescriptionProperty => $instance->description,
+            self::ColorProperty => $instance->color,
+            self::TimezoneProperty => $this->calendarTimezoneProperty($instance->timezone),
             self::SupportedComponentsProperty => new SupportedCalendarComponentSet($components),
             self::SyncTokenProperty => $this->davSyncToken($calendar->sync_token),
+            'share-access' => $instance->access,
+            'share-resource-uri' => '/ns/share/'.$calendar->id,
+            'read-only' => $instance->access === SharingPlugin::ACCESS_READ,
         ];
     }
 
@@ -558,7 +595,7 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         $payload = is_resource($objectData) ? (string) stream_get_contents($objectData) : (string) $objectData;
 
         Dav::modelFor('scheduling_object', DavSchedulingObject::class)::query()->updateOrCreate(
-            ['user_id' => $userId, 'uri' => (string) $objectUri],
+            ['owner_id' => $userId, 'uri' => (string) $objectUri],
             [
                 'calendar_data' => $payload,
                 'etag' => sha1($payload),
@@ -587,7 +624,7 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         /** @var class-string<DavSchedulingObject> $model */
         $model = Dav::modelFor('scheduling_object', DavSchedulingObject::class);
 
-        return $model::query()->where('user_id', $userId);
+        return $model::query()->where('owner_id', $userId);
     }
 
     /**
@@ -605,14 +642,30 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         ];
     }
 
-    private function calendar(int|string $calendarId): DavCalendar
+    private function calendar(mixed $calendarId): DavCalendar
     {
-        return Dav::modelFor('calendar', DavCalendar::class)::query()->findOrFail($calendarId);
+        return Dav::modelFor('calendar', DavCalendar::class)::query()->findOrFail($this->calendarKey($calendarId));
+    }
+
+    private function calendarInstance(mixed $calendarId): ?DavCalendarInstance
+    {
+        $instanceId = is_array($calendarId) ? ($calendarId[1] ?? null) : null;
+
+        if ($instanceId === null) {
+            return null;
+        }
+
+        return Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()->find($instanceId);
+    }
+
+    private function calendarKey(mixed $calendarId): int|string
+    {
+        return is_array($calendarId) ? $calendarId[0] : $calendarId;
     }
 
     private function ownerExists(int $userId): bool
     {
-        $model = config('dav.owner_model');
+        $model = Dav::ownerModel();
 
         return $model::query()->whereKey($userId)->exists();
     }

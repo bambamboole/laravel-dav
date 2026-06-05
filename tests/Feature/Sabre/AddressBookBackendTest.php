@@ -14,7 +14,7 @@ function addressBookBackend(): AddressBookBackend
 it('persists a card, reads it back, and records a change', function (): void {
     $owner = OwnerUser::factory()->create();
     $backend = addressBookBackend();
-    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'contacts']);
+    $addressBook = DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'contacts']);
 
     $payload = contactCardPayload([
         'UID' => 'card-1',
@@ -48,7 +48,7 @@ it('persists a card, reads it back, and records a change', function (): void {
 it('deletes a card and records the deletion', function (): void {
     $owner = OwnerUser::factory()->create();
     $backend = addressBookBackend();
-    $addressBook = DavAddressBook::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'contacts']);
+    $addressBook = DavAddressBook::factory()->create(['owner_id' => $owner->getKey(), 'uri' => 'contacts']);
     $payload = contactCardPayload(['UID' => 'card-1', 'FN' => 'Ada Lovelace']);
     $backend->createCard($addressBook->id, 'card-1.vcf', $payload);
 

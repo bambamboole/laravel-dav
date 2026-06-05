@@ -7,7 +7,9 @@ use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 use Carbon\CarbonImmutable;
 
 it('creates a calendar object from calendar object data', function (): void {
-    $calendar = DavCalendar::factory()->create(['timezone' => 'Europe/Berlin']);
+    $calendar = DavCalendar::factory()
+        ->withInstance(['timezone' => 'Europe/Berlin'])
+        ->create();
     $startsAt = CarbonImmutable::parse('2026-01-01 09:00:00', 'Europe/Berlin');
     $endsAt = CarbonImmutable::parse('2026-01-01 10:00:00', 'Europe/Berlin');
     $data = new CalendarObjectData(
@@ -99,6 +101,6 @@ it('belongs to a calendar that owns many objects', function (): void {
 it('resolves the owner relation to the stub user', function (): void {
     $calendar = DavCalendar::factory()->create();
 
-    expect($calendar->user)->not->toBeNull()
-        ->and($calendar->user)->toBeInstanceOf(OwnerUser::class);
+    expect($calendar->owner)->not->toBeNull()
+        ->and($calendar->owner)->toBeInstanceOf(OwnerUser::class);
 });

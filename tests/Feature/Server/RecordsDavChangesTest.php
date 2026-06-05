@@ -25,7 +25,7 @@ it('increments the sync token, writes a change row, and dispatches the event', f
         ->and($change->sync_token)->toBe(2);
 
     Event::assertDispatched(DavCollectionChanged::class, function (DavCollectionChanged $event) use ($calendar): bool {
-        return $event->ownerId === (int) $calendar->user_id
+        return $event->ownerId === (int) $calendar->owner_id
             && $event->type === 'calendar'
             && $event->collectionId === $calendar->getKey()
             && $event->resourceUri === 'event.ics'

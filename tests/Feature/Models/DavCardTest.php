@@ -111,6 +111,6 @@ it('belongs to an address book that owns many cards', function (): void {
 it('resolves the owner relation to the stub user', function (): void {
     $addressBook = DavAddressBook::factory()->create();
 
-    expect($addressBook->user)->not->toBeNull()
-        ->and($addressBook->user)->toBeInstanceOf(OwnerUser::class);
+    expect($addressBook->owner)->not->toBeNull()
+        ->and($addressBook->owner)->toBeInstanceOf(OwnerUser::class);
 });

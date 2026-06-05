@@ -10,7 +10,11 @@ class LaravelDav
     /** @var array<string, class-string<Model>> */
     private const DEFAULTS = [
         'calendar' => Models\DavCalendar::class,
+        'calendar_attachment' => Models\DavCalendarAttachment::class,
+        'calendar_instance' => Models\DavCalendarInstance::class,
         'calendar_object' => Models\DavCalendarObject::class,
+        'calendar_proxy_membership' => Models\DavCalendarProxyMembership::class,
+        'calendar_subscription' => Models\DavCalendarSubscription::class,
         'address_book' => Models\DavAddressBook::class,
         'card' => Models\DavCard::class,
         'credential' => Models\DavCredential::class,
@@ -53,5 +57,26 @@ class LaravelDav
         }
 
         return $model;
+    }
+
+    /**
+     * @return class-string<Model>
+     */
+    public function ownerModel(): string
+    {
+        $model = config('dav.models.owner');
+
+        if (! is_string($model) || ! is_a($model, Model::class, true)) {
+            throw new InvalidArgumentException('The dav.models.owner config value must be an Eloquent model class.');
+        }
+
+        return $model;
+    }
+
+    public function ownerTable(): string
+    {
+        $model = $this->ownerModel();
+
+        return (new $model)->getTable();
     }
 }

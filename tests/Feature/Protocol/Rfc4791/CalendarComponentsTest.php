@@ -9,7 +9,7 @@ it('[section 4.1] saves and loads journals in a mixed calendar preserving raw iC
     $actor = davActor();
     $owner = $actor['owner'];
 
-    DavCalendar::factory()->create(['user_id' => $owner->getKey(), 'uri' => 'personal']);
+    DavCalendar::factory()->withInstance(['uri' => 'personal'])->create(['owner_id' => $owner->getKey()]);
 
     $eventPayload = ical(<<<'ICS'
         BEGIN:VCALENDAR

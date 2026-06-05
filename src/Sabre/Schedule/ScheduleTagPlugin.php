@@ -94,8 +94,8 @@ class ScheduleTagPlugin extends ServerPlugin
 
         return Dav::modelFor('calendar_object', DavCalendarObject::class)::query()
             ->where('uri', $objectUri)
-            ->whereHas('calendar', function (Builder $query) use ($ownerId, $calendarUri): void {
-                $query->where('user_id', $ownerId)->where('uri', $calendarUri);
+            ->whereHas('calendar.instances', function (Builder $query) use ($ownerId, $calendarUri): void {
+                $query->where('owner_id', $ownerId)->where('uri', $calendarUri);
             })
             ->first();
     }
