@@ -18,6 +18,7 @@ use Sabre\CalDAV\CalendarRoot;
 use Sabre\CalDAV\ICSExportPlugin;
 use Sabre\CalDAV\Plugin as CalDavPlugin;
 use Sabre\CalDAV\Schedule\Plugin as SchedulePlugin;
+use Sabre\CalDAV\SharingPlugin as CalDavSharingPlugin;
 use Sabre\CalDAV\Subscriptions\Plugin as SubscriptionsPlugin;
 use Sabre\CardDAV\AddressBookRoot;
 use Sabre\CardDAV\Plugin as CardDavPlugin;
@@ -26,6 +27,7 @@ use Sabre\DAV\Auth\Plugin as AuthPlugin;
 use Sabre\DAV\Locks\Plugin as LocksPlugin;
 use Sabre\DAV\PropertyStorage\Plugin as PropertyStoragePlugin;
 use Sabre\DAV\Server;
+use Sabre\DAV\Sharing\Plugin as SharingPlugin;
 use Sabre\DAVACL\Plugin as AclPlugin;
 use Sabre\VObject\Component\VCalendar;
 
@@ -57,6 +59,8 @@ class ServerFactory
         $server->addPlugin(new LocksPlugin($this->lockBackend));
         $server->addPlugin(new AclPlugin);
         $server->addPlugin(new CalDavPlugin);
+        $server->addPlugin(new SharingPlugin);
+        $server->addPlugin(new CalDavSharingPlugin);
         $server->addPlugin(new SubscriptionsPlugin);
         $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;
         $server->xml->elementMap['{DAV:}principal-property-search'] = PrincipalPropertySearchReport::class;
