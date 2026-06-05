@@ -91,7 +91,7 @@ final readonly class ContactData implements Arrayable, JsonSerializable
      */
     public function toArray(): array
     {
-        return DtoFactory::contactDataArray($this);
+        return DtoFactory::dataArray($this);
     }
 
     /**

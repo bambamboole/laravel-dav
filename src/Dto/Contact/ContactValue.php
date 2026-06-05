@@ -1,13 +1,27 @@
 <?php
 
-namespace Bambamboole\LaravelDav\Dto\Contact\Concerns;
+namespace Bambamboole\LaravelDav\Dto\Contact;
 
-trait NormalizesContactData
+use Illuminate\Contracts\Support\Arrayable;
+use JsonSerializable;
+
+/**
+ * @implements Arrayable<string, mixed>
+ */
+abstract class ContactValue implements Arrayable, JsonSerializable
 {
+    /**
+     * @return array<string, mixed>
+     */
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
-    private function nullableString(array $data, string $key): ?string
+    protected function nullableString(array $data, string $key): ?string
     {
         $value = $data[$key] ?? null;
 
@@ -17,7 +31,7 @@ trait NormalizesContactData
     /**
      * @param  array<string, mixed>  $data
      */
-    private function string(array $data, string $key, string $default = ''): string
+    protected function string(array $data, string $key, string $default = ''): string
     {
         $value = $data[$key] ?? null;
 
@@ -27,7 +41,7 @@ trait NormalizesContactData
     /**
      * @param  array<string, mixed>  $data
      */
-    private function nullableInt(array $data, string $key): ?int
+    protected function nullableInt(array $data, string $key): ?int
     {
         $value = $data[$key] ?? null;
 
@@ -38,7 +52,7 @@ trait NormalizesContactData
      * @param  array<string, mixed>  $data
      * @return array<int, string>
      */
-    private function stringList(array $data, string $key): array
+    protected function stringList(array $data, string $key): array
     {
         $value = $data[$key] ?? [];
 
@@ -55,7 +69,7 @@ trait NormalizesContactData
     /**
      * @param  array<string, mixed>  $data
      */
-    private function bool(array $data, string $key): bool
+    protected function bool(array $data, string $key): bool
     {
         return (bool) ($data[$key] ?? false);
     }

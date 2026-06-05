@@ -6,8 +6,6 @@ use Bambamboole\LaravelDav\Contracts\DavOwner;
 
 class RepositoryFactory
 {
-    use ResolvesDavOwnerId;
-
     public function __construct(
         private ContactCardWriter $contacts,
         private CalendarObjectWriter $calendarObjects,
@@ -31,5 +29,10 @@ class RepositoryFactory
     public function calendars(DavOwner|int|string $owner): CalendarRepository
     {
         return new CalendarRepository($this->calendarObjects, $this->davOwnerId($owner));
+    }
+
+    private function davOwnerId(DavOwner|int|string $owner): int|string
+    {
+        return $owner instanceof DavOwner ? $owner->getDavPrincipalId() : $owner;
     }
 }

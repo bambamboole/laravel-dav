@@ -68,43 +68,9 @@ final class DtoFactory
     /**
      * @return array<string, mixed>
      */
-    public static function contactDataArray(ContactData $data): array
+    public static function dataArray(ContactData|CalendarObjectData $data): array
     {
-        return [
-            'uri' => $data->uri,
-            'raw' => $data->raw,
-            'etag' => $data->etag,
-            'size' => $data->size,
-            'uid' => $data->uid,
-            'formattedName' => $data->formattedName,
-            'givenName' => $data->givenName,
-            'familyName' => $data->familyName,
-            'organization' => $data->organization,
-            'contactType' => $data->contactType,
-            'birthday' => self::arrayValue($data->birthday),
-            'emailAddresses' => self::arrayList($data->emailAddresses),
-            'phoneNumbers' => self::arrayList($data->phoneNumbers),
-            'addresses' => self::arrayList($data->addresses),
-            'urls' => self::arrayList($data->urls),
-            'instantMessages' => self::arrayList($data->instantMessages),
-            'socialProfiles' => self::arrayList($data->socialProfiles),
-            'dates' => self::arrayList($data->dates),
-            'relations' => self::arrayList($data->relations),
-            'extensions' => self::arrayList($data->extensions),
-            'pronouns' => self::arrayList($data->pronouns),
-            'namePrefix' => $data->namePrefix,
-            'middleName' => $data->middleName,
-            'phoneticGivenName' => $data->phoneticGivenName,
-            'phoneticMiddleName' => $data->phoneticMiddleName,
-            'phoneticFamilyName' => $data->phoneticFamilyName,
-            'phoneticOrganization' => $data->phoneticOrganization,
-            'previousFamilyName' => $data->previousFamilyName,
-            'nameSuffix' => $data->nameSuffix,
-            'nickname' => $data->nickname,
-            'jobTitle' => $data->jobTitle,
-            'department' => $data->department,
-            'note' => $data->note,
-        ];
+        return array_map(self::serializeValue(...), get_object_vars($data));
     }
 
     /**
@@ -112,7 +78,7 @@ final class DtoFactory
      */
     public static function contactStorageData(ContactData $data): array
     {
-        return array_diff_key(self::contactDataArray($data), array_flip(['uri', 'raw', 'etag', 'size']));
+        return array_diff_key(self::dataArray($data), array_flip(['uri', 'raw', 'etag', 'size']));
     }
 
     /**
@@ -145,33 +111,9 @@ final class DtoFactory
     /**
      * @return array<string, mixed>
      */
-    public static function calendarObjectDataArray(CalendarObjectData $data): array
-    {
-        return [
-            'uri' => $data->uri,
-            'raw' => $data->raw,
-            'etag' => $data->etag,
-            'size' => $data->size,
-            'uid' => $data->uid,
-            'componentType' => $data->componentType,
-            'summary' => $data->summary,
-            'description' => $data->description,
-            'location' => $data->location,
-            'status' => $data->status,
-            'url' => $data->url,
-            'startsAt' => $data->startsAt?->toJSON(),
-            'endsAt' => $data->endsAt?->toJSON(),
-            'isAllDay' => $data->isAllDay,
-            'timezone' => $data->timezone,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
     public static function calendarObjectStorageData(CalendarObjectData $data): array
     {
-        return array_diff_key(self::calendarObjectDataArray($data), array_flip([
+        return array_diff_key(self::dataArray($data), array_flip([
             'uri',
             'raw',
             'etag',
@@ -253,25 +195,14 @@ final class DtoFactory
         return is_array($value) ? new ContactDate($value) : null;
     }
 
-    /**
-     * @return array<string, mixed>|mixed|null
-     */
-    private static function arrayValue(mixed $value): mixed
+    private static function serializeValue(mixed $value): mixed
     {
-        if ($value instanceof Arrayable) {
-            return $value->toArray();
-        }
-
-        return $value;
-    }
-
-    /**
-     * @param  array<int, mixed>  $values
-     * @return array<int, mixed>
-     */
-    private static function arrayList(array $values): array
-    {
-        return array_map(self::arrayValue(...), $values);
+        return match (true) {
+            $value instanceof CarbonImmutable => $value->toJSON(),
+            $value instanceof Arrayable => $value->toArray(),
+            is_array($value) => array_map(self::serializeValue(...), $value),
+            default => $value,
+        };
     }
 
     /**
