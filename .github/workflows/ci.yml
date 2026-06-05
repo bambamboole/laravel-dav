@@ -37,7 +37,7 @@ jobs:
 
       - name: Install caldav-server-tester
         run: |
-          uv tool install caldav-server-tester
+          uv tool install --with vobject caldav-server-tester
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run tests
