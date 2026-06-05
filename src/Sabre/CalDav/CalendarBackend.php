@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Sabre\CalDav;
 
+use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
@@ -14,6 +15,7 @@ use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SchedulingSupport;
 use Sabre\CalDAV\Backend\SyncSupport;
@@ -265,15 +267,187 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
     private function upsertObject(int|string $calendarId, string $uri, string $payload): DavCalendarObject
     {
         return DB::transaction(function () use ($calendarId, $uri, $payload): DavCalendarObject {
-            $object = $this->calendar($calendarId)->objects()->firstOrNew(['uri' => $uri]);
+            $calendar = $this->calendar($calendarId);
+            $object = $calendar->objects()->firstOrNew(['uri' => $uri]);
+            $currentPayload = $object->exists ? $object->calendar_data : null;
 
             $object->fill([
                 'data' => $this->parser->parse($payload, $uri),
                 'calendar_data' => $payload,
-            ])->save();
+            ]);
+
+            if (! $this->isSchedulingObject($payload)) {
+                $object->schedule_tag = null;
+            } elseif ($object->schedule_tag === null || ! $this->isAttendeeParticipantStatusOnlyChange($calendar, $currentPayload, $payload)) {
+                $object->schedule_tag = (string) Str::uuid();
+            }
+
+            $object->save();
 
             return $object;
         });
+    }
+
+    private function isSchedulingObject(string $payload): bool
+    {
+        try {
+            $calendar = Reader::read($payload);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (! $calendar instanceof VCalendar) {
+            $calendar->destroy();
+
+            return false;
+        }
+
+        try {
+            foreach ($calendar->getBaseComponents() as $component) {
+                if (in_array($component->name, ['VEVENT', 'VTODO'], true) && isset($component->ORGANIZER) && isset($component->ATTENDEE)) {
+                    return true;
+                }
+            }
+
+            return false;
+        } finally {
+            $calendar->destroy();
+        }
+    }
+
+    private function isAttendeeParticipantStatusOnlyChange(DavCalendar $calendar, ?string $currentPayload, string $payload): bool
+    {
+        if ($currentPayload === null || $currentPayload === '') {
+            return false;
+        }
+
+        if (! $this->isAttendeeSchedulingObject($calendar, $payload)) {
+            return false;
+        }
+
+        $current = $this->calendarWithoutParticipantStatus($currentPayload);
+        $updated = $this->calendarWithoutParticipantStatus($payload);
+
+        return $current !== null && $current === $updated;
+    }
+
+    private function isAttendeeSchedulingObject(DavCalendar $calendar, string $payload): bool
+    {
+        $owner = $calendar->user;
+
+        if (! $owner instanceof DavOwner || $owner->getDavPrincipalEmail() === null) {
+            return false;
+        }
+
+        try {
+            $parsed = Reader::read($payload);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (! $parsed instanceof VCalendar) {
+            $parsed->destroy();
+
+            return false;
+        }
+
+        try {
+            foreach ($parsed->getBaseComponents() as $component) {
+                if (! in_array($component->name, ['VEVENT', 'VTODO'], true)) {
+                    continue;
+                }
+
+                if ($this->componentOrganizerMatches($component, $owner->getDavPrincipalEmail())) {
+                    return false;
+                }
+
+                if ($this->componentAttendeeMatches($component, $owner->getDavPrincipalEmail())) {
+                    return true;
+                }
+            }
+
+            return false;
+        } finally {
+            $parsed->destroy();
+        }
+    }
+
+    private function componentOrganizerMatches(VObject\Component $component, string $email): bool
+    {
+        foreach ($component->select('ORGANIZER') as $organizer) {
+            if ($organizer instanceof VObject\Property && $this->calendarAddressMatches($organizer, $email)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function componentAttendeeMatches(VObject\Component $component, string $email): bool
+    {
+        foreach ($component->select('ATTENDEE') as $attendee) {
+            if ($attendee instanceof VObject\Property && $this->calendarAddressMatches($attendee, $email)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function calendarAddressMatches(VObject\Property $property, string $email): bool
+    {
+        return strtolower($property->getValue()) === 'mailto:'.strtolower($email);
+    }
+
+    private function calendarWithoutParticipantStatus(string $payload): ?string
+    {
+        try {
+            $calendar = Reader::read($payload);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (! $calendar instanceof VCalendar) {
+            $calendar->destroy();
+
+            return null;
+        }
+
+        try {
+            foreach ($calendar->getBaseComponents() as $component) {
+                if (! in_array($component->name, ['VEVENT', 'VTODO'], true)) {
+                    continue;
+                }
+
+                foreach ($component->select('ORGANIZER') as $organizer) {
+                    if ($organizer instanceof VObject\Property) {
+                        unset($organizer['SCHEDULE-STATUS']);
+                        unset($organizer['SCHEDULE-FORCE-SEND']);
+                    }
+                }
+
+                foreach ($component->select('ATTENDEE') as $attendee) {
+                    if ($attendee instanceof VObject\Property) {
+                        unset($attendee['PARTSTAT']);
+                        unset($attendee['RSVP']);
+                        unset($attendee['SCHEDULE-STATUS']);
+                        unset($attendee['SCHEDULE-FORCE-SEND']);
+                    }
+                }
+            }
+
+            return $this->canonicalCalendarPayload($calendar);
+        } finally {
+            $calendar->destroy();
+        }
+    }
+
+    private function canonicalCalendarPayload(VCalendar $calendar): string
+    {
+        $lines = preg_split('/\R/', trim($calendar->serialize())) ?: [];
+        sort($lines, SORT_STRING);
+
+        return implode("\n", $lines);
     }
 
     /**

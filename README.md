@@ -9,7 +9,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 - **Full CalDAV** — events (`VEVENT`), todos (`VTODO`), and journals (`VJOURNAL`).
 - **Full CardDAV** — contacts (`VCARD`) with rich, typed parsing.
 - **WebDAV sync** — collection synchronization via sync tokens ([RFC 6578](https://datatracker.ietf.org/doc/html/rfc6578)).
-- **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
+- **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), schedule tags, free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
 - **HTTP Basic authentication** — stateless, backed by hashed credentials.
 - **Owner-agnostic** — any model that implements a small contract can own collections.
@@ -20,7 +20,6 @@ Expose your application's calendars and contacts to any standards-compliant clie
 
 The following are not implemented yet and are tracked for future releases:
 
-- **RFC 6638 `schedule-tag`** — the `Schedule-Tag` header and `If-Schedule-Tag-Match` precondition are not implemented (scheduling otherwise works: auto-schedule, free/busy, and iMIP).
 - **Calendar sharing & proxy delegation.**
 - **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
