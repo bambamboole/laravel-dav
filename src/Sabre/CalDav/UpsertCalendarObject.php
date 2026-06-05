@@ -5,10 +5,14 @@ namespace Bambamboole\LaravelDav\Sabre\CalDav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
+use Bambamboole\LaravelDav\Support\CalendarObjectProjection;
 
 class UpsertCalendarObject
 {
-    public function __construct(private CalendarObjectParser $parser) {}
+    public function __construct(
+        private CalendarObjectParser $parser,
+        private CalendarObjectProjection $projection,
+    ) {}
 
     public function handle(DavCalendar $calendar, string $uri, string $payload): DavCalendarObject
     {
@@ -17,17 +21,7 @@ class UpsertCalendarObject
         return $calendar->objects()->updateOrCreate(
             ['uri' => $uri],
             [
-                'uid' => $parsed->uid,
-                'component_type' => $parsed->componentType,
-                'summary' => $parsed->summary,
-                'description' => $parsed->description,
-                'location' => $parsed->location,
-                'status' => $parsed->status,
-                'url' => $parsed->url,
-                'starts_at' => $parsed->startsAt,
-                'ends_at' => $parsed->endsAt,
-                'is_all_day' => $parsed->isAllDay,
-                'timezone' => $parsed->timezone,
+                ...$this->projection->attributesFromData($parsed, defaultComponentType: null),
                 'calendar_data' => $payload,
                 'last_modified_at' => now(),
             ],
