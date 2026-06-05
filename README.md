@@ -104,6 +104,10 @@ DavCredential::create([
 
 The client then authenticates with the `username` and the plaintext `$secret`. The package verifies it against `secret_hash` and records `last_used_at` on each successful request.
 
+Only HTTP Basic authentication is supported. Deploy it behind HTTPS and issue per-client secrets as shown above. Digest authentication is intentionally not implemented: it would require storing Digest-compatible HA1 material instead of normal hashed secrets, which weakens the credential storage model this package uses.
+
+The Basic authentication realm is configurable through `dav.realm` or `DAV_REALM`; it defaults to your Laravel application name.
+
 ## Endpoints
 
 All DAV traffic is served under the configured route prefix (`dav.route.prefix`, default `dav`):
@@ -120,6 +124,8 @@ These routes are registered **outside** the `web` middleware group: authenticati
 ```
 
 Point a client at `https://your-app.test/dav/` (or just `https://your-app.test/` if it honors well-known discovery) and supply the Basic credentials created above.
+
+RFC 6764 DNS SRV/TXT discovery is a hosting concern, not package code. If you want DNS-based discovery, publish `_caldavs._tcp` and `_carddavs._tcp` SRV records for your HTTPS host, with matching TXT records such as `path=/dav/` when clients need the DAV path. The non-TLS service names are `_caldav._tcp` and `_carddav._tcp`, but production deployments should use TLS.
 
 ## Collections
 
