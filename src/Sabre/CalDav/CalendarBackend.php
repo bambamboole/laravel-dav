@@ -7,6 +7,7 @@ use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
+use Bambamboole\LaravelDav\Models\DavCalendarSubscription;
 use Bambamboole\LaravelDav\Models\DavSchedulingObject;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
@@ -19,17 +20,20 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SchedulingSupport;
+use Sabre\CalDAV\Backend\SubscriptionSupport;
 use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
+use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\Exception\NotFound;
 use Sabre\DAV\PropPatch;
 use Sabre\DAV\Sharing\Plugin as SharingPlugin;
 use Sabre\DAV\StringUtil;
+use Sabre\DAV\Xml\Property\Href;
 use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Reader;
 
-class CalendarBackend extends AbstractBackend implements SchedulingSupport, SyncSupport
+class CalendarBackend extends AbstractBackend implements SchedulingSupport, SubscriptionSupport, SyncSupport
 {
     use RecordsDavChanges;
     use ResolvesPrincipalUri;
@@ -45,6 +49,18 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
     private const SupportedComponentsProperty = '{urn:ietf:params:xml:ns:caldav}supported-calendar-component-set';
 
     private const SyncTokenProperty = '{http://sabredav.org/ns}sync-token';
+
+    private const SubscriptionSourceProperty = '{http://calendarserver.org/ns/}source';
+
+    private const SubscriptionRefreshRateProperty = '{http://apple.com/ns/ical/}refreshrate';
+
+    private const SubscriptionOrderProperty = '{http://apple.com/ns/ical/}calendar-order';
+
+    private const SubscriptionStripTodosProperty = '{http://calendarserver.org/ns/}subscribed-strip-todos';
+
+    private const SubscriptionStripAlarmsProperty = '{http://calendarserver.org/ns/}subscribed-strip-alarms';
+
+    private const SubscriptionStripAttachmentsProperty = '{http://calendarserver.org/ns/}subscribed-strip-attachments';
 
     public function __construct(private CalendarObjectParser $parser) {}
 
@@ -160,6 +176,113 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
             ->delete();
 
         Dav::model('calendar')::query()->whereKey($calendarKey)->delete();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getSubscriptionsForUser($principalUri): array
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null) {
+            return [];
+        }
+
+        return $this->subscriptionQuery($userId)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (DavCalendarSubscription $subscription): array => $this->subscriptionRow($subscription))
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     */
+    public function createSubscription($principalUri, $uri, array $properties): int|string
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null || ! $this->ownerExists($userId)) {
+            throw new NotFound('Principal not found');
+        }
+
+        $source = $this->subscriptionHref($properties[self::SubscriptionSourceProperty] ?? null);
+
+        if ($source === null) {
+            throw new Forbidden('The {http://calendarserver.org/ns/}source property is required when creating subscriptions');
+        }
+
+        $subscription = Dav::modelFor('calendar_subscription', DavCalendarSubscription::class)::query()->create([
+            'owner_id' => $userId,
+            'uri' => (string) $uri,
+            'source' => $source,
+            'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $uri),
+            'color' => $properties[self::ColorProperty] ?? null,
+            'refresh_rate' => $properties[self::SubscriptionRefreshRateProperty] ?? null,
+            'order' => (int) ($properties[self::SubscriptionOrderProperty] ?? 0),
+            'strip_todos' => $this->subscriptionFlag($properties, self::SubscriptionStripTodosProperty),
+            'strip_alarms' => $this->subscriptionFlag($properties, self::SubscriptionStripAlarmsProperty),
+            'strip_attachments' => $this->subscriptionFlag($properties, self::SubscriptionStripAttachmentsProperty),
+            'last_modified_at' => now(),
+        ]);
+
+        return $subscription->getKey();
+    }
+
+    public function updateSubscription($subscriptionId, PropPatch $propPatch): void
+    {
+        $propPatch->handle([
+            self::SubscriptionSourceProperty,
+            self::DisplayNameProperty,
+            self::ColorProperty,
+            self::SubscriptionRefreshRateProperty,
+            self::SubscriptionOrderProperty,
+            self::SubscriptionStripTodosProperty,
+            self::SubscriptionStripAlarmsProperty,
+            self::SubscriptionStripAttachmentsProperty,
+        ], function (array $mutations) use ($subscriptionId): bool {
+            $subscription = Dav::modelFor('calendar_subscription', DavCalendarSubscription::class)::query()->find($subscriptionId);
+
+            if (! $subscription instanceof DavCalendarSubscription) {
+                return false;
+            }
+
+            $values = [];
+
+            foreach ($mutations as $property => $value) {
+                match ($property) {
+                    self::SubscriptionSourceProperty => $values['source'] = $this->subscriptionHref($value),
+                    self::DisplayNameProperty => $values['display_name'] = $value,
+                    self::ColorProperty => $values['color'] = $value,
+                    self::SubscriptionRefreshRateProperty => $values['refresh_rate'] = $value,
+                    self::SubscriptionOrderProperty => $values['order'] = (int) $value,
+                    self::SubscriptionStripTodosProperty => $values['strip_todos'] = $value !== null,
+                    self::SubscriptionStripAlarmsProperty => $values['strip_alarms'] = $value !== null,
+                    self::SubscriptionStripAttachmentsProperty => $values['strip_attachments'] = $value !== null,
+                    default => null,
+                };
+            }
+
+            if (array_key_exists('source', $values) && $values['source'] === null) {
+                return false;
+            }
+
+            $subscription->forceFill([
+                ...$values,
+                'last_modified_at' => now(),
+            ])->save();
+
+            return true;
+        });
+    }
+
+    public function deleteSubscription($subscriptionId): void
+    {
+        Dav::modelFor('calendar_subscription', DavCalendarSubscription::class)::query()
+            ->whereKey($subscriptionId)
+            ->delete();
     }
 
     /**
@@ -625,6 +748,73 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Sync
         $model = Dav::modelFor('scheduling_object', DavSchedulingObject::class);
 
         return $model::query()->where('owner_id', $userId);
+    }
+
+    /**
+     * @return Builder<DavCalendarSubscription>
+     */
+    private function subscriptionQuery(int|string $userId): Builder
+    {
+        /** @var class-string<DavCalendarSubscription> $model */
+        $model = Dav::modelFor('calendar_subscription', DavCalendarSubscription::class);
+
+        return $model::query()->where('owner_id', $userId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function subscriptionRow(DavCalendarSubscription $subscription): array
+    {
+        $row = [
+            'id' => (int) $subscription->id,
+            'uri' => $subscription->uri,
+            'principaluri' => $this->principalUri($subscription->owner_id),
+            'source' => $subscription->source,
+            'lastmodified' => $subscription->last_modified_at?->getTimestamp(),
+            self::DisplayNameProperty => $subscription->display_name,
+            self::SubscriptionOrderProperty => $subscription->order,
+            self::SupportedComponentsProperty => new SupportedCalendarComponentSet(['VTODO', 'VEVENT']),
+        ];
+
+        if ($subscription->color !== null) {
+            $row[self::ColorProperty] = $subscription->color;
+        }
+
+        if ($subscription->refresh_rate !== null) {
+            $row[self::SubscriptionRefreshRateProperty] = $subscription->refresh_rate;
+        }
+
+        if ($subscription->strip_todos) {
+            $row[self::SubscriptionStripTodosProperty] = true;
+        }
+
+        if ($subscription->strip_alarms) {
+            $row[self::SubscriptionStripAlarmsProperty] = true;
+        }
+
+        if ($subscription->strip_attachments) {
+            $row[self::SubscriptionStripAttachmentsProperty] = true;
+        }
+
+        return $row;
+    }
+
+    private function subscriptionHref(mixed $property): ?string
+    {
+        if ($property instanceof Href) {
+            return $property->getHref();
+        }
+
+        return is_string($property) && $property !== '' ? $property : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $properties
+     */
+    private function subscriptionFlag(array $properties, string $property): bool
+    {
+        return array_key_exists($property, $properties);
     }
 
     /**
