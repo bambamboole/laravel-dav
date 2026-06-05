@@ -29,6 +29,8 @@ class VCardParser
             $organizationParts = $this->parts($vCard, 'ORG');
 
             $birthday = $this->dateProperty($vCard, 'BDAY');
+            $anniversary = $this->dateProperty($vCard, 'ANNIVERSARY');
+            $gender = $this->gender($vCard);
 
             return new ContactData(
                 uri: $uri,
@@ -40,8 +42,12 @@ class VCardParser
                 givenName: $nameParts[1] ?? null,
                 familyName: $nameParts[0] ?? null,
                 organization: $organizationParts[0] ?? $this->textProperty($vCard, 'ORG'),
+                kind: $this->textProperty($vCard, 'KIND'),
                 contactType: $this->contactType($vCard),
                 birthday: $birthday !== null ? new ContactDate($birthday) : null,
+                anniversary: $anniversary !== null ? new ContactDate(array_replace($anniversary, ['label' => 'anniversary'])) : null,
+                gender: $gender['gender'],
+                genderIdentity: $gender['genderIdentity'],
                 emailAddresses: array_map(fn (array $row): ContactEmailAddress => new ContactEmailAddress($row), $this->labeledTextProperties($vCard, 'EMAIL')),
                 phoneNumbers: array_map(fn (array $row): ContactPhoneNumber => new ContactPhoneNumber($row), $this->labeledTextProperties($vCard, 'TEL')),
                 addresses: array_map(fn (array $row): ContactPostalAddress => new ContactPostalAddress($row), $this->addresses($vCard)),
@@ -89,6 +95,34 @@ class VCardParser
         }
 
         return (string) $component->{$name};
+    }
+
+    private function filledString(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
+     * @return array{gender: ?string, genderIdentity: ?string}
+     */
+    private function gender(Component $component): array
+    {
+        if (! isset($component->GENDER) || ! $component->GENDER instanceof Property) {
+            return ['gender' => null, 'genderIdentity' => null];
+        }
+
+        $parts = $component->GENDER->getParts();
+
+        return [
+            'gender' => $this->filledString($parts[0] ?? null),
+            'genderIdentity' => $this->filledString($parts[1] ?? null),
+        ];
     }
 
     /**

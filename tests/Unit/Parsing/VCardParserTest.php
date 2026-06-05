@@ -1,5 +1,6 @@
 <?php
 
+use Bambamboole\LaravelDav\Dto\Contact\ContactDate;
 use Bambamboole\LaravelDav\Dto\Contact\ContactEmailAddress;
 use Bambamboole\LaravelDav\Dto\Contact\ContactInstantMessage;
 use Bambamboole\LaravelDav\Dto\Contact\ContactPhoneNumber;
@@ -300,10 +301,38 @@ it('parses a vCard 4.0 card, mapping KIND and the PREF parameter', function () {
 
     expect($data->uid)->toBe('urn:uuid:contact-4')
         ->and($data->formattedName)->toBe('Analytical Engines')
+        ->and($data->kind)->toBe('org')
         ->and($data->contactType)->toBe('organization')
         ->and($data->emailAddresses)->toHaveCount(2)
         ->and($data->emailAddresses[0]->value)->toBe('info@example.com')
         ->and($data->emailAddresses[0]->isPreferred)->toBeTrue()
         ->and($data->emailAddresses[1]->isPreferred)->toBeFalse()
         ->and($data->phoneNumbers[0]->isPreferred)->toBeTrue();
+});
+
+it('parses vCard 4.0 gender, anniversary and non-organization kind fields', function () {
+    $payload = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:4.0
+        PRODID:-//Life OS//Tests//EN
+        UID:urn:uuid:contact-group
+        KIND:group
+        FN:Research Group
+        GENDER:F;woman
+        ANNIVERSARY:20100615
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($payload, 'contact-group.vcf');
+
+    expect($data->kind)->toBe('group')
+        ->and($data->contactType)->toBe('person')
+        ->and($data->gender)->toBe('F')
+        ->and($data->genderIdentity)->toBe('woman')
+        ->and($data->anniversary)->toBeInstanceOf(ContactDate::class)
+        ->and($data->anniversary?->label)->toBe('anniversary')
+        ->and($data->anniversary?->year)->toBe(2010)
+        ->and($data->anniversary?->month)->toBe(6)
+        ->and($data->anniversary?->day)->toBe(15)
+        ->and($data->anniversary?->rawValue)->toBe('20100615');
 });
