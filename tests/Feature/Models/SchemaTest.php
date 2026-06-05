@@ -13,6 +13,7 @@ it('creates every dav table', function (string $table): void {
     'dav_cards',
     'dav_locks',
     'dav_calendar_objects',
+    'dav_scheduling_objects',
 ]);
 
 it('has the key columns on dav_calendar_objects', function (): void {

@@ -13,6 +13,7 @@ use Bambamboole\LaravelDav\Sabre\PropertyStorage\PropertyBackend;
 use Sabre\CalDAV\CalendarRoot;
 use Sabre\CalDAV\ICSExportPlugin;
 use Sabre\CalDAV\Plugin as CalDavPlugin;
+use Sabre\CalDAV\Schedule\Plugin as SchedulePlugin;
 use Sabre\CardDAV\AddressBookRoot;
 use Sabre\CardDAV\Plugin as CardDavPlugin;
 use Sabre\CardDAV\VCFExportPlugin;
@@ -47,6 +48,7 @@ class ServerFactory
         $server->addPlugin(new CalDavPlugin);
         $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;
         $server->xml->elementMap['{DAV:}principal-property-search'] = PrincipalPropertySearchReport::class;
+        $server->addPlugin(new SchedulePlugin);
         $server->addPlugin(new CardDavPlugin);
         $server->addPlugin(new SyncPlugin);
         $server->addPlugin(new ICSExportPlugin);

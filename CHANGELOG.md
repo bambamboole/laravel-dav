@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CalDAV scheduling foundation ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)):
+  the calendar backend implements `SchedulingSupport` (backed by a new
+  `dav_scheduling_objects` table), the `Sabre\CalDAV\Schedule\Plugin` is registered,
+  and principals now advertise `calendar-user-address-set` plus scheduling
+  inbox/outbox URLs. Automatic iTip delivery, free/busy, iMIP, and `schedule-tag`
+  remain follow-ups.
+
 ### Changed
 
 - `calendar-query` REPORTs now narrow candidates in SQL using the denormalised
