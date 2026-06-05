@@ -29,7 +29,7 @@ function recurrenceActor(): array
     ];
 }
 
-it('finds a later instance of a weekly recurring VEVENT', function (): void {
+it('[section 9.9] finds a later instance of a weekly recurring VEVENT', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'weekly.ics', $actor['header'], ical(<<<'ICS'
@@ -60,7 +60,7 @@ it('finds a later instance of a weekly recurring VEVENT', function (): void {
         ->assertSee('weekly.ics', false);
 });
 
-it('does not match a recurring VEVENT outside every instance window', function (): void {
+it('[section 9.9] does not match a recurring VEVENT outside every instance window', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'weekly.ics', $actor['header'], ical(<<<'ICS'
@@ -91,7 +91,7 @@ it('does not match a recurring VEVENT outside every instance window', function (
         ->assertDontSee('weekly.ics', false);
 });
 
-it('finds a later instance of a recurring VTODO', function (): void {
+it('[section 9.9] finds a later instance of a recurring VTODO', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'recurring-task.ics', $actor['header'], ical(<<<'ICS'
@@ -122,7 +122,7 @@ it('finds a later instance of a recurring VTODO', function (): void {
         ->assertSee('recurring-task.ics', false);
 });
 
-it('matches an infinite RRULE in a far future window', function (): void {
+it('[section 9.9] matches an infinite RRULE in a far future window', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'infinite.ics', $actor['header'], ical(<<<'ICS'
@@ -153,7 +153,7 @@ it('matches an infinite RRULE in a far future window', function (): void {
         ->assertSee('infinite.ics', false);
 });
 
-it('matches a recurrence overridden by a RECURRENCE-ID at its shifted time', function (): void {
+it('[section 9.9] matches a recurrence overridden by a RECURRENCE-ID at its shifted time', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'override.ics', $actor['header'], ical(<<<'ICS'
@@ -204,7 +204,7 @@ it('matches a recurrence overridden by a RECURRENCE-ID at its shifted time', fun
         ->assertDontSee('override.ics', false);
 });
 
-it('matches an all-day yearly recurrence in the following year', function (): void {
+it('[section 9.9] matches an all-day yearly recurrence in the following year', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'birthday.ics', $actor['header'], ical(<<<'ICS'
@@ -235,7 +235,7 @@ it('matches an all-day yearly recurrence in the following year', function (): vo
         ->assertSee('birthday.ics', false);
 });
 
-it('expands a recurring VEVENT into individual instances within the window', function (): void {
+it('[section 9.6.5] expands a recurring VEVENT into individual instances within the window', function (): void {
     $actor = recurrenceActor();
 
     davPut($this, $actor['path'].'expandable.ics', $actor['header'], ical(<<<'ICS'

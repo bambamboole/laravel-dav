@@ -2,7 +2,9 @@
 
 use Bambamboole\LaravelDav\Models\DavCredential;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
+use Bambamboole\LaravelDav\Tests\TestCase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\TestResponse;
 
 /**
  * @return array{owner: OwnerUser, header: string}
@@ -25,16 +27,14 @@ function principalSearchActor(string $name): array
     ];
 }
 
-function principalPropertySearchReport($test, string $authHeader, string $body)
+function principalPropertySearchReport(TestCase $test, string $authHeader, string $body): TestResponse
 {
-    return $test->call('REPORT', '/dav/', [], [], [], [
-        'CONTENT_TYPE' => 'application/xml',
-        'HTTP_AUTHORIZATION' => $authHeader,
+    return $test->callDav('REPORT', '/dav/', $authHeader, $body, [
         'HTTP_DEPTH' => '0',
-    ], $body);
+    ]);
 }
 
-it('finds a principal by name and returns its displayname and calendar-home-set', function (): void {
+it('[section 9.4] finds a principal by name and returns its displayname and calendar-home-set', function (): void {
     $match = principalSearchActor('Ada Lovelace');
     $other = principalSearchActor('Grace Hopper');
 
@@ -61,7 +61,7 @@ it('finds a principal by name and returns its displayname and calendar-home-set'
         ->assertDontSee('Grace Hopper', false);
 });
 
-it('lists all principals for authenticated users (enumeration policy)', function (): void {
+it('[section 9.4] lists all principals for authenticated users', function (): void {
     $first = principalSearchActor('Ada Lovelace');
     $second = principalSearchActor('Grace Hopper');
 
@@ -81,7 +81,7 @@ it('lists all principals for authenticated users (enumeration policy)', function
         ->assertSee('Grace Hopper', false);
 });
 
-it('finds a principal by name using the python caldav client query shape', function (): void {
+it('[section 9.4] finds a principal by name using the python caldav client query shape', function (): void {
     $match = principalSearchActor('Ada Lovelace');
     $other = principalSearchActor('Grace Hopper');
 
@@ -96,7 +96,7 @@ it('finds a principal by name using the python caldav client query shape', funct
         ->assertDontSee('Grace Hopper', false);
 });
 
-it('lists all principals using the python caldav client query shape', function (): void {
+it('[section 9.4] lists all principals using the python caldav client query shape', function (): void {
     $first = principalSearchActor('Ada Lovelace');
     $second = principalSearchActor('Grace Hopper');
 
@@ -113,7 +113,7 @@ it('lists all principals using the python caldav client query shape', function (
         ->assertSee('/dav/calendars/'.$second['owner']->getKey().'/', false);
 });
 
-it('degrades gracefully when only unsupported search properties are requested', function (): void {
+it('[section 9.4] degrades gracefully when only unsupported search properties are requested', function (): void {
     $actor = principalSearchActor('Ada Lovelace');
 
     principalPropertySearchReport($this, $actor['header'], <<<'XML'

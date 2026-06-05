@@ -7,6 +7,7 @@ use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Date;
+use Illuminate\Testing\TestResponse;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 use function Orchestra\Testbench\default_migration_path;
@@ -14,6 +15,22 @@ use function Orchestra\Testbench\default_migration_path;
 abstract class TestCase extends Orchestra
 {
     use RefreshDatabase;
+
+    /**
+     * @param  array<string, string>  $server
+     */
+    public function callDav(string $method, string $path, ?string $authHeader = null, string $body = '', array $server = [], ?string $contentType = null): TestResponse
+    {
+        if ($authHeader !== null) {
+            $server['HTTP_AUTHORIZATION'] = $authHeader;
+        }
+
+        if ($contentType !== null || $body !== '') {
+            $server['CONTENT_TYPE'] = $contentType ?? 'application/xml';
+        }
+
+        return $this->call($method, $path, [], [], [], $server, $body);
+    }
 
     protected function getPackageProviders($app): array
     {
