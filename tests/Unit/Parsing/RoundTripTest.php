@@ -261,3 +261,45 @@ it('leaves existing emails and phones untouched when merge data does not carry r
         ->toContain('ada@example.com')
         ->toContain('+1 555');
 });
+
+it('keeps the vCard 4.0 version and unknown 4.0 properties when merging a typed edit', function () {
+    $existing = vcard(<<<'VCF'
+        BEGIN:VCARD
+        VERSION:4.0
+        UID:urn:uuid:merge-4
+        FN:Old Name
+        N:Old;Name;;;
+        KIND:individual
+        GENDER:F
+        ANNIVERSARY:20100615
+        EMAIL;PREF=1:old@example.com
+        X-CUSTOM:keep-me
+        END:VCARD
+        VCF);
+
+    $data = (new VCardParser)->parse($existing, 'merge-4.vcf');
+    $updated = new ContactData(
+        uri: $data->uri,
+        raw: $data->raw,
+        etag: $data->etag,
+        size: $data->size,
+        uid: $data->uid,
+        formattedName: 'New Name',
+        givenName: 'New',
+        familyName: 'Name',
+        emailAddresses: [new ContactEmailAddress(['value' => 'new@example.com'])],
+    );
+
+    $merged = (new VCardSerializer)->merge($existing, $updated);
+
+    expect($merged)
+        ->toContain('VERSION:4.0')
+        ->toContain('FN:New Name')
+        ->toContain('new@example.com')
+        ->toContain('KIND:individual')
+        ->toContain('GENDER:F')
+        ->toContain('ANNIVERSARY:20100615')
+        ->toContain('X-CUSTOM:keep-me')
+        ->not->toContain('old@example.com')
+        ->not->toContain('VERSION:3.0');
+});

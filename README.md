@@ -7,7 +7,7 @@ Expose your application's calendars and contacts to any standards-compliant clie
 ## Features
 
 - **Full CalDAV** — events (`VEVENT`), todos (`VTODO`), and journals (`VJOURNAL`).
-- **Full CardDAV** — contacts (`VCARD`) with rich, typed parsing.
+- **Full CardDAV** — contacts (`VCARD`) in vCard 3.0 and 4.0, stored losslessly with version content-negotiation, plus rich, typed parsing.
 - **WebDAV sync** — collection synchronization via sync tokens ([RFC 6578](https://datatracker.ietf.org/doc/html/rfc6578)).
 - **CalDAV scheduling** ([RFC 6638](https://datatracker.ietf.org/doc/html/rfc6638)) — auto-scheduling between local users (iTip `REQUEST`/`REPLY`/`CANCEL` delivered to scheduling inboxes), schedule tags, free/busy queries, and optional iMIP email to external attendees ([RFC 6047](https://datatracker.ietf.org/doc/html/rfc6047)).
 - **Service discovery** — `/.well-known/caldav` and `/.well-known/carddav` redirects ([RFC 6764](https://datatracker.ietf.org/doc/html/rfc6764)).
@@ -21,7 +21,6 @@ Expose your application's calendars and contacts to any standards-compliant clie
 The following are not implemented yet and are tracked for future releases:
 
 - **Calendar sharing & proxy delegation.**
-- **vCard 4.0 / jCard** — contacts are parsed and stored as vCard 3.0.
 - **Server-side expansion of recurring `VTODO`s** (`<C:expand>`) — clients expand recurrences themselves.
 
 ## Requirements
@@ -185,6 +184,10 @@ $contact->organization;  // ?string
 $contact->birthday;      // ?ContactDate
 ```
 
+### vCard versions
+
+Cards are stored exactly as uploaded — a vCard 4.0 card is kept byte-for-byte in `card_data`, never normalized. The server advertises both 3.0 and 4.0 in `supported-address-data` and serves the version the client negotiates via the `Accept` header (`text/vcard; version=4.0`), defaulting to 3.0 for maximum client compatibility. jCard (`application/vcard+json`) is also negotiable through sabre's on-the-fly converter, though clients in the wild use `text/vcard`. The typed `ContactData` projection covers the common fields across both versions (including 4.0's `PREF` parameter); any property it doesn't model still round-trips losslessly through `raw`/`card_data`.
+
 ## Scheduling
 
 Scheduling is **on by default**. When an event carries `ORGANIZER`/`ATTENDEE` properties, the server schedules it automatically. Attendees that are **local principals** (their email resolves to an owner) receive iTip `REQUEST`/`REPLY`/`CANCEL` messages in their scheduling inbox; free/busy queries work out of the box. Set `dav.scheduling.enabled` to `false` to turn the whole feature off.
@@ -196,6 +199,8 @@ DAV_SCHEDULING_FROM="no-reply@your-app.test"
 ```
 
 A working mail transport must be set up for delivery to succeed. Override the transport with `dav.scheduling.mailer`. The email carries the invitation as a `text/calendar` attachment; to customise it, override the `Bambamboole\LaravelDav\Mail\SchedulingMessageMail` mailable.
+
+**Availability** ([RFC 7953](https://datatracker.ietf.org/doc/html/rfc7953)) — a principal can publish working hours by storing a `VAVAILABILITY` document in the `calendar-availability` property of their scheduling inbox (`PROPPATCH /dav/calendars/{owner}/inbox/`). Free/busy responses then mark time outside those windows as `BUSY-UNAVAILABLE`.
 
 ## Reacting to changes
 
