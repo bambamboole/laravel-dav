@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   defaulting to `MAIL_FROM_ADDRESS`) using the overridable `SchedulingMessageMail`
   mailable. The whole scheduling stack can be toggled with `dav.scheduling.enabled`
   (on by default). `schedule-tag` remains a follow-up.
+- Calendar availability ([RFC 7953](https://datatracker.ietf.org/doc/html/rfc7953)):
+  the `calendar-availability` property can be stored on a principal's scheduling
+  inbox to publish working hours, and free/busy responses now mark time outside
+  those windows as `BUSY-UNAVAILABLE`.
 
 ### Changed
 
