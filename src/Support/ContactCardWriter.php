@@ -15,7 +15,6 @@ class ContactCardWriter
     public function __construct(
         private VCardSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
-        private ContactCardProjection $projection,
     ) {}
 
     public function create(DavAddressBook $addressBook, ContactData $data): DavCard
@@ -26,12 +25,7 @@ class ContactCardWriter
             $data = $this->withIdentity($data, $uri, $uid);
             $payload = $this->serializer->serialize($data);
 
-            $card = $addressBook->cards()->create([
-                ...$this->projection->attributesFromData($data),
-                'uri' => $uri,
-                'card_data' => $payload,
-                'last_modified_at' => now(),
-            ]);
+            $card = DavCard::createFromData($addressBook, $uri, $data, $payload);
 
             $this->changeRecorder->recordAddressBookChange($addressBook, $card->uri, DavChangeOperation::Add);
 
@@ -51,11 +45,7 @@ class ContactCardWriter
             $data = $this->withIdentity($data, $fresh->uri, $data->uid ?: $fresh->uid ?: (string) Str::uuid());
             $payload = $this->serializer->merge($fresh->card_data, $data);
 
-            $fresh->forceFill([
-                ...$this->projection->attributesFromData($data),
-                'card_data' => $payload,
-                'last_modified_at' => now(),
-            ])->save();
+            $fresh->updateFromData($data, $payload);
 
             $addressBook = $fresh->addressBook()->firstOrFail();
             $this->changeRecorder->recordAddressBookChange($addressBook, $fresh->uri, DavChangeOperation::Modify);
@@ -118,8 +108,6 @@ class ContactCardWriter
             jobTitle: $data->jobTitle,
             department: $data->department,
             note: $data->note,
-            simpleEmails: $data->simpleEmails,
-            simplePhones: $data->simplePhones,
         );
     }
 }

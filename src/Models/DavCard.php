@@ -177,8 +177,8 @@ class DavCard extends Model
             organization: $this->organization,
             contactType: (string) ($this->contact_type ?? 'person'),
             birthday: $this->birthday,
-            emails: $this->email_addresses->all(),
-            phones: $this->phone_numbers->all(),
+            emails: $this->emailAddressesFromAttributes(),
+            phones: $this->phoneNumbersFromAttributes(),
             addresses: $this->addresses->all(),
             urls: $this->urls->all(),
             instantMessages: $this->instant_messages->all(),
@@ -187,8 +187,6 @@ class DavCard extends Model
             relations: $this->getAttribute('relations')->all(),
             extensions: $this->vcard_extensions->all(),
             pronouns: $this->pronouns->all(),
-            simpleEmails: (array) $this->emails,
-            simplePhones: (array) $this->phones,
             namePrefix: $this->name_prefix,
             middleName: $this->middle_name,
             phoneticGivenName: $this->phonetic_given_name,
@@ -202,6 +200,114 @@ class DavCard extends Model
             department: $this->department,
             note: $this->note,
         );
+    }
+
+    public static function createFromData(DavAddressBook $addressBook, string $uri, ContactData $data, ?string $payload = null): self
+    {
+        return $addressBook->cards()->create([
+            ...self::attributesFromData($data),
+            'uri' => $uri,
+            'card_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ]);
+    }
+
+    public function updateFromData(ContactData $data, ?string $payload = null): bool
+    {
+        return $this->forceFill([
+            ...self::attributesFromData($data),
+            'card_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function attributesFromData(ContactData $data): array
+    {
+        return [
+            'uid' => $data->uid,
+            'full_name' => $data->formattedName,
+            'given_name' => $data->givenName,
+            'family_name' => $data->familyName,
+            'organization' => $data->organization,
+            'contact_type' => $data->contactType,
+            'name_prefix' => $data->namePrefix,
+            'middle_name' => $data->middleName,
+            'previous_family_name' => $data->previousFamilyName,
+            'name_suffix' => $data->nameSuffix,
+            'nickname' => $data->nickname,
+            'phonetic_given_name' => $data->phoneticGivenName,
+            'phonetic_middle_name' => $data->phoneticMiddleName,
+            'phonetic_family_name' => $data->phoneticFamilyName,
+            'phonetic_organization' => $data->phoneticOrganization,
+            'job_title' => $data->jobTitle,
+            'department' => $data->department,
+            'note' => $data->note,
+            'birthday' => $data->birthday,
+            'pronouns' => $data->pronouns,
+            'emails' => array_map(fn (ContactEmailAddress $email): string => $email->value, $data->emails),
+            'phones' => array_map(fn (ContactPhoneNumber $phone): string => $phone->value, $data->phones),
+            'phone_numbers' => $data->phones,
+            'email_addresses' => $data->emails,
+            'addresses' => $data->addresses,
+            'urls' => $data->urls,
+            'instant_messages' => $data->instantMessages,
+            'social_profiles' => $data->socialProfiles,
+            'dates' => $data->dates,
+            'relations' => $data->relations,
+            'vcard_extensions' => $data->extensions,
+        ];
+    }
+
+    private static function payloadFromData(ContactData $data, ?string $payload): ?string
+    {
+        $payload ??= $data->raw;
+
+        return blank($payload) ? null : $payload;
+    }
+
+    /**
+     * @return array<int, ContactEmailAddress>
+     */
+    private function emailAddressesFromAttributes(): array
+    {
+        $emails = $this->email_addresses->all();
+
+        if ($emails !== []) {
+            return $emails;
+        }
+
+        return collect($this->emails)
+            ->filter(fn (mixed $email): bool => is_string($email) || is_numeric($email))
+            ->map(fn (mixed $email): ContactEmailAddress => new ContactEmailAddress([
+                'value' => (string) $email,
+                'types' => ['INTERNET'],
+            ]))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, ContactPhoneNumber>
+     */
+    private function phoneNumbersFromAttributes(): array
+    {
+        $phones = $this->phone_numbers->all();
+
+        if ($phones !== []) {
+            return $phones;
+        }
+
+        return collect($this->phones)
+            ->filter(fn (mixed $phone): bool => is_string($phone) || is_numeric($phone))
+            ->map(fn (mixed $phone): ContactPhoneNumber => new ContactPhoneNumber([
+                'value' => (string) $phone,
+                'types' => ['CELL'],
+            ]))
+            ->values()
+            ->all();
     }
 
     /**

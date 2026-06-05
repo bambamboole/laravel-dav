@@ -106,6 +106,60 @@ class DavCalendarObject extends Model
         );
     }
 
+    public static function createFromData(
+        DavCalendar $calendar,
+        string $uri,
+        CalendarObjectData $data,
+        ?string $payload = null,
+        ?string $defaultComponentType = 'VEVENT',
+    ): self {
+        return $calendar->objects()->create([
+            ...self::attributesFromData($data, $defaultComponentType),
+            'uri' => $uri,
+            'calendar_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ]);
+    }
+
+    public function updateFromData(
+        CalendarObjectData $data,
+        ?string $payload = null,
+        ?string $defaultComponentType = 'VEVENT',
+    ): bool {
+        return $this->forceFill([
+            ...self::attributesFromData($data, $defaultComponentType),
+            'calendar_data' => self::payloadFromData($data, $payload),
+            'last_modified_at' => now(),
+        ])->save();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function attributesFromData(CalendarObjectData $data, ?string $defaultComponentType = 'VEVENT'): array
+    {
+        return [
+            'uid' => $data->uid,
+            'component_type' => $data->componentType ?? $defaultComponentType,
+            'summary' => $data->summary,
+            'description' => $data->description,
+            'location' => $data->location,
+            'status' => $data->status,
+            'url' => $data->url,
+            'starts_at' => $data->startsAt,
+            'ends_at' => $data->endsAt,
+            'is_all_day' => $data->isAllDay,
+            'timezone' => $data->timezone,
+        ];
+    }
+
+    private static function payloadFromData(CalendarObjectData $data, ?string $payload): ?string
+    {
+        $payload ??= $data->raw;
+
+        return blank($payload) ? null : $payload;
+    }
+
     /**
      * Keep the payload, etag, and size consistent on every save. The iCalendar
      * payload is derived from the structured attributes only when none was

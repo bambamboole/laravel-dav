@@ -15,7 +15,6 @@ class CalendarObjectWriter
     public function __construct(
         private CalendarObjectSerializer $serializer,
         private DavChangeRecorder $changeRecorder,
-        private CalendarObjectProjection $projection,
     ) {}
 
     public function create(DavCalendar $calendar, CalendarObjectData $data): DavCalendarObject
@@ -26,12 +25,7 @@ class CalendarObjectWriter
             $data = $this->withIdentity($data, $uri, $uid, $data->timezone ?: $calendar->timezone);
             $payload = $this->serializer->serialize($data);
 
-            $object = $calendar->objects()->create([
-                ...$this->projection->attributesFromData($data),
-                'uri' => $uri,
-                'calendar_data' => $payload,
-                'last_modified_at' => now(),
-            ]);
+            $object = DavCalendarObject::createFromData($calendar, $uri, $data, $payload);
 
             $this->changeRecorder->recordCalendarChange($calendar, $object->uri, DavChangeOperation::Add);
 
@@ -51,11 +45,7 @@ class CalendarObjectWriter
             $data = $this->withIdentity($data, $fresh->uri, $data->uid ?: $fresh->uid ?: (string) Str::uuid(), $data->timezone ?: $fresh->timezone);
             $payload = $this->serializer->merge($fresh->calendar_data, $data);
 
-            $fresh->forceFill([
-                ...$this->projection->attributesFromData($data),
-                'calendar_data' => $payload,
-                'last_modified_at' => now(),
-            ])->save();
+            $fresh->updateFromData($data, $payload);
 
             $calendar = $fresh->calendar()->firstOrFail();
             $this->changeRecorder->recordCalendarChange($calendar, $fresh->uri, DavChangeOperation::Modify);

@@ -5,6 +5,47 @@ use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 
+it('creates a card from contact data', function (): void {
+    $addressBook = DavAddressBook::factory()->create();
+    $data = ContactData::fromArray([
+        'uid' => 'contact-1',
+        'full_name' => 'Ada Lovelace',
+        'given_name' => 'Ada',
+        'family_name' => 'Lovelace',
+        'emails' => ['ada@example.com'],
+        'phones' => ['+1 555 0100'],
+    ]);
+
+    $card = DavCard::createFromData($addressBook, 'ada.vcf', $data);
+
+    expect($card->addressBook->is($addressBook))->toBeTrue()
+        ->and($card->uri)->toBe('ada.vcf')
+        ->and($card->uid)->toBe('contact-1')
+        ->and($card->full_name)->toBe('Ada Lovelace')
+        ->and($card->emails)->toBe(['ada@example.com'])
+        ->and($card->phones)->toBe(['+1 555 0100'])
+        ->and($card->email_addresses->first()->value)->toBe('ada@example.com')
+        ->and($card->phone_numbers->first()->value)->toBe('+1 555 0100')
+        ->and($card->card_data)->toContain('FN:Ada Lovelace');
+});
+
+it('updates a card from contact data', function (): void {
+    $card = DavCard::factory()->create();
+    $data = ContactData::fromArray([
+        'uid' => 'contact-2',
+        'full_name' => 'Grace Hopper',
+        'emails' => ['grace@example.com'],
+    ]);
+
+    $card->updateFromData($data);
+
+    expect($card->fresh())
+        ->uid->toBe('contact-2')
+        ->full_name->toBe('Grace Hopper')
+        ->emails->toBe(['grace@example.com'])
+        ->card_data->toContain('FN:Grace Hopper');
+});
+
 it('serializes card_data from structured fields when none is supplied', function (): void {
     $card = DavCard::factory()->create();
 

@@ -4,6 +4,53 @@ use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
+use Carbon\CarbonImmutable;
+
+it('creates a calendar object from calendar object data', function (): void {
+    $calendar = DavCalendar::factory()->create(['timezone' => 'Europe/Berlin']);
+    $startsAt = CarbonImmutable::parse('2026-01-01 09:00:00', 'Europe/Berlin');
+    $endsAt = CarbonImmutable::parse('2026-01-01 10:00:00', 'Europe/Berlin');
+    $data = new CalendarObjectData(
+        uri: '',
+        raw: '',
+        etag: '',
+        size: 0,
+        uid: 'event-1',
+        summary: 'Planning',
+        startsAt: $startsAt,
+        endsAt: $endsAt,
+        timezone: 'Europe/Berlin',
+    );
+
+    $object = DavCalendarObject::createFromData($calendar, 'planning.ics', $data);
+
+    expect($object->calendar->is($calendar))->toBeTrue()
+        ->and($object->uri)->toBe('planning.ics')
+        ->and($object->uid)->toBe('event-1')
+        ->and($object->component_type)->toBe('VEVENT')
+        ->and($object->summary)->toBe('Planning')
+        ->and($object->calendar_data)->toContain('SUMMARY:Planning');
+});
+
+it('updates a calendar object from calendar object data', function (): void {
+    $object = DavCalendarObject::factory()->create();
+    $data = new CalendarObjectData(
+        uri: '',
+        raw: '',
+        etag: '',
+        size: 0,
+        uid: 'event-2',
+        summary: 'Updated planning',
+    );
+
+    $object->updateFromData($data);
+
+    expect($object->fresh())
+        ->uid->toBe('event-2')
+        ->component_type->toBe('VEVENT')
+        ->summary->toBe('Updated planning')
+        ->calendar_data->toContain('SUMMARY:Updated planning');
+});
 
 it('serializes calendar_data from structured fields when none is supplied', function (): void {
     $object = DavCalendarObject::factory()->create();

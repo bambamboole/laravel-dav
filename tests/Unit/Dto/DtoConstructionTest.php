@@ -121,6 +121,23 @@ it('builds ContactData from simple contact fields', function (): void {
         ->and($data->phones[0]->value)->toBe('+1 555 0101');
 });
 
+it('normalizes simple contact lists into typed email and phone values', function (): void {
+    $data = ContactData::fromArray([
+        'emails' => ['ada@example.com', 'admin@example.com'],
+        'phones' => ['+1 555 0100'],
+    ]);
+
+    expect($data->emails)->toHaveCount(2)
+        ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
+        ->and($data->emails[0]->value)->toBe('ada@example.com')
+        ->and($data->emails[0]->types)->toBe(['INTERNET'])
+        ->and($data->emails[1]->value)->toBe('admin@example.com')
+        ->and($data->phones)->toHaveCount(1)
+        ->and($data->phones[0])->toBeInstanceOf(ContactPhoneNumber::class)
+        ->and($data->phones[0]->value)->toBe('+1 555 0100')
+        ->and($data->phones[0]->types)->toBe(['CELL']);
+});
+
 it('builds CalendarObjectData from a validated array shape', function (): void {
     $data = CalendarObjectData::fromArray([
         'summary' => 'Sprint planning',

@@ -26,8 +26,6 @@ final readonly class ContactData
      * @param  array<int, ContactRelation>  $relations
      * @param  array<int, ContactVCardExtension>  $extensions
      * @param  array<int, ContactPronoun>  $pronouns
-     * @param  array<int, string>  $simpleEmails  Plain email strings extracted from EMAIL properties, retained alongside the typed $emails so a card carrying only untyped emails round-trips losslessly.
-     * @param  array<int, string>  $simplePhones  Plain phone strings extracted from TEL properties, retained alongside the typed $phones.
      */
     public function __construct(
         public string $uri,
@@ -63,8 +61,6 @@ final readonly class ContactData
         public ?string $jobTitle = null,
         public ?string $department = null,
         public ?string $note = null,
-        public array $simpleEmails = [],
-        public array $simplePhones = [],
     ) {}
 
     /**
@@ -106,8 +102,6 @@ final readonly class ContactData
             jobTitle: self::nullableString($data, 'job_title') ?? self::nullableString($data, 'jobTitle'),
             department: self::nullableString($data, 'department'),
             note: self::nullableString($data, 'note'),
-            simpleEmails: self::stringList($data['emails'] ?? []),
-            simplePhones: self::stringList($data['phones'] ?? []),
         );
     }
 
@@ -147,8 +141,6 @@ final readonly class ContactData
             jobTitle: $this->jobTitle,
             department: $this->department,
             note: $this->note,
-            simpleEmails: $this->simpleEmails,
-            simplePhones: $this->simplePhones,
         );
     }
 
@@ -207,6 +199,18 @@ final readonly class ContactData
             return $emails;
         }
 
+        $emailValues = self::stringList($data['emails'] ?? []);
+
+        if ($emailValues !== []) {
+            return array_map(
+                fn (string $email): ContactEmailAddress => new ContactEmailAddress([
+                    'value' => $email,
+                    'types' => ['INTERNET'],
+                ]),
+                $emailValues,
+            );
+        }
+
         $email = self::nullableString($data, 'email');
 
         return $email === null ? [] : [
@@ -228,6 +232,18 @@ final readonly class ContactData
 
         if ($phones !== []) {
             return $phones;
+        }
+
+        $phoneValues = self::stringList($data['phones'] ?? []);
+
+        if ($phoneValues !== []) {
+            return array_map(
+                fn (string $phone): ContactPhoneNumber => new ContactPhoneNumber([
+                    'value' => $phone,
+                    'types' => ['CELL'],
+                ]),
+                $phoneValues,
+            );
         }
 
         $phone = self::nullableString($data, 'phone');

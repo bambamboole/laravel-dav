@@ -35,8 +35,6 @@ it('parses contact fields', function () {
         ->and($data->givenName)->toBe('Ada')
         ->and($data->familyName)->toBe('Lovelace')
         ->and($data->organization)->toBe('Analytical Engines')
-        ->and($data->simpleEmails)->toBe(['ada@example.com'])
-        ->and($data->simplePhones)->toBe(['+491234567'])
         ->and($data->emails)->toHaveCount(1)
         ->and($data->emails[0])->toBeInstanceOf(ContactEmailAddress::class)
         ->and($data->emails[0]->value)->toBe('ada@example.com')
@@ -61,9 +59,7 @@ it('parses multiple emails and phones', function () {
 
     $data = (new VCardParser)->parse($payload);
 
-    expect($data->simpleEmails)->toBe(['grace@example.com', 'hopper@example.net'])
-        ->and($data->simplePhones)->toBe(['+491111111', '+492222222'])
-        ->and($data->emails)->toHaveCount(2)
+    expect($data->emails)->toHaveCount(2)
         ->and($data->emails[1]->value)->toBe('hopper@example.net')
         ->and($data->emails[1]->types)->toBe(['home'])
         ->and($data->phones)->toHaveCount(2);

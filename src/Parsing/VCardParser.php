@@ -64,8 +64,6 @@ class VCardParser
                 jobTitle: $this->textProperty($vCard, 'TITLE'),
                 department: $organizationParts[1] ?? null,
                 note: $this->textProperty($vCard, 'NOTE'),
-                simpleEmails: $this->propertyValues($vCard, 'EMAIL'),
-                simplePhones: $this->propertyValues($vCard, 'TEL'),
             );
         } finally {
             $vCard->destroy();
@@ -91,17 +89,6 @@ class VCardParser
         }
 
         return (string) $component->{$name};
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function propertyValues(Component $component, string $name): array
-    {
-        return collect($component->select($name))
-            ->map(fn (Property $property): string => (string) $property)
-            ->values()
-            ->all();
     }
 
     /**
