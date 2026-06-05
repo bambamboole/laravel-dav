@@ -20,20 +20,23 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Sabre\CalDAV\Backend\AbstractBackend;
 use Sabre\CalDAV\Backend\SchedulingSupport;
+use Sabre\CalDAV\Backend\SharingSupport;
 use Sabre\CalDAV\Backend\SubscriptionSupport;
 use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\Forbidden;
 use Sabre\DAV\Exception\NotFound;
+use Sabre\DAV\Exception\NotImplemented;
 use Sabre\DAV\PropPatch;
 use Sabre\DAV\Sharing\Plugin as SharingPlugin;
 use Sabre\DAV\StringUtil;
+use Sabre\DAV\Xml\Element\Sharee;
 use Sabre\DAV\Xml\Property\Href;
 use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Reader;
 
-class CalendarBackend extends AbstractBackend implements SchedulingSupport, SubscriptionSupport, SyncSupport
+class CalendarBackend extends AbstractBackend implements SchedulingSupport, SharingSupport, SubscriptionSupport, SyncSupport
 {
     use RecordsDavChanges;
     use ResolvesPrincipalUri;
@@ -176,6 +179,97 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Subs
             ->delete();
 
         Dav::model('calendar')::query()->whereKey($calendarKey)->delete();
+    }
+
+    /**
+     * @param  array<int, Sharee>  $sharees
+     */
+    public function updateInvites($calendarId, array $sharees): void
+    {
+        $calendar = $this->calendar($calendarId);
+        $sourceInstance = $this->calendarInstance($calendarId) ?? $calendar->ownerInstance()->first();
+
+        if (! $sourceInstance) {
+            throw new NotFound('Calendar instance not found');
+        }
+
+        foreach ($sharees as $sharee) {
+            if ($sharee->access === SharingPlugin::ACCESS_NOACCESS) {
+                $this->sharedInstanceQuery($calendar->getKey())
+                    ->where('share_href', $sharee->href)
+                    ->delete();
+
+                continue;
+            }
+
+            $shareeOwnerId = $sharee->principal ? $this->userIdFromPrincipalUri($sharee->principal) : null;
+
+            if ($shareeOwnerId === null || ! $this->ownerExists($shareeOwnerId)) {
+                continue;
+            }
+
+            $inviteStatus = SharingPlugin::INVITE_ACCEPTED;
+            $shareDisplayName = $sharee->properties[self::DisplayNameProperty] ?? null;
+            $existingInstance = $this->sharedInstanceQuery($calendar->getKey())
+                ->where('share_href', $sharee->href)
+                ->first();
+
+            if ($existingInstance instanceof DavCalendarInstance) {
+                $existingInstance->forceFill([
+                    'owner_id' => $shareeOwnerId,
+                    'access' => $sharee->access,
+                    'share_display_name' => $shareDisplayName,
+                    'share_invite_status' => $inviteStatus,
+                ])->save();
+
+                continue;
+            }
+
+            $calendar->instances()->create([
+                'owner_id' => $shareeOwnerId,
+                'uri' => (string) Str::uuid(),
+                'access' => $sharee->access,
+                'display_name' => $sourceInstance->display_name,
+                'description' => $sourceInstance->description,
+                'color' => $sourceInstance->color,
+                'timezone' => $sourceInstance->timezone,
+                'order' => $sourceInstance->order,
+                'transparent' => true,
+                'share_href' => $sharee->href,
+                'share_display_name' => $shareDisplayName,
+                'share_invite_status' => $inviteStatus,
+            ]);
+        }
+    }
+
+    /**
+     * @return array<int, Sharee>
+     */
+    public function getInvites($calendarId): array
+    {
+        return Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()
+            ->where('dav_calendar_id', $this->calendarKey($calendarId))
+            ->orderBy('id')
+            ->get()
+            ->map(function (DavCalendarInstance $instance): Sharee {
+                $principalUri = $this->principalUri($instance->owner_id);
+
+                return new Sharee([
+                    'href' => $instance->share_href ?? $principalUri,
+                    'principal' => $principalUri,
+                    'access' => $instance->access,
+                    'inviteStatus' => $instance->share_invite_status ?? 0,
+                    'properties' => $instance->share_display_name !== null
+                        ? [self::DisplayNameProperty => $instance->share_display_name]
+                        : [],
+                ]);
+            })
+            ->all();
+    }
+
+    public function setPublishStatus($calendarId, $value): void
+    {
+        throw new NotImplemented('Publishing calendars is not implemented');
     }
 
     /**
@@ -748,6 +842,19 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Subs
         $model = Dav::modelFor('scheduling_object', DavSchedulingObject::class);
 
         return $model::query()->where('owner_id', $userId);
+    }
+
+    /**
+     * @return Builder<DavCalendarInstance>
+     */
+    private function sharedInstanceQuery(int|string $calendarId): Builder
+    {
+        /** @var class-string<DavCalendarInstance> $model */
+        $model = Dav::modelFor('calendar_instance', DavCalendarInstance::class);
+
+        return $model::query()
+            ->where('dav_calendar_id', $calendarId)
+            ->whereIn('access', [DavCalendarInstance::AccessRead, DavCalendarInstance::AccessReadWrite]);
     }
 
     /**
