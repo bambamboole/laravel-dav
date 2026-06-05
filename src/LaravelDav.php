@@ -14,6 +14,7 @@ class LaravelDav
         'address_book' => Models\DavAddressBook::class,
         'card' => Models\DavCard::class,
         'credential' => Models\DavCredential::class,
+        'scheduling_object' => Models\DavSchedulingObject::class,
     ];
 
     /**

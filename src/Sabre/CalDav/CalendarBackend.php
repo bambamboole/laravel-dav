@@ -5,6 +5,7 @@ namespace Bambamboole\LaravelDav\Sabre\CalDav;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
+use Bambamboole\LaravelDav\Models\DavSchedulingObject;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
@@ -14,6 +15,7 @@ use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Sabre\CalDAV\Backend\AbstractBackend;
+use Sabre\CalDAV\Backend\SchedulingSupport;
 use Sabre\CalDAV\Backend\SyncSupport;
 use Sabre\CalDAV\Xml\Property\SupportedCalendarComponentSet;
 use Sabre\DAV\Exception\NotFound;
@@ -23,7 +25,7 @@ use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
 use Sabre\VObject\Reader;
 
-class CalendarBackend extends AbstractBackend implements SyncSupport
+class CalendarBackend extends AbstractBackend implements SchedulingSupport, SyncSupport
 {
     use RecordsDavChanges;
     use ResolvesPrincipalUri;
@@ -362,6 +364,98 @@ class CalendarBackend extends AbstractBackend implements SyncSupport
         }
 
         return $row;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getSchedulingObjects($principalUri): array
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null) {
+            return [];
+        }
+
+        return $this->schedulingObjectQuery($userId)
+            ->orderBy('id')
+            ->get()
+            ->map(fn (DavSchedulingObject $object): array => $this->schedulingObjectRow($object))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getSchedulingObject($principalUri, $objectUri): ?array
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null) {
+            return null;
+        }
+
+        $object = $this->schedulingObjectQuery($userId)->where('uri', $objectUri)->first();
+
+        return $object instanceof DavSchedulingObject ? $this->schedulingObjectRow($object) : null;
+    }
+
+    public function createSchedulingObject($principalUri, $objectUri, $objectData): void
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null) {
+            return;
+        }
+
+        $payload = is_resource($objectData) ? (string) stream_get_contents($objectData) : (string) $objectData;
+
+        Dav::modelFor('scheduling_object', DavSchedulingObject::class)::query()->updateOrCreate(
+            ['user_id' => $userId, 'uri' => (string) $objectUri],
+            [
+                'calendar_data' => $payload,
+                'etag' => sha1($payload),
+                'size' => strlen($payload),
+                'last_modified_at' => now(),
+            ],
+        );
+    }
+
+    public function deleteSchedulingObject($principalUri, $objectUri): void
+    {
+        $userId = $this->userIdFromPrincipalUri((string) $principalUri);
+
+        if ($userId === null) {
+            return;
+        }
+
+        $this->schedulingObjectQuery($userId)->where('uri', $objectUri)->delete();
+    }
+
+    /**
+     * @return Builder<DavSchedulingObject>
+     */
+    private function schedulingObjectQuery(int|string $userId): Builder
+    {
+        /** @var class-string<DavSchedulingObject> $model */
+        $model = Dav::modelFor('scheduling_object', DavSchedulingObject::class);
+
+        return $model::query()->where('user_id', $userId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function schedulingObjectRow(DavSchedulingObject $object): array
+    {
+        return [
+            'id' => $object->id,
+            'uri' => $object->uri,
+            'lastmodified' => $object->last_modified_at->getTimestamp(),
+            'etag' => '"'.$object->etag.'"',
+            'size' => $object->size,
+            'calendardata' => $object->calendar_data,
+        ];
     }
 
     private function calendar(int|string $calendarId): DavCalendar
