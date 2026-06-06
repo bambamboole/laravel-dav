@@ -32,20 +32,4 @@ class ContactInstantMessage extends ContactValue
     public bool $isPreferred;
 
     public ?string $group;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'service' => $this->service,
-            'username' => $this->username,
-            'uri' => $this->uri,
-            'types' => $this->types,
-            'isPreferred' => $this->isPreferred,
-            'group' => $this->group,
-        ];
-    }
 }

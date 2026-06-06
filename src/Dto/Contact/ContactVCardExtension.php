@@ -23,17 +23,4 @@ class ContactVCardExtension extends ContactValue
 
     /** @var array<string, array<int, string>|string> */
     public array $parameters;
-
-    /**
-     * @return array{name: string, value: string, group: ?string, parameters: array<string, array<int, string>|string>}
-     */
-    public function toArray(): array
-    {
-        return [
-            'name' => $this->name,
-            'value' => $this->value,
-            'group' => $this->group,
-            'parameters' => $this->parameters,
-        ];
-    }
 }

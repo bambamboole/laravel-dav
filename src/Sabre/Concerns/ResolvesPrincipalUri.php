@@ -3,9 +3,15 @@
 namespace Bambamboole\LaravelDav\Sabre\Concerns;
 
 use Bambamboole\LaravelDav\Contracts\DavOwner;
+use Bambamboole\LaravelDav\Facades\Dav;
 
 trait ResolvesPrincipalUri
 {
+    private function ownerExists(int|string $ownerId): bool
+    {
+        return (Dav::ownerModel())::query()->whereKey($ownerId)->exists();
+    }
+
     private function userIdFromPrincipalUri(string $principalUri): ?int
     {
         $prefix = config('dav.principal_prefix', 'principals');

@@ -62,36 +62,12 @@ class ContactDate extends ContactValue implements Castable
              */
             public function set(Model $model, string $key, mixed $value, array $attributes): ?string
             {
-                if ($value === null) {
-                    return null;
-                }
+                $date = $value instanceof ContactDate
+                    ? $value
+                    : (is_array($value) ? new ContactDate($value) : null);
 
-                if ($value instanceof ContactDate) {
-                    return json_encode($value->toArray());
-                }
-
-                if (is_array($value)) {
-                    return json_encode((new ContactDate($value))->toArray());
-                }
-
-                return null;
+                return $date !== null ? json_encode($date->toArray()) : null;
             }
         };
-    }
-
-    /**
-     * @return array{label: ?string, year: ?int, month: ?int, day: ?int, calendar: ?string, rawValue: ?string, group: ?string}
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'year' => $this->year,
-            'month' => $this->month,
-            'day' => $this->day,
-            'calendar' => $this->calendar,
-            'rawValue' => $this->rawValue,
-            'group' => $this->group,
-        ];
     }
 }

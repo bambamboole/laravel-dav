@@ -2,12 +2,15 @@
 
 namespace Bambamboole\LaravelDav\Models\Concerns;
 
+use Bambamboole\LaravelDav\Dto\CalendarObjectData;
+use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Exceptions\StaleDavResourceException;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCalendar;
 use Bambamboole\LaravelDav\Support\DavChangeOperation;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Shared write behaviour for versioned DAV resources (calendar objects and
@@ -15,6 +18,8 @@ use Carbon\CarbonImmutable;
  * payload, etag, and size, enforces optimistic concurrency, and records a
  * sync change — regardless of whether the write came from the DAV protocol or
  * the typed Eloquent API.
+ *
+ * @method static fillFromDavData(CalendarObjectData|ContactData|string $data, ?string $uri = null)
  */
 trait TracksDavResource
 {
@@ -29,6 +34,35 @@ trait TracksDavResource
         $this->expectedEtag = $etag;
 
         return $this;
+    }
+
+    public function replaceWith(CalendarObjectData|ContactData|string $data, ?string $expectedEtag = null): static
+    {
+        return DB::transaction(function () use ($data, $expectedEtag): static {
+            if ($expectedEtag !== null) {
+                $this->expectingEtag($expectedEtag);
+            }
+
+            $this->fillFromDavData($data, $this->uri)->save();
+
+            return $this;
+        });
+    }
+
+    public function deleteDavResource(?string $expectedEtag = null): bool
+    {
+        return DB::transaction(function () use ($expectedEtag): bool {
+            if ($expectedEtag !== null) {
+                $this->expectingEtag($expectedEtag);
+            }
+
+            return (bool) $this->delete();
+        });
+    }
+
+    public function quotedEtag(): string
+    {
+        return '"'.$this->etag.'"';
     }
 
     abstract protected function payloadColumn(): string;

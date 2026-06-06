@@ -41,8 +41,6 @@ class DavChange extends Model
             'collection_id' => 'integer',
             'operation' => 'integer',
             'sync_token' => 'integer',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
         ];
     }
 

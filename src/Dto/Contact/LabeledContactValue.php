@@ -26,18 +26,4 @@ abstract class LabeledContactValue extends ContactValue
         $this->isPreferred = $this->bool($data, 'isPreferred');
         $this->group = $this->nullableString($data, 'group');
     }
-
-    /**
-     * @return array{label: ?string, value: string, types: array<int, string>, isPreferred: bool, group: ?string}
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'value' => $this->value,
-            'types' => $this->types,
-            'isPreferred' => $this->isPreferred,
-            'group' => $this->group,
-        ];
-    }
 }

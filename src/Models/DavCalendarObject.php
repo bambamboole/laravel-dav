@@ -11,6 +11,7 @@ use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Bambamboole\LaravelDav\Models\Concerns\TracksDavResource;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectParser;
 use Bambamboole\LaravelDav\Parsing\CalendarObjectSerializer;
+use Bambamboole\LaravelDav\Parsing\Concerns\InspectsSchedulingComponents;
 use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -18,7 +19,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Sabre\VObject;
 use Sabre\VObject\Component\VCalendar;
@@ -50,6 +50,7 @@ class DavCalendarObject extends Model
     /** @use HasFactory<DavCalendarObjectFactory> */
     use HasFactory;
 
+    use InspectsSchedulingComponents;
     use QueriesDavResources;
     use TracksDavResource;
 
@@ -139,35 +140,6 @@ class DavCalendarObject extends Model
         $this->fill(['data' => $uri === null ? $data : DtoFactory::calendarObjectData($data, ['uri' => $uri])]);
 
         return $this;
-    }
-
-    public function replaceWith(CalendarObjectData|string $data, ?string $expectedEtag = null): static
-    {
-        return DB::transaction(function () use ($data, $expectedEtag): static {
-            if ($expectedEtag !== null) {
-                $this->expectingEtag($expectedEtag);
-            }
-
-            $this->fillFromDavData($data, $this->uri)->save();
-
-            return $this;
-        });
-    }
-
-    public function deleteDavResource(?string $expectedEtag = null): bool
-    {
-        return DB::transaction(function () use ($expectedEtag): bool {
-            if ($expectedEtag !== null) {
-                $this->expectingEtag($expectedEtag);
-            }
-
-            return (bool) $this->delete();
-        });
-    }
-
-    public function quotedEtag(): string
-    {
-        return '"'.$this->etag.'"';
     }
 
     protected function payloadColumn(): string
@@ -277,22 +249,6 @@ class DavCalendarObject extends Model
         }) ?? false;
     }
 
-    private function componentHasAddress(VObject\Component $component, string $propertyName, string $email): bool
-    {
-        foreach ($component->select($propertyName) as $property) {
-            if ($property instanceof VObject\Property && $this->calendarAddressMatches($property, $email)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function calendarAddressMatches(VObject\Property $property, string $email): bool
-    {
-        return strtolower($property->getValue()) === 'mailto:'.strtolower($email);
-    }
-
     private function calendarWithoutParticipantStatus(string $payload): ?string
     {
         return $this->withCalendar($payload, function (VCalendar $calendar): string {
@@ -347,17 +303,6 @@ class DavCalendarObject extends Model
         } finally {
             $calendar->destroy();
         }
-    }
-
-    /**
-     * @return list<VObject\Component>
-     */
-    private function schedulingComponents(VCalendar $calendar): array
-    {
-        return array_values(array_filter(
-            $calendar->getBaseComponents(),
-            static fn (VObject\Component $component): bool => in_array($component->name, ['VEVENT', 'VTODO'], true),
-        ));
     }
 
     protected static function newFactory(): DavCalendarObjectFactory

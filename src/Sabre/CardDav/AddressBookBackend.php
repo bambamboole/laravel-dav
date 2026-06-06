@@ -231,11 +231,4 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
     {
         return Dav::model(DavAddressBook::class)::query()->findOrFail($addressBookId);
     }
-
-    private function ownerExists(int $userId): bool
-    {
-        $model = Dav::ownerModel();
-
-        return $model::query()->whereKey($userId)->exists();
-    }
 }

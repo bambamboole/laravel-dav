@@ -273,11 +273,6 @@ class PrincipalBackend extends AbstractBackend
         return $this->userIdFromPrincipalUri($member);
     }
 
-    private function ownerExists(int $ownerId): bool
-    {
-        return (Dav::ownerModel())::query()->whereKey($ownerId)->exists();
-    }
-
     /**
      * @return Builder<DavCalendarProxyMembership>
      */

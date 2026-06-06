@@ -47,25 +47,4 @@ class ContactPostalAddress extends ContactValue
     public bool $isPreferred;
 
     public ?string $group;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'poBox' => $this->poBox,
-            'extended' => $this->extended,
-            'street' => $this->street,
-            'city' => $this->city,
-            'region' => $this->region,
-            'postalCode' => $this->postalCode,
-            'country' => $this->country,
-            'countryCode' => $this->countryCode,
-            'types' => $this->types,
-            'isPreferred' => $this->isPreferred,
-            'group' => $this->group,
-        ];
-    }
 }

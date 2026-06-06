@@ -3,11 +3,10 @@
 namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Database\Factories\DavCredentialFactory;
-use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\BelongsToDavOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -21,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DavCredential extends Model
 {
+    use BelongsToDavOwner;
+
     /** @use HasFactory<DavCredentialFactory> */
     use HasFactory;
 
@@ -48,14 +49,6 @@ class DavCredential extends Model
         return [
             'last_used_at' => 'datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<Model, $this>
-     */
-    public function owner(): BelongsTo
-    {
-        return $this->belongsTo(Dav::ownerModel(), 'owner_id');
     }
 
     protected static function newFactory(): DavCredentialFactory

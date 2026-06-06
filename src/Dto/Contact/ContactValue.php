@@ -13,6 +13,14 @@ abstract class ContactValue implements Arrayable, JsonSerializable
     /**
      * @return array<string, mixed>
      */
+    public function toArray(): array
+    {
+        return get_object_vars($this);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return $this->toArray();

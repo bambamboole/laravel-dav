@@ -8,6 +8,7 @@ use Bambamboole\LaravelDav\Models\DavCalendarAttachment;
 use Bambamboole\LaravelDav\Models\DavCalendarInstance;
 use Bambamboole\LaravelDav\Models\DavCalendarObject;
 use Bambamboole\LaravelDav\Models\DavCalendarProxyMembership;
+use Bambamboole\LaravelDav\Parsing\Concerns\InspectsSchedulingComponents;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ use Throwable;
 
 class ManagedAttachmentsPlugin extends ServerPlugin
 {
+    use InspectsSchedulingComponents;
     use ResolvesPrincipalUri;
 
     private Server $server;
@@ -275,7 +277,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
         $matched = false;
 
         try {
-            foreach ($this->attachmentComponents($calendar) as $component) {
+            foreach ($this->schedulingComponents($calendar) as $component) {
                 if ($requireManagedId !== null && ! $this->componentHasManagedId($component, $requireManagedId)) {
                     continue;
                 }
@@ -479,7 +481,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
         $calendar = $this->readCalendar($object->calendar_data);
 
         try {
-            foreach ($this->attachmentComponents($calendar) as $component) {
+            foreach ($this->schedulingComponents($calendar) as $component) {
                 if (! isset($component->ORGANIZER) || ! isset($component->ATTENDEE)) {
                     continue;
                 }
@@ -518,7 +520,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
         try {
             $managedIds = [];
 
-            foreach ($this->attachmentComponents($calendar) as $component) {
+            foreach ($this->schedulingComponents($calendar) as $component) {
                 foreach ($component->select('ATTACH') as $property) {
                     if ($property instanceof Property) {
                         $managedId = $this->managedIdParameter($property);
@@ -571,17 +573,6 @@ class ManagedAttachmentsPlugin extends ServerPlugin
         return $calendar;
     }
 
-    /**
-     * @return list<Component>
-     */
-    private function attachmentComponents(VCalendar $calendar): array
-    {
-        return array_values(array_filter(
-            $calendar->getBaseComponents(),
-            static fn (Component $component): bool => in_array($component->name, ['VEVENT', 'VTODO'], true),
-        ));
-    }
-
     private function componentHasManagedId(Component $component, string $managedId): bool
     {
         return $this->findAttachment($component, $managedId) !== null;
@@ -596,17 +587,6 @@ class ManagedAttachmentsPlugin extends ServerPlugin
         }
 
         return null;
-    }
-
-    private function componentHasAddress(Component $component, string $propertyName, string $email): bool
-    {
-        foreach ($component->select($propertyName) as $property) {
-            if ($property instanceof Property && strtolower($property->getValue()) === 'mailto:'.strtolower($email)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private function managedIdParameter(Property $property): ?string
