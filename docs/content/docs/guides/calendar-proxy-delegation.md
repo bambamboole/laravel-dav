@@ -52,3 +52,17 @@ Revoke all delegates for a proxy group by setting an empty member set:
 ```
 
 Delegation is stored in `DavCalendarProxyMembership` rows with `owner_id`, `delegate_owner_id`, and `access`. The `access` value is `read` for `calendar-proxy-read` and `write` for `calendar-proxy-write`.
+
+Application code can manage the same delegation without a DAV request when the owner model uses `HasDavCollections`:
+
+```php
+use Bambamboole\LaravelDav\Models\DavCalendarProxyMembership;
+
+$owner->grantCalendarProxy($delegate, DavCalendarProxyMembership::AccessWrite);
+
+$owner->setCalendarProxyDelegates(DavCalendarProxyMembership::AccessRead, [
+    $readDelegate,
+]);
+
+$owner->revokeCalendarProxy($delegate);
+```

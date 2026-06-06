@@ -9,10 +9,13 @@ Implement `Bambamboole\LaravelDav\Contracts\DavOwner` on that model:
 
 ```php
 use Bambamboole\LaravelDav\Contracts\DavOwner;
+use Bambamboole\LaravelDav\Models\Concerns\HasDavCollections;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable implements DavOwner
 {
+    use HasDavCollections;
+
     public function getDavPrincipalId(): string|int
     {
         return $this->getKey();
@@ -29,6 +32,8 @@ class User extends Authenticatable implements DavOwner
     }
 }
 ```
+
+`HasDavCollections` adds Eloquent-native helpers such as `createDavCalendar()`, `createDavAddressBook()`, and calendar proxy delegation methods. The trait is optional, but it is the recommended API for creating and mutating DAV resources from application code.
 
 The package defaults to `App\Models\User`. If your owner model lives somewhere else, publish the config and update the model:
 

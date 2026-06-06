@@ -22,6 +22,18 @@ Use `<cs:read />` for read-only access.
 
 The share creates a `DavCalendarInstance` for the sharee. It points at the same `DavCalendar`, has its own owner-specific URI and display name, and stores the share access level.
 
+Application code can create the same share without making a DAV request:
+
+```php
+use Bambamboole\LaravelDav\Models\DavCalendarInstance;
+
+$calendar->shareWith(
+    $teammate,
+    DavCalendarInstance::AccessReadWrite,
+    shareDisplayName: 'Team calendar',
+);
+```
+
 Revoke access with a remove request:
 
 ```xml
@@ -34,3 +46,9 @@ Revoke access with a remove request:
 ```
 
 Revoking a share removes the sharee instance. Calendar objects remain on the original calendar.
+
+From PHP, revoke the share through the calendar model:
+
+```php
+$calendar->unshareWith($teammate);
+```

@@ -312,7 +312,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
             throw new NotFound('Calendar object not found.');
         }
 
-        $instance = Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()
+        $instance = Dav::model(DavCalendarInstance::class)::query()
             ->where('owner_id', (int) $segments[1])
             ->where('uri', $segments[2])
             ->first();
@@ -321,7 +321,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
             throw new NotFound('Calendar object not found.');
         }
 
-        $object = Dav::modelFor('calendar_object', DavCalendarObject::class)::query()
+        $object = Dav::model(DavCalendarObject::class)::query()
             ->where('dav_calendar_id', $instance->dav_calendar_id)
             ->where('uri', $segments[3])
             ->first();
@@ -385,7 +385,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
      */
     private function attachments(): Builder
     {
-        return Dav::modelFor('calendar_attachment', DavCalendarAttachment::class)::query();
+        return Dav::model(DavCalendarAttachment::class)::query();
     }
 
     private function attachment(string $managedId): DavCalendarAttachment
@@ -451,7 +451,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
             return true;
         }
 
-        $hasSharedInstance = Dav::modelFor('calendar_instance', DavCalendarInstance::class)::query()
+        $hasSharedInstance = Dav::model(DavCalendarInstance::class)::query()
             ->where('dav_calendar_id', $object->dav_calendar_id)
             ->where('owner_id', $ownerId)
             ->whereIn('access', [DavCalendarInstance::AccessOwner, DavCalendarInstance::AccessRead, DavCalendarInstance::AccessReadWrite])
@@ -461,7 +461,7 @@ class ManagedAttachmentsPlugin extends ServerPlugin
             return true;
         }
 
-        return Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()
+        return Dav::model(DavCalendarProxyMembership::class)::query()
             ->where('owner_id', $calendar->owner_id)
             ->where('delegate_owner_id', $ownerId)
             ->whereIn('access', [DavCalendarProxyMembership::AccessRead, DavCalendarProxyMembership::AccessWrite])

@@ -5,11 +5,9 @@ namespace Bambamboole\LaravelDav\Sabre\CardDav;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\DavAddressBook;
 use Bambamboole\LaravelDav\Models\DavCard;
-use Bambamboole\LaravelDav\Parsing\VCardParser;
 use Bambamboole\LaravelDav\Sabre\Concerns\RecordsDavChanges;
 use Bambamboole\LaravelDav\Sabre\Concerns\ResolvesPrincipalUri;
 use Bambamboole\LaravelDav\Support\DavChangeRecorder;
-use Illuminate\Support\Facades\DB;
 use Sabre\CardDAV\Backend\AbstractBackend;
 use Sabre\CardDAV\Backend\SyncSupport;
 use Sabre\DAV\Exception\NotFound;
@@ -28,8 +26,6 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     private const SyncTokenProperty = '{http://sabredav.org/ns}sync-token';
 
-    public function __construct(private VCardParser $parser) {}
-
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -41,7 +37,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             return [];
         }
 
-        return Dav::modelFor('address_book', DavAddressBook::class)::query()
+        return Dav::model(DavAddressBook::class)::query()
             ->where('owner_id', $userId)
             ->orderBy('id')
             ->get()
@@ -60,12 +56,10 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             throw new NotFound('Principal not found');
         }
 
-        $addressBook = Dav::modelFor('address_book', DavAddressBook::class)::query()->create([
-            'owner_id' => $userId,
+        $addressBook = Dav::model(DavAddressBook::class)::createForOwner($userId, [
             'uri' => (string) $url,
             'display_name' => (string) ($properties[self::DisplayNameProperty] ?? $url),
             'description' => $properties[self::DescriptionProperty] ?? null,
-            'sync_token' => 1,
         ]);
 
         return (int) $addressBook->id;
@@ -77,9 +71,9 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
             self::DisplayNameProperty,
             self::DescriptionProperty,
         ], function (array $mutations) use ($addressBookId): bool {
-            $addressBook = Dav::model('address_book')::query()->find($addressBookId);
+            $addressBook = Dav::model(DavAddressBook::class)::query()->find($addressBookId);
 
-            if (! $addressBook) {
+            if (! $addressBook instanceof DavAddressBook) {
                 return false;
             }
 
@@ -93,7 +87,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
                 };
             }
 
-            $addressBook->forceFill($values)->save();
+            $addressBook->updateDavProperties($values);
 
             return true;
         });
@@ -101,7 +95,11 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     public function deleteAddressBook($addressBookId): void
     {
-        Dav::model('address_book')::query()->whereKey($addressBookId)->delete();
+        $addressBook = Dav::model(DavAddressBook::class)::query()->find($addressBookId);
+
+        if ($addressBook instanceof DavAddressBook) {
+            $addressBook->deleteDavAddressBook();
+        }
     }
 
     /**
@@ -156,35 +154,17 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     public function createCard($addressBookId, $cardUri, $cardData): string
     {
-        return '"'.$this->upsertCard($addressBookId, (string) $cardUri, (string) $cardData)->etag.'"';
+        return $this->addressBook($addressBookId)->putContact((string) $cardData, (string) $cardUri)->quotedEtag();
     }
 
     public function updateCard($addressBookId, $cardUri, $cardData): string
     {
-        return '"'.$this->upsertCard($addressBookId, (string) $cardUri, (string) $cardData)->etag.'"';
+        return $this->addressBook($addressBookId)->putContact((string) $cardData, (string) $cardUri)->quotedEtag();
     }
 
     public function deleteCard($addressBookId, $cardUri): bool
     {
-        return DB::transaction(function () use ($addressBookId, $cardUri): bool {
-            $card = $this->addressBook($addressBookId)->cards()->where('uri', $cardUri)->first();
-
-            return (bool) $card?->delete();
-        });
-    }
-
-    private function upsertCard(int|string $addressBookId, string $uri, string $payload): DavCard
-    {
-        return DB::transaction(function () use ($addressBookId, $uri, $payload): DavCard {
-            $card = $this->addressBook($addressBookId)->cards()->firstOrNew(['uri' => $uri]);
-
-            $card->fill([
-                'data' => $this->parser->parse($payload, $uri),
-                'card_data' => $payload,
-            ])->save();
-
-            return $card;
-        });
+        return (bool) $this->addressBook($addressBookId)->cards()->where('uri', $cardUri)->first()?->deleteDavResource();
     }
 
     /**
@@ -192,7 +172,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
      */
     public function getChangesForAddressBook($addressBookId, $syncToken, $syncLevel, $limit = null): ?array
     {
-        $addressBook = Dav::modelFor('address_book', DavAddressBook::class)::query()->find($addressBookId);
+        $addressBook = Dav::model(DavAddressBook::class)::query()->find($addressBookId);
         $syncToken = (string) $syncToken;
 
         if (! $addressBook) {
@@ -249,7 +229,7 @@ class AddressBookBackend extends AbstractBackend implements SyncSupport
 
     private function addressBook(int|string $addressBookId): DavAddressBook
     {
-        return Dav::modelFor('address_book', DavAddressBook::class)::query()->findOrFail($addressBookId);
+        return Dav::model(DavAddressBook::class)::query()->findOrFail($addressBookId);
     }
 
     private function ownerExists(int $userId): bool

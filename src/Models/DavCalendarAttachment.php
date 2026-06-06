@@ -58,7 +58,7 @@ class DavCalendarAttachment extends Model
      */
     public function calendarObject(): BelongsTo
     {
-        return $this->belongsTo(Dav::modelFor('calendar_object', DavCalendarObject::class), 'dav_calendar_object_id');
+        return $this->belongsTo(Dav::model(DavCalendarObject::class), 'dav_calendar_object_id');
     }
 
     protected static function newFactory(): DavCalendarAttachmentFactory

@@ -8,33 +8,23 @@ Laravel DAV does not auto-create default calendars or address books. Create coll
 ## Calendar
 
 ```php
-use Bambamboole\LaravelDav\Models\DavCalendar;
-use Bambamboole\LaravelDav\Models\DavCalendarInstance;
-
-$calendar = DavCalendar::create([
-    'owner_id' => $user->id,
-    'components' => ['VEVENT', 'VTODO'],
-]);
-
-$calendar->instances()->create([
-    'owner_id' => $user->id,
+$calendar = $user->createDavCalendar([
     'uri' => 'personal',
     'display_name' => 'Personal',
     'color' => '#3b82f6',
-    'access' => DavCalendarInstance::AccessOwner,
+    'components' => ['VEVENT', 'VTODO'],
 ]);
 ```
 
 ## Address book
 
 ```php
-use Bambamboole\LaravelDav\Models\DavAddressBook;
-
-DavAddressBook::create([
-    'owner_id' => $user->id,
+$addressBook = $user->createDavAddressBook([
     'uri' => 'personal',
     'display_name' => 'Contacts',
 ]);
 ```
 
 Use stable, URL-safe `uri` values. Existing clients may keep references to collection URLs after their first sync.
+
+The owner helpers require the owner model to use `Bambamboole\LaravelDav\Models\Concerns\HasDavCollections`. You can still use the models directly, but the helpers create the required owner calendar instance and keep the collection shape consistent.

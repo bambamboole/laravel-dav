@@ -18,7 +18,7 @@ beforeEach(function (): void {
 });
 
 it('resolves the swapped card model through the resolver', function (): void {
-    expect(Dav::model('card'))->toBe(CustomCard::class);
+    expect(Dav::model(DavCard::class))->toBe(CustomCard::class);
 });
 
 it('drives the address book backend end-to-end with the swapped card model', function (): void {

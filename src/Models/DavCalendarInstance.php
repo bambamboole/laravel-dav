@@ -4,6 +4,7 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarInstanceFactory;
+use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Sabre\DAV\Sharing\Plugin as SharingPlugin;
 
 /**
@@ -88,7 +90,7 @@ class DavCalendarInstance extends Model
      */
     public function calendar(): BelongsTo
     {
-        return $this->belongsTo(Dav::modelFor('calendar', DavCalendar::class), 'dav_calendar_id');
+        return $this->belongsTo(Dav::model(DavCalendar::class), 'dav_calendar_id');
     }
 
     /**
@@ -99,6 +101,54 @@ class DavCalendarInstance extends Model
         $ownerModel = Dav::ownerModel();
 
         return $this->belongsTo($ownerModel, 'owner_id');
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateDavProperties(array $attributes): static
+    {
+        DB::transaction(function () use ($attributes): void {
+            if (array_key_exists('components', $attributes)) {
+                $this->calendar->forceFill(['components' => $attributes['components']])->save();
+            }
+
+            $values = array_intersect_key($attributes, array_flip([
+                'uri',
+                'display_name',
+                'description',
+                'color',
+                'timezone',
+                'order',
+                'transparent',
+                'share_display_name',
+            ]));
+
+            if ($values !== []) {
+                $this->forceFill($values)->save();
+            }
+        });
+
+        return $this;
+    }
+
+    public function putObject(CalendarObjectData|string $data, ?string $uri = null, ?string $expectedEtag = null): DavCalendarObject
+    {
+        return $this->calendar->putObject($data, $uri, $expectedEtag);
+    }
+
+    public function deleteDavCollection(): void
+    {
+        DB::transaction(function (): void {
+            if ($this->access !== self::AccessOwner) {
+                $this->delete();
+
+                return;
+            }
+
+            $this->calendar->instances()->delete();
+            $this->calendar->delete();
+        });
     }
 
     /**
