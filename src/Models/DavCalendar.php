@@ -101,6 +101,21 @@ class DavCalendar extends Model
             ->where('access', DavCalendarInstance::AccessOwner);
     }
 
+    public function instanceFor(DavOwner|int|string $owner): ?DavCalendarInstance
+    {
+        $ownerId = self::resolveOwnerId($owner);
+
+        if ($this->relationLoaded('instances')) {
+            return $this->instances->first(
+                fn (DavCalendarInstance $instance): bool => (string) $instance->owner_id === (string) $ownerId,
+            );
+        }
+
+        return $this->instances()
+            ->where('owner_id', $ownerId)
+            ->first();
+    }
+
     /**
      * @return HasMany<DavCalendarObject, $this>
      */
