@@ -19,16 +19,4 @@ class ContactRelation extends ContactValue
     public string $name;
 
     public ?string $group;
-
-    /**
-     * @return array{label: ?string, name: string, group: ?string}
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'name' => $this->name,
-            'group' => $this->group,
-        ];
-    }
 }

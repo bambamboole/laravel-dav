@@ -5,6 +5,8 @@ namespace Bambamboole\LaravelDav\Models;
 use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarProxyMembershipFactory;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\BelongsToDavOwner;
+use Bambamboole\LaravelDav\Models\Concerns\ResolvesDavOwner;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,8 +23,12 @@ use Illuminate\Support\Facades\DB;
  */
 class DavCalendarProxyMembership extends Model
 {
+    use BelongsToDavOwner;
+
     /** @use HasFactory<DavCalendarProxyMembershipFactory> */
     use HasFactory;
+
+    use ResolvesDavOwner;
 
     public const AccessRead = 'read';
 
@@ -99,26 +105,11 @@ class DavCalendarProxyMembership extends Model
     /**
      * @return BelongsTo<Model, $this>
      */
-    public function owner(): BelongsTo
-    {
-        $ownerModel = Dav::ownerModel();
-
-        return $this->belongsTo($ownerModel, 'owner_id');
-    }
-
-    /**
-     * @return BelongsTo<Model, $this>
-     */
     public function delegateOwner(): BelongsTo
     {
         $ownerModel = Dav::ownerModel();
 
         return $this->belongsTo($ownerModel, 'delegate_owner_id');
-    }
-
-    private static function resolveOwnerId(DavOwner|int|string $owner): int|string
-    {
-        return $owner instanceof DavOwner ? $owner->getDavPrincipalId() : $owner;
     }
 
     protected static function newFactory(): DavCalendarProxyMembershipFactory

@@ -19,16 +19,4 @@ class ContactPronoun extends ContactValue
     public string $value;
 
     public ?string $group;
-
-    /**
-     * @return array{language: ?string, value: string, group: ?string}
-     */
-    public function toArray(): array
-    {
-        return [
-            'language' => $this->language,
-            'value' => $this->value,
-            'group' => $this->group,
-        ];
-    }
 }

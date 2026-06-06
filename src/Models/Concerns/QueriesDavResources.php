@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 trait QueriesDavResources
 {
+    use ResolvesDavOwner;
+
     /**
      * Scope to a single resource by primary key or by its DAV uri.
      *
@@ -26,8 +28,13 @@ trait QueriesDavResources
         });
     }
 
-    protected static function resolveOwnerId(DavOwner|int|string $owner): int|string
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function forOwner(Builder $query, DavOwner|int|string $owner): Builder
     {
-        return $owner instanceof DavOwner ? $owner->getDavPrincipalId() : $owner;
+        return $query->where('owner_id', self::resolveOwnerId($owner));
     }
 }

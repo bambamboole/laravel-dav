@@ -28,19 +28,4 @@ class ContactSocialProfile extends ContactValue
     public ?string $userIdentifier;
 
     public ?string $group;
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
-    {
-        return [
-            'label' => $this->label,
-            'service' => $this->service,
-            'username' => $this->username,
-            'url' => $this->url,
-            'userIdentifier' => $this->userIdentifier,
-            'group' => $this->group,
-        ];
-    }
 }

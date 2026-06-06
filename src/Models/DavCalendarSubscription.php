@@ -2,16 +2,12 @@
 
 namespace Bambamboole\LaravelDav\Models;
 
-use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarSubscriptionFactory;
-use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\BelongsToDavOwner;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Attributes\Scope;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -32,6 +28,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class DavCalendarSubscription extends Model
 {
+    use BelongsToDavOwner;
+
     /** @use HasFactory<DavCalendarSubscriptionFactory> */
     use HasFactory;
 
@@ -73,26 +71,6 @@ class DavCalendarSubscription extends Model
             'strip_attachments' => 'boolean',
             'last_modified_at' => 'datetime',
         ];
-    }
-
-    /**
-     * @return BelongsTo<Model, $this>
-     */
-    public function owner(): BelongsTo
-    {
-        $ownerModel = Dav::ownerModel();
-
-        return $this->belongsTo($ownerModel, 'owner_id');
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    #[Scope]
-    protected function forOwner(Builder $query, DavOwner|int|string $owner): Builder
-    {
-        return $query->where('owner_id', self::resolveOwnerId($owner));
     }
 
     protected static function newFactory(): DavCalendarSubscriptionFactory

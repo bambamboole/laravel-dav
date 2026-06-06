@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -113,35 +112,6 @@ class DavCard extends Model
         $this->fill(['data' => $uri === null ? $data : DtoFactory::contactData($data, ['uri' => $uri])]);
 
         return $this;
-    }
-
-    public function replaceWith(ContactData|string $data, ?string $expectedEtag = null): static
-    {
-        return DB::transaction(function () use ($data, $expectedEtag): static {
-            if ($expectedEtag !== null) {
-                $this->expectingEtag($expectedEtag);
-            }
-
-            $this->fillFromDavData($data, $this->uri)->save();
-
-            return $this;
-        });
-    }
-
-    public function deleteDavResource(?string $expectedEtag = null): bool
-    {
-        return DB::transaction(function () use ($expectedEtag): bool {
-            if ($expectedEtag !== null) {
-                $this->expectingEtag($expectedEtag);
-            }
-
-            return (bool) $this->delete();
-        });
-    }
-
-    public function quotedEtag(): string
-    {
-        return '"'.$this->etag.'"';
     }
 
     protected function payloadColumn(): string

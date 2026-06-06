@@ -6,6 +6,7 @@ use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavCalendarFactory;
 use Bambamboole\LaravelDav\Dto\CalendarObjectData;
 use Bambamboole\LaravelDav\Facades\Dav;
+use Bambamboole\LaravelDav\Models\Concerns\BelongsToDavOwner;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -13,7 +14,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +35,8 @@ use Sabre\DAV\Sharing\Plugin as SharingPlugin;
  */
 class DavCalendar extends Model
 {
+    use BelongsToDavOwner;
+
     /** @use HasFactory<DavCalendarFactory> */
     use HasFactory;
 
@@ -64,24 +66,6 @@ class DavCalendar extends Model
             'components' => 'array',
             'sync_token' => 'integer',
         ];
-    }
-
-    /**
-     * @return BelongsTo<Model, $this>
-     */
-    public function owner(): BelongsTo
-    {
-        return $this->belongsTo(Dav::ownerModel(), 'owner_id');
-    }
-
-    /**
-     * @param  Builder<static>  $query
-     * @return Builder<static>
-     */
-    #[Scope]
-    protected function forOwner(Builder $query, DavOwner|int|string $owner): Builder
-    {
-        return $query->where('owner_id', self::resolveOwnerId($owner));
     }
 
     /**

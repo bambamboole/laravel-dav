@@ -27,13 +27,7 @@ class VCardSerializer
 
         $this->addIfPresent($vCard, 'FN', $data->formattedName);
 
-        $vCard->add('N', [
-            $data->familyName ?? '',
-            $data->givenName ?? '',
-            $data->middleName ?? '',
-            $data->namePrefix ?? '',
-            $data->nameSuffix ?? '',
-        ]);
+        $vCard->add('N', $this->nameParts($data));
 
         if ($data->contactType === 'organization') {
             $vCard->add('X-ABShowAs', 'COMPANY');
@@ -47,10 +41,7 @@ class VCardSerializer
         $this->addIfPresent($vCard, 'X-MAIDEN-NAME', $data->previousFamilyName);
 
         if (! empty($data->organization)) {
-            $vCard->add('ORG', array_filter([
-                $data->organization,
-                $data->department,
-            ], fn (?string $value): bool => filled($value)));
+            $vCard->add('ORG', $this->orgParts($data));
         }
 
         $this->addIfPresent($vCard, 'TITLE', $data->jobTitle);
@@ -154,13 +145,7 @@ class VCardSerializer
             $this->setOrRemove($vCard, 'FN', $data->formattedName);
 
             unset($vCard->N);
-            $vCard->add('N', [
-                $data->familyName ?? '',
-                $data->givenName ?? '',
-                $data->middleName ?? '',
-                $data->namePrefix ?? '',
-                $data->nameSuffix ?? '',
-            ]);
+            $vCard->add('N', $this->nameParts($data));
 
             $this->setOrRemove($vCard, 'NICKNAME', $data->nickname);
             $this->setOrRemove($vCard, 'TITLE', $data->jobTitle);
@@ -173,10 +158,7 @@ class VCardSerializer
 
             unset($vCard->ORG);
             if (! empty($data->organization)) {
-                $vCard->add('ORG', array_values(array_filter(
-                    [$data->organization, $data->department],
-                    fn (?string $v): bool => filled($v),
-                )));
+                $vCard->add('ORG', $this->orgParts($data));
             }
 
             $group = $this->nextItemNumber($vCard);
@@ -230,6 +212,31 @@ class VCardSerializer
             ->all();
 
         return $types === [] ? [] : ['TYPE' => $types];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function nameParts(ContactData $data): array
+    {
+        return [
+            $data->familyName ?? '',
+            $data->givenName ?? '',
+            $data->middleName ?? '',
+            $data->namePrefix ?? '',
+            $data->nameSuffix ?? '',
+        ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function orgParts(ContactData $data): array
+    {
+        return array_values(array_filter(
+            [$data->organization, $data->department],
+            fn (?string $value): bool => filled($value),
+        ));
     }
 
     private function dateValue(ContactDate $date): string

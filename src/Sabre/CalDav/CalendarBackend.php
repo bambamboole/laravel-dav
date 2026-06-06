@@ -730,13 +730,6 @@ class CalendarBackend extends AbstractBackend implements SchedulingSupport, Shar
         return is_array($calendarId) ? $calendarId[0] : $calendarId;
     }
 
-    private function ownerExists(int $userId): bool
-    {
-        $model = Dav::ownerModel();
-
-        return $model::query()->whereKey($userId)->exists();
-    }
-
     /**
      * @param  array<string, mixed>  $filters
      */

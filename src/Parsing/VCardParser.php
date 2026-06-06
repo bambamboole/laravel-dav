@@ -126,20 +126,40 @@ class VCardParser
     }
 
     /**
-     * @return array<int, array{label: ?string, value: string, types: array<int, string>, isPreferred: bool, group: ?string}>
+     * @param  callable(Property): (array<string, mixed>|null)  $mapper
+     * @return array<int, array<string, mixed>>
+     */
+    private function selectRows(Component $component, string $name, callable $mapper): array
+    {
+        return collect($component->select($name))
+            ->map($mapper)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{label: ?string, types: array<int, string>, isPreferred: bool, group: ?string}
+     */
+    private function labeledRow(Component $component, Property $property): array
+    {
+        return [
+            'label' => $this->labelFor($component, $property),
+            'types' => $this->parameterValues($property, 'TYPE'),
+            'isPreferred' => $this->isPreferred($property),
+            'group' => $this->group($property),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
      */
     private function labeledTextProperties(Component $component, string $name): array
     {
-        return collect($component->select($name))
-            ->map(fn (Property $property): array => [
-                'label' => $this->labelFor($component, $property),
-                'value' => (string) $property,
-                'types' => $this->parameterValues($property, 'TYPE'),
-                'isPreferred' => $this->isPreferred($property),
-                'group' => $this->group($property),
-            ])
-            ->values()
-            ->all();
+        return $this->selectRows($component, $name, fn (Property $property): array => [
+            ...$this->labeledRow($component, $property),
+            'value' => (string) $property,
+        ]);
     }
 
     /**
@@ -147,27 +167,21 @@ class VCardParser
      */
     private function addresses(Component $component): array
     {
-        return collect($component->select('ADR'))
-            ->map(function (Property $property) use ($component): array {
-                $parts = $property->getParts();
+        return $this->selectRows($component, 'ADR', function (Property $property) use ($component): array {
+            $parts = $property->getParts();
 
-                return [
-                    'label' => $this->labelFor($component, $property),
-                    'poBox' => $parts[0] ?? null,
-                    'extended' => $parts[1] ?? null,
-                    'street' => $parts[2] ?? null,
-                    'city' => $parts[3] ?? null,
-                    'region' => $parts[4] ?? null,
-                    'postalCode' => $parts[5] ?? null,
-                    'country' => $parts[6] ?? null,
-                    'countryCode' => null,
-                    'types' => $this->parameterValues($property, 'TYPE'),
-                    'isPreferred' => $this->isPreferred($property),
-                    'group' => $this->group($property),
-                ];
-            })
-            ->values()
-            ->all();
+            return [
+                ...$this->labeledRow($component, $property),
+                'poBox' => $parts[0] ?? null,
+                'extended' => $parts[1] ?? null,
+                'street' => $parts[2] ?? null,
+                'city' => $parts[3] ?? null,
+                'region' => $parts[4] ?? null,
+                'postalCode' => $parts[5] ?? null,
+                'country' => $parts[6] ?? null,
+                'countryCode' => null,
+            ];
+        });
     }
 
     /**
@@ -183,26 +197,20 @@ class VCardParser
                     : [null, $uri];
 
                 return [
-                    'label' => $this->labelFor($component, $property),
+                    ...$this->labeledRow($component, $property),
                     'service' => $service,
                     'username' => $username,
                     'uri' => $uri,
-                    'types' => $this->parameterValues($property, 'TYPE'),
-                    'isPreferred' => $this->isPreferred($property),
-                    'group' => $this->group($property),
                 ];
             });
 
         foreach (['X-JABBER' => 'jabber', 'X-AIM' => 'aim', 'X-SKYPE' => 'skype'] as $propertyName => $service) {
             foreach ($component->select($propertyName) as $property) {
                 $messages->push([
-                    'label' => $this->labelFor($component, $property),
+                    ...$this->labeledRow($component, $property),
                     'service' => $service,
                     'username' => (string) $property,
-                    'uri' => $service.':'.(string) $property,
-                    'types' => $this->parameterValues($property, 'TYPE'),
-                    'isPreferred' => $this->isPreferred($property),
-                    'group' => $this->group($property),
+                    'uri' => $service.':'.$property,
                 ]);
             }
         }
@@ -215,17 +223,14 @@ class VCardParser
      */
     private function socialProfiles(Component $component): array
     {
-        return collect($component->select('X-SOCIALPROFILE'))
-            ->map(fn (Property $property): array => [
-                'label' => $this->labelFor($component, $property),
-                'service' => $this->parameterValues($property, 'TYPE')[0] ?? null,
-                'username' => null,
-                'url' => (string) $property,
-                'userIdentifier' => null,
-                'group' => $this->group($property),
-            ])
-            ->values()
-            ->all();
+        return $this->selectRows($component, 'X-SOCIALPROFILE', fn (Property $property): array => [
+            'label' => $this->labelFor($component, $property),
+            'service' => $this->parameterValues($property, 'TYPE')[0] ?? null,
+            'username' => null,
+            'url' => (string) $property,
+            'userIdentifier' => null,
+            'group' => $this->group($property),
+        ]);
     }
 
     /**
@@ -233,14 +238,11 @@ class VCardParser
      */
     private function pronouns(Component $component): array
     {
-        return collect($component->select('PRONOUNS'))
-            ->map(fn (Property $property): array => [
-                'language' => $this->parameterValues($property, 'LANGUAGE')[0] ?? null,
-                'value' => (string) $property,
-                'group' => $this->group($property),
-            ])
-            ->values()
-            ->all();
+        return $this->selectRows($component, 'PRONOUNS', fn (Property $property): array => [
+            'language' => $this->parameterValues($property, 'LANGUAGE')[0] ?? null,
+            'value' => (string) $property,
+            'group' => $this->group($property),
+        ]);
     }
 
     /**
@@ -248,11 +250,7 @@ class VCardParser
      */
     private function dates(Component $component): array
     {
-        return collect($component->select('X-ABDATE'))
-            ->map(fn (Property $property): ?array => $this->dateFromProperty($component, $property))
-            ->filter()
-            ->values()
-            ->all();
+        return $this->selectRows($component, 'X-ABDATE', fn (Property $property): ?array => $this->dateFromProperty($component, $property));
     }
 
     /**
@@ -260,14 +258,11 @@ class VCardParser
      */
     private function relations(Component $component): array
     {
-        return collect($component->select('X-ABRELATEDNAMES'))
-            ->map(fn (Property $property): array => [
-                'label' => $this->labelFor($component, $property),
-                'name' => (string) $property,
-                'group' => $this->group($property),
-            ])
-            ->values()
-            ->all();
+        return $this->selectRows($component, 'X-ABRELATEDNAMES', fn (Property $property): array => [
+            'label' => $this->labelFor($component, $property),
+            'name' => (string) $property,
+            'group' => $this->group($property),
+        ]);
     }
 
     /**
