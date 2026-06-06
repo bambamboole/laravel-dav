@@ -8,6 +8,8 @@ use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\Concerns\BelongsToDavOwner;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -83,6 +85,64 @@ class DavCalendarInstance extends Model
             'transparent' => 'boolean',
             'share_invite_status' => 'integer',
         ];
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->access === self::AccessOwner;
+    }
+
+    public function isShared(): bool
+    {
+        return ! $this->isOwner();
+    }
+
+    public function isWritable(): bool
+    {
+        return in_array($this->access, self::writeAccessLevels(), true);
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function readAccessLevels(): array
+    {
+        return [
+            self::AccessOwner,
+            self::AccessRead,
+            self::AccessReadWrite,
+        ];
+    }
+
+    /**
+     * @return list<int>
+     */
+    public static function writeAccessLevels(): array
+    {
+        return [
+            self::AccessOwner,
+            self::AccessReadWrite,
+        ];
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function readable(Builder $query): Builder
+    {
+        return $query->whereIn('access', self::readAccessLevels());
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    #[Scope]
+    protected function writable(Builder $query): Builder
+    {
+        return $query->whereIn('access', self::writeAccessLevels());
     }
 
     /**

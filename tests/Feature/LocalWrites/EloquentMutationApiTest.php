@@ -11,6 +11,7 @@ use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavChange;
 use Bambamboole\LaravelDav\Tests\Stubs\OwnerUser;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 it('creates and mutates dav resources through eloquent models', function (): void {
     $owner = OwnerUser::factory()->create();
@@ -187,4 +188,67 @@ it('manages calendar proxy delegates from the owner model', function (): void {
         ->where('owner_id', $owner->getKey())
         ->where('delegate_owner_id', $writeDelegate->getKey())
         ->exists())->toBeFalse();
+});
+
+it('exposes calendar instance access helpers and scopes', function (): void {
+    $owner = OwnerUser::factory()->create();
+    $reader = OwnerUser::factory()->create();
+    $writer = OwnerUser::factory()->create();
+
+    $calendar = $owner->createDavCalendar(['uri' => 'work']);
+    $ownerInstance = $calendar->ownerInstance()->firstOrFail();
+    $readInstance = $calendar->shareWith($reader, DavCalendarInstance::AccessRead);
+    $writeInstance = $calendar->shareWith($writer, DavCalendarInstance::AccessReadWrite);
+
+    expect(DavCalendarInstance::readAccessLevels())->toBe([
+        DavCalendarInstance::AccessOwner,
+        DavCalendarInstance::AccessRead,
+        DavCalendarInstance::AccessReadWrite,
+    ])
+        ->and(DavCalendarInstance::writeAccessLevels())->toBe([
+            DavCalendarInstance::AccessOwner,
+            DavCalendarInstance::AccessReadWrite,
+        ])
+        ->and($ownerInstance->isOwner())->toBeTrue()
+        ->and($ownerInstance->isShared())->toBeFalse()
+        ->and($ownerInstance->isWritable())->toBeTrue()
+        ->and($readInstance->isOwner())->toBeFalse()
+        ->and($readInstance->isShared())->toBeTrue()
+        ->and($readInstance->isWritable())->toBeFalse()
+        ->and($writeInstance->isOwner())->toBeFalse()
+        ->and($writeInstance->isShared())->toBeTrue()
+        ->and($writeInstance->isWritable())->toBeTrue()
+        ->and($calendar->instances()->readable()->pluck('owner_id')->sort()->values()->all())->toBe([
+            $owner->getKey(),
+            $reader->getKey(),
+            $writer->getKey(),
+        ])
+        ->and($calendar->instances()->writable()->pluck('owner_id')->sort()->values()->all())->toBe([
+            $owner->getKey(),
+            $writer->getKey(),
+        ]);
+});
+
+it('resolves calendar instances for owners from loaded instances before querying', function (): void {
+    $owner = OwnerUser::factory()->create();
+    $sharee = OwnerUser::factory()->create();
+    $missingOwner = OwnerUser::factory()->create();
+
+    $calendar = $owner->createDavCalendar(['uri' => 'work']);
+    $sharedInstance = $calendar->shareWith($sharee, DavCalendarInstance::AccessReadWrite);
+
+    $calendar->load('instances');
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    expect($calendar->instanceFor($sharee)?->getKey())->toBe($sharedInstance->getKey())
+        ->and($calendar->instanceFor($sharee->getKey())?->getKey())->toBe($sharedInstance->getKey())
+        ->and($calendar->instanceFor((string) $sharee->getKey())?->getKey())->toBe($sharedInstance->getKey())
+        ->and($calendar->instanceFor($missingOwner))->toBeNull()
+        ->and(DB::getQueryLog())->toBe([]);
+
+    DB::disableQueryLog();
+
+    expect($calendar->fresh()->instanceFor($sharee)?->getKey())->toBe($sharedInstance->getKey());
 });
