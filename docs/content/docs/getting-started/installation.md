@@ -23,7 +23,7 @@ php artisan migrate
 - Laravel `^12` or `^13`
 - sabre/dav `^4.7`
 
-Publishing is optional. Publish the config file when you need to customize the owner model, route prefix, Basic auth realm, scheduling mailer, or model classes:
+Publishing is optional. Publish the config file when you need to customize the owner model, route prefix, enabled protocols, Basic auth realm, scheduling mailer, or model classes:
 
 ```bash
 php artisan vendor:publish --tag=dav-config

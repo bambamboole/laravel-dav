@@ -264,7 +264,7 @@ class PrincipalBackend extends AbstractBackend
     private function ownerIdFromMemberUri(string $member): ?int
     {
         $member = trim($member, '/');
-        $baseUri = trim((string) config('dav.base_uri', '/dav/'), '/');
+        $baseUri = trim(Dav::baseUri(), '/');
 
         if ($baseUri !== '' && str_starts_with($member, $baseUri.'/')) {
             $member = mb_substr($member, mb_strlen($baseUri) + 1);

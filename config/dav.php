@@ -32,14 +32,18 @@ return [
         'middleware' => [],
     ],
 
-    'base_uri' => null,
     'realm' => env('DAV_REALM', config('app.name', 'Laravel')),
+
+    'caldav' => [
+        'enabled' => env('DAV_CALDAV_ENABLED', true),
+    ],
+
+    'carddav' => [
+        'enabled' => env('DAV_CARDDAV_ENABLED', true),
+    ],
 
     'principal_prefix' => 'principals',
     'calendar_prefix' => 'calendars',
-    'address_book_prefix' => 'addressbooks',
-    'default_calendar_uri' => 'personal',
-    'default_address_book_uri' => 'personal',
 
     'scheduling' => [
         'enabled' => true,
