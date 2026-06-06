@@ -11,7 +11,7 @@ Supported iCalendar components:
 - `VTODO`
 - `VJOURNAL`
 
-Scheduling implements local iTip delivery and optional iMIP email delivery for external attendees.
+Scheduling implements local iTIP delivery and optional iMIP email delivery for external attendees.
 
 Availability support follows RFC 7953 with `VAVAILABILITY` stored on the scheduling inbox.
 
