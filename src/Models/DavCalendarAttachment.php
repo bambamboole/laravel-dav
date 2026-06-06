@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property int $dav_calendar_object_id
+ * @property int $created_by_owner_id
  * @property string $managed_id
  * @property string|null $filename
  * @property string|null $content_type
@@ -32,6 +33,7 @@ class DavCalendarAttachment extends Model
 
     protected $fillable = [
         'dav_calendar_object_id',
+        'created_by_owner_id',
         'managed_id',
         'filename',
         'content_type',

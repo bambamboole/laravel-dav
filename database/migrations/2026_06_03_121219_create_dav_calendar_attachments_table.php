@@ -1,5 +1,6 @@
 <?php
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,9 @@ return new class extends Migration
             $table->foreignId('dav_calendar_object_id')
                 ->constrained('dav_calendar_objects')
                 ->cascadeOnDelete();
+            $table->foreignId('created_by_owner_id')
+                ->constrained(Dav::ownerTable())
+                ->cascadeOnDelete();
             $table->string('managed_id')->unique();
             $table->string('filename')->nullable();
             $table->string('content_type')->nullable();
@@ -23,6 +27,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('dav_calendar_object_id');
+            $table->index('created_by_owner_id');
         });
     }
 

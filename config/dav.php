@@ -44,4 +44,9 @@ return [
         'mailer' => env('MAIL_MAILER'),
         'from' => env('DAV_SCHEDULING_FROM', env('MAIL_FROM_ADDRESS', 'noreply@laravel-dav.example')),
     ],
+
+    'attachments' => [
+        'disk' => env('DAV_ATTACHMENTS_DISK', env('FILESYSTEM_DISK', 'local')),
+        'path' => env('DAV_ATTACHMENTS_PATH', 'dav-attachments'),
+    ],
 ];

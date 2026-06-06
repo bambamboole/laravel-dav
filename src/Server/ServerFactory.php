@@ -5,6 +5,7 @@ namespace Bambamboole\LaravelDav\Server;
 use Bambamboole\LaravelDav\Sabre\Auth\BasicAuthBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\ExpandingVCalendar;
+use Bambamboole\LaravelDav\Sabre\CalDav\ManagedAttachmentsPlugin;
 use Bambamboole\LaravelDav\Sabre\CalDav\Xml\Request\CalendarQueryReport;
 use Bambamboole\LaravelDav\Sabre\CardDav\AddressBookBackend;
 use Bambamboole\LaravelDav\Sabre\DAVACL\EnumerablePrincipalCollection;
@@ -59,6 +60,7 @@ class ServerFactory
         $server->addPlugin(new LocksPlugin($this->lockBackend));
         $server->addPlugin(new AclPlugin);
         $server->addPlugin(new CalDavPlugin);
+        $server->addPlugin(new ManagedAttachmentsPlugin($this->calendarBackend));
         $server->addPlugin(new SharingPlugin);
         $server->addPlugin(new CalDavSharingPlugin);
         $server->addPlugin(new SubscriptionsPlugin);

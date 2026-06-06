@@ -101,3 +101,16 @@ Disable it if your application only needs local storage and sync:
     'enabled' => false,
 ],
 ```
+
+## Managed attachments
+
+Managed calendar attachments are stored through Laravel's filesystem:
+
+```php
+'attachments' => [
+    'disk' => env('DAV_ATTACHMENTS_DISK', env('FILESYSTEM_DISK', 'local')),
+    'path' => env('DAV_ATTACHMENTS_PATH', 'dav-attachments'),
+],
+```
+
+Use a private disk unless your application has a separate reason to expose the raw storage path. DAV downloads are served through the package so calendar access rules still apply.
