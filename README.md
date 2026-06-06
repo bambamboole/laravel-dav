@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg" />
+    <img alt="LaravelDAV" src="docs/assets/logo.svg" width="300" />
+  </picture>
+</p>
+
 # Laravel DAV
 
 CalDAV & CardDAV server for Laravel, powered by [sabre/dav](https://sabre.io/dav/), with a typed DTO API.
