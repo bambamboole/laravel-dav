@@ -9,7 +9,6 @@ class CustomRoutePrefixTestCase extends TestCase
         parent::defineEnvironment($app);
 
         $app['config']->set('dav.route.prefix', 'remote.php/dav');
-        $app['config']->set('dav.base_uri', null);
     }
 }
 

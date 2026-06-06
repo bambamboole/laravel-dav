@@ -1,6 +1,6 @@
 ---
 title: Configuration
-description: Configure owner models, routes, authentication, scheduling, and swappable models.
+description: Configure owner models, routes, protocols, authentication, scheduling, and swappable models.
 ---
 
 Publish the config file when you need to override package defaults:
@@ -32,6 +32,22 @@ Content models can also be replaced with subclasses of the package models:
 
 Available model keys include `calendar`, `calendar_instance`, `calendar_object`, `calendar_attachment`, `calendar_subscription`, `calendar_proxy_membership`, `address_book`, `card`, `credential`, and `scheduling_object`.
 
+## Protocols
+
+CalDAV and CardDAV are enabled by default:
+
+```php
+'caldav' => [
+    'enabled' => env('DAV_CALDAV_ENABLED', true),
+],
+
+'carddav' => [
+    'enabled' => env('DAV_CARDDAV_ENABLED', true),
+],
+```
+
+Disable either protocol when your application only needs calendar or contact support. Disabling CalDAV also disables CalDAV scheduling, sharing, subscriptions, managed attachments, and ICS export.
+
 ## Routes
 
 The DAV endpoint defaults to `/dav/`:
@@ -52,11 +68,8 @@ Change `route.prefix` to serve DAV traffic from another path:
 ],
 ```
 
-When `base_uri` is `null`, the advertised Sabre base URI is derived from `route.prefix`. Set `base_uri` only when the externally visible DAV path differs from the Laravel route path:
+The advertised Sabre base URI is derived from `route.prefix`.
 
-```php
-'base_uri' => '/remote.php/dav/',
-```
 
 ## Authentication
 
@@ -75,9 +88,6 @@ The internal DAV path segments are configurable:
 ```php
 'principal_prefix' => 'principals',
 'calendar_prefix' => 'calendars',
-'address_book_prefix' => 'addressbooks',
-'default_calendar_uri' => 'personal',
-'default_address_book_uri' => 'personal',
 ```
 
 Only change these before clients start syncing. Existing clients may cache discovered collection URLs.

@@ -11,6 +11,6 @@ class DavController
 {
     public function __invoke(Request $request, ServerFactory $servers, ResponseEmitter $responses): Response
     {
-        return $responses->toLaravelResponse($servers->make(), $request);
+        return $responses->toLaravelResponse($servers->create(), $request);
     }
 }

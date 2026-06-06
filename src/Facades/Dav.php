@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static class-string<Model> ownerModel()
  * @method static string ownerTable()
+ * @method static string baseUri()
  */
 class Dav extends Facade
 {

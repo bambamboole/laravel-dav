@@ -2,6 +2,7 @@
 
 namespace Bambamboole\LaravelDav\Server;
 
+use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Sabre\Auth\BasicAuthBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\CalendarBackend;
 use Bambamboole\LaravelDav\Sabre\CalDav\ExpandingVCalendar;
@@ -25,6 +26,7 @@ use Sabre\CardDAV\AddressBookRoot;
 use Sabre\CardDAV\Plugin as CardDavPlugin;
 use Sabre\CardDAV\VCFExportPlugin;
 use Sabre\DAV\Auth\Plugin as AuthPlugin;
+use Sabre\DAV\INode;
 use Sabre\DAV\Locks\Plugin as LocksPlugin;
 use Sabre\DAV\PropertyStorage\Plugin as PropertyStoragePlugin;
 use Sabre\DAV\Server;
@@ -43,52 +45,106 @@ class ServerFactory
         private readonly LockBackend $lockBackend,
     ) {}
 
-    public function make(): Server
+    public function create(): Server
     {
         VCalendar::$componentMap['VCALENDAR'] = ExpandingVCalendar::class;
 
-        $server = new Server([
-            new EnumerablePrincipalCollection($this->principalBackend),
-            new CalendarRoot($this->principalBackend, $this->calendarBackend),
-            new AddressBookRoot($this->principalBackend, $this->addressBookBackend),
-        ]);
+        $server = $this->createServer($this->getNodes());
 
+        if ($this->calDavEnabled()) {
+            $server->addPlugin(new CalDavPlugin);
+            $server->addPlugin(new ICSExportPlugin);
+            $server->addPlugin(new ManagedAttachmentsPlugin($this->calendarBackend));
+            $server->addPlugin(new SharingPlugin);
+            $server->addPlugin(new CalDavSharingPlugin);
+            $server->addPlugin(new SubscriptionsPlugin);
+            $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;
+
+            if ($this->schedulingEnabled()) {
+                $server->addPlugin(new SchedulePlugin);
+                $server->addPlugin(new ScheduleTagPlugin);
+                $server->addPlugin(new IMipPlugin($this->schedulingFrom()));
+            }
+        }
+
+        if ($this->cardDavEnabled()) {
+            $server->addPlugin(new CardDavPlugin);
+            $server->addPlugin(new VCFExportPlugin);
+        }
+
+        return $this->prepareServer($server);
+    }
+
+    protected function prepareServer(Server $server): Server
+    {
+        return $server;
+    }
+
+    /**
+     * @param  array<int, INode>  $nodes
+     */
+    protected function createServer(array $nodes): Server
+    {
+        $server = new Server($nodes);
         $server->setBaseUri($this->baseUri());
-        $server->debugExceptions = (bool) config('app.debug');
+        $server->debugExceptions = $this->debugExceptionsEnabled();
         $server->addPlugin(new AuthPlugin($this->authBackend));
         $server->addPlugin(new PropertyStoragePlugin($this->propertyBackend));
         $server->addPlugin(new LocksPlugin($this->lockBackend));
         $server->addPlugin(new AclPlugin);
-        $server->addPlugin(new CalDavPlugin);
-        $server->addPlugin(new ManagedAttachmentsPlugin($this->calendarBackend));
-        $server->addPlugin(new SharingPlugin);
-        $server->addPlugin(new CalDavSharingPlugin);
-        $server->addPlugin(new SubscriptionsPlugin);
-        $server->xml->elementMap['{urn:ietf:params:xml:ns:caldav}calendar-query'] = CalendarQueryReport::class;
-        $server->xml->elementMap['{DAV:}principal-property-search'] = PrincipalPropertySearchReport::class;
-        if (config('dav.scheduling.enabled')) {
-            $server->addPlugin(new SchedulePlugin);
-            $server->addPlugin(new ScheduleTagPlugin);
-            $server->addPlugin(new IMipPlugin(config('dav.scheduling.from')));
-        }
-        $server->addPlugin(new CardDavPlugin);
         $server->addPlugin(new SyncPlugin);
-        $server->addPlugin(new ICSExportPlugin);
-        $server->addPlugin(new VCFExportPlugin);
+        $server->xml->elementMap['{DAV:}principal-property-search'] = PrincipalPropertySearchReport::class;
 
         return $server;
     }
 
-    private function baseUri(): string
+    protected function baseUri(): string
     {
-        $configuredBaseUri = config('dav.base_uri');
+        return Dav::baseUri();
+    }
 
-        if (is_string($configuredBaseUri) && $configuredBaseUri !== '') {
-            return $configuredBaseUri;
+    protected function debugExceptionsEnabled(): bool
+    {
+        return config()->boolean('app.debug');
+    }
+
+    protected function calDavEnabled(): bool
+    {
+        return config()->boolean('dav.caldav.enabled', true);
+    }
+
+    protected function cardDavEnabled(): bool
+    {
+        return config()->boolean('dav.carddav.enabled', true);
+    }
+
+    protected function schedulingEnabled(): bool
+    {
+        return config()->boolean('dav.scheduling.enabled');
+    }
+
+    protected function schedulingFrom(): ?string
+    {
+        return config()->string('dav.scheduling.from', 'noreply@laravel-dav.example');
+    }
+
+    /**
+     * @return array<int, INode>
+     */
+    protected function getNodes(): array
+    {
+        $nodes = [
+            new EnumerablePrincipalCollection($this->principalBackend),
+        ];
+
+        if ($this->calDavEnabled()) {
+            $nodes[] = new CalendarRoot($this->principalBackend, $this->calendarBackend);
         }
 
-        $prefix = trim((string) config('dav.route.prefix', 'dav'), '/');
+        if ($this->cardDavEnabled()) {
+            $nodes[] = new AddressBookRoot($this->principalBackend, $this->addressBookBackend);
+        }
 
-        return $prefix === '' ? '/' : "/{$prefix}/";
+        return $nodes;
     }
 }

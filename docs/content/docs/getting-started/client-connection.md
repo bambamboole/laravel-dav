@@ -35,7 +35,7 @@ The default route prefix is `dav`. Change it in the published config:
 ],
 ```
 
-When `base_uri` is `null`, the package advertises a base URI derived from the route prefix.
+The package advertises a base URI derived from the route prefix.
 
 ## DNS discovery
 

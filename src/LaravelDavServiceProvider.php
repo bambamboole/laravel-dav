@@ -12,6 +12,7 @@ class LaravelDavServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/dav.php', 'dav');
 
         $this->app->singleton(LaravelDav::class);
+        $this->app->singletonIf(Server\ServerFactory::class);
     }
 
     public function boot(): void

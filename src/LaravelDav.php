@@ -74,4 +74,11 @@ class LaravelDav
 
         return (new $model)->getTable();
     }
+
+    public function baseUri(): string
+    {
+        $prefix = trim((string) config('dav.route.prefix', 'dav'), '/');
+
+        return $prefix === '' ? '/' : "/{$prefix}/";
+    }
 }
