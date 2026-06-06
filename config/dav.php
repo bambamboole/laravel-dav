@@ -26,11 +26,11 @@ return [
     ],
 
     'route' => [
-        'prefix' => env('DAV_BASE_PREFIX', 'dav'),
+        'prefix' => 'dav',
         'middleware' => [],
     ],
 
-    'base_uri' => env('DAV_BASE_URI', '/dav/'),
+    'base_uri' => null,
     'realm' => env('DAV_REALM', config('app.name', 'Laravel')),
 
     'principal_prefix' => 'principals',

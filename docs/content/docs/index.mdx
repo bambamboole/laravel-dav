@@ -1,0 +1,38 @@
+---
+title: Laravel DAV
+description: CalDAV and CardDAV server for Laravel, powered by sabre/dav, with a typed DTO API.
+template: splash
+prev: false
+next: false
+hero:
+  title: CalDAV and CardDAV for Laravel.
+  tagline: Expose application-owned calendars and contacts to standards-compliant clients such as Apple Calendar, Apple Contacts, Thunderbird, and DAVx5, backed by Eloquent and sabre/dav.
+  actions:
+    - text: Get Started
+      link: /laravel-dav/getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/bambamboole/laravel-dav
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+## What it provides
+
+<CardGrid>
+  <Card title="CalDAV" icon="document">
+    Events, todos, journals, recurrence expansion, free/busy queries, scheduling, and availability.
+  </Card>
+  <Card title="CardDAV" icon="open-book">
+    vCard 3.0 and 4.0 storage with lossless raw payloads and typed contact projections.
+  </Card>
+  <Card title="WebDAV sync" icon="random">
+    Collection sync tokens for efficient client synchronization.
+  </Card>
+  <Card title="Laravel storage" icon="setting">
+    Plain Eloquent models, migrations, factories, events, and configuration.
+  </Card>
+</CardGrid>

@@ -5,6 +5,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Route;
 
 $prefix = trim((string) config('dav.route.prefix', 'dav'), '/');
+$basePath = $prefix === '' ? '/' : "/{$prefix}/";
+$davPath = $prefix === '' ? '/{path?}' : "/{$prefix}/{path?}";
 
 $davMethods = [
     'GET',
@@ -26,7 +28,7 @@ $davMethods = [
     'ACL',
 ];
 
-Route::match($davMethods, '/.well-known/caldav', fn (): RedirectResponse => redirect("/{$prefix}/", 301));
-Route::match($davMethods, '/.well-known/carddav', fn (): RedirectResponse => redirect("/{$prefix}/", 301));
+Route::match($davMethods, '/.well-known/caldav', fn (): RedirectResponse => redirect($basePath, 301));
+Route::match($davMethods, '/.well-known/carddav', fn (): RedirectResponse => redirect($basePath, 301));
 
-Route::match($davMethods, "/{$prefix}/{path?}", DavController::class)->where('path', '.*');
+Route::match($davMethods, $davPath, DavController::class)->where('path', '.*');
