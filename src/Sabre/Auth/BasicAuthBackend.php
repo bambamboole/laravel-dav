@@ -60,7 +60,7 @@ class BasicAuthBackend extends AbstractBasic
 
     protected function validateUserPass($username, $password): bool
     {
-        $credential = Dav::modelFor('credential', DavCredential::class)::query()
+        $credential = Dav::model(DavCredential::class)::query()
             ->where('username', $username)
             ->with('owner')
             ->first();

@@ -4,6 +4,7 @@ namespace Bambamboole\LaravelDav\Models;
 
 use Bambamboole\LaravelDav\Contracts\DavOwner;
 use Bambamboole\LaravelDav\Database\Factories\DavAddressBookFactory;
+use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Carbon\CarbonImmutable;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -85,7 +87,64 @@ class DavAddressBook extends Model
      */
     public function cards(): HasMany
     {
-        return $this->hasMany(Dav::modelFor('card', DavCard::class), 'dav_address_book_id');
+        return $this->hasMany(Dav::model(DavCard::class), 'dav_address_book_id');
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function createForOwner(DavOwner|int|string $owner, array $attributes = []): static
+    {
+        $ownerId = self::resolveOwnerId($owner);
+        $uri = (string) ($attributes['uri'] ?? 'default');
+
+        return static::query()->create([
+            'owner_id' => $ownerId,
+            'uri' => $uri,
+            'display_name' => (string) ($attributes['display_name'] ?? $uri),
+            'description' => $attributes['description'] ?? null,
+            'sync_token' => $attributes['sync_token'] ?? 1,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateDavProperties(array $attributes): static
+    {
+        $values = array_intersect_key($attributes, array_flip([
+            'uri',
+            'display_name',
+            'description',
+        ]));
+
+        if ($values !== []) {
+            $this->forceFill($values)->save();
+        }
+
+        return $this;
+    }
+
+    public function putContact(ContactData|string $data, ?string $uri = null, ?string $expectedEtag = null): DavCard
+    {
+        return DB::transaction(function () use ($data, $uri, $expectedEtag): DavCard {
+            $card = $uri === null
+                ? $this->cards()->make()
+                : $this->cards()->firstOrNew(['uri' => $uri]);
+
+            if ($expectedEtag !== null) {
+                $card->expectingEtag($expectedEtag);
+            }
+
+            $card->fillFromDavData($data, $uri)->save();
+
+            return $card;
+        });
+    }
+
+    public function deleteDavAddressBook(): void
+    {
+        $this->delete();
     }
 
     protected static function newFactory(): DavAddressBookFactory

@@ -9,6 +9,7 @@ use Bambamboole\LaravelDav\Dto\ContactData;
 use Bambamboole\LaravelDav\Facades\Dav;
 use Bambamboole\LaravelDav\Models\Concerns\QueriesDavResources;
 use Bambamboole\LaravelDav\Models\Concerns\TracksDavResource;
+use Bambamboole\LaravelDav\Parsing\VCardParser;
 use Bambamboole\LaravelDav\Parsing\VCardSerializer;
 use Bambamboole\LaravelDav\Support\DtoFactory;
 use Carbon\CarbonImmutable;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -73,7 +75,7 @@ class DavCard extends Model
      */
     public function addressBook(): BelongsTo
     {
-        return $this->belongsTo(Dav::modelFor('address_book', DavAddressBook::class), 'dav_address_book_id');
+        return $this->belongsTo(Dav::model(DavAddressBook::class), 'dav_address_book_id');
     }
 
     /**
@@ -89,6 +91,57 @@ class DavCard extends Model
     public function toData(): ContactData
     {
         return $this->data;
+    }
+
+    public function fillFromDavData(ContactData|string $data, ?string $uri = null): static
+    {
+        if ($uri !== null) {
+            $this->uri = $uri;
+        }
+
+        if (is_string($data)) {
+            $payloadUri = $uri ?? $this->uri;
+
+            $this->fill([
+                'data' => app(VCardParser::class)->parse($data, $payloadUri),
+                'card_data' => $data,
+            ]);
+
+            return $this;
+        }
+
+        $this->fill(['data' => $uri === null ? $data : DtoFactory::contactData($data, ['uri' => $uri])]);
+
+        return $this;
+    }
+
+    public function replaceWith(ContactData|string $data, ?string $expectedEtag = null): static
+    {
+        return DB::transaction(function () use ($data, $expectedEtag): static {
+            if ($expectedEtag !== null) {
+                $this->expectingEtag($expectedEtag);
+            }
+
+            $this->fillFromDavData($data, $this->uri)->save();
+
+            return $this;
+        });
+    }
+
+    public function deleteDavResource(?string $expectedEtag = null): bool
+    {
+        return DB::transaction(function () use ($expectedEtag): bool {
+            if ($expectedEtag !== null) {
+                $this->expectingEtag($expectedEtag);
+            }
+
+            return (bool) $this->delete();
+        });
+    }
+
+    public function quotedEtag(): string
+    {
+        return '"'.$this->etag.'"';
     }
 
     protected function payloadColumn(): string

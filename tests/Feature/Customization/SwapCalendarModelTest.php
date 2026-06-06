@@ -19,7 +19,7 @@ beforeEach(function (): void {
 });
 
 it('resolves the swapped calendar model through the resolver', function (): void {
-    expect(Dav::model('calendar'))->toBe(CustomCalendar::class);
+    expect(Dav::model(DavCalendar::class))->toBe(CustomCalendar::class);
 });
 
 it('drives the calendar backend end-to-end with the swapped model', function (): void {

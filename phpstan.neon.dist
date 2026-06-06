@@ -4,3 +4,4 @@ parameters:
     level: 6
     paths:
         - src
+        - tests/Stubs/OwnerUser.php

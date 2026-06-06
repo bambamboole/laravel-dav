@@ -152,7 +152,7 @@ class PrincipalBackend extends AbstractBackend
             return [];
         }
 
-        return Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()
+        return Dav::model(DavCalendarProxyMembership::class)::query()
             ->where('delegate_owner_id', $ownerId)
             ->orderBy('owner_id')
             ->get()
@@ -180,19 +180,11 @@ class PrincipalBackend extends AbstractBackend
             ->unique()
             ->values();
 
-        $this->proxyMembershipQuery($proxyPrincipal['owner_id'], $proxyPrincipal['access'])
-            ->whereNotIn('delegate_owner_id', $memberOwnerIds->all())
-            ->delete();
-
-        foreach ($memberOwnerIds as $memberOwnerId) {
-            Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()->updateOrCreate(
-                [
-                    'owner_id' => $proxyPrincipal['owner_id'],
-                    'delegate_owner_id' => $memberOwnerId,
-                ],
-                ['access' => $proxyPrincipal['access']],
-            );
-        }
+        Dav::model(DavCalendarProxyMembership::class)::setDelegates(
+            $proxyPrincipal['owner_id'],
+            $proxyPrincipal['access'],
+            $memberOwnerIds,
+        );
     }
 
     /**
@@ -291,7 +283,7 @@ class PrincipalBackend extends AbstractBackend
      */
     private function proxyMembershipQuery(int $ownerId, string $access): Builder
     {
-        return Dav::modelFor('calendar_proxy_membership', DavCalendarProxyMembership::class)::query()
+        return Dav::model(DavCalendarProxyMembership::class)::query()
             ->where('owner_id', $ownerId)
             ->where('access', $access);
     }
