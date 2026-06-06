@@ -10,6 +10,7 @@ use Bambamboole\LaravelDav\Models\DavCalendarProxyMembership;
 use Bambamboole\LaravelDav\Models\DavCalendarSubscription;
 use Bambamboole\LaravelDav\Models\DavCard;
 use Bambamboole\LaravelDav\Models\DavCredential;
+use Bambamboole\LaravelDav\Models\DavSchedulingObject;
 
 return [
     'models' => [
@@ -23,6 +24,7 @@ return [
         'address_book' => DavAddressBook::class,
         'card' => DavCard::class,
         'credential' => DavCredential::class,
+        'scheduling_object' => DavSchedulingObject::class,
     ],
 
     'route' => [
