@@ -49,10 +49,10 @@
         "test": "pest",
         "lint": "pint",
         "lint:check": "pint --test",
-        "stan": "phpstan analyse --no-progress",
+        "phpstan": "phpstan analyse --no-progress",
         "all": [
             "@lint",
-            "@stan",
+            "@phpstan",
             "@test"
         ],
         "post-autoload-dump": [
