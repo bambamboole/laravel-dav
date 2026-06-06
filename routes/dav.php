@@ -25,7 +25,7 @@ $davMethods = [
     'ACL',
 ];
 
-Route::match($davMethods, '/.well-known/caldav', fn(): RedirectResponse => redirect(Dav::baseUri(), 301));
-Route::match($davMethods, '/.well-known/carddav', fn(): RedirectResponse => redirect(Dav::baseUri(), 301));
+Route::match($davMethods, '/.well-known/caldav', fn (): RedirectResponse => redirect(Dav::baseUri(), 301));
+Route::match($davMethods, '/.well-known/carddav', fn (): RedirectResponse => redirect(Dav::baseUri(), 301));
 
-Route::match($davMethods, Dav::baseUri() . '{path?}', DavController::class)->where('path', '.*');
+Route::match($davMethods, Dav::baseUri().'{path?}', DavController::class)->where('path', '.*');
